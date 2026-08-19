@@ -78,18 +78,15 @@
             <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-date">선택 완료</button></div>
         </div>
 
-        <!-- 🚀 추가됨: 국가 선택 모달 (대륙 -> 국가) -->
         <div id="country-modal" class="bottom-sheet">
             <div class="sheet-header">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button class="icon-btn" id="btn-country-back" style="display:none; width:auto;"><span class="material-symbols-rounded">arrow_back</span></button>
+                    <button class="icon-btn" id="btn-country-back" style="display:none;"><span class="material-symbols-rounded">arrow_back</span></button>
                     <h3 id="country-modal-title">대륙 선택</h3>
                 </div>
                 <button class="icon-btn" id="btn-close-country"><span class="material-symbols-rounded">close</span></button>
             </div>
-            <div class="sheet-content" id="country-list-container" style="padding-top: 10px;">
-                <!-- JS 동적 생성 -->
-            </div>
+            <div class="sheet-content" id="country-list-container" style="padding-top: 10px;"></div>
         </div>
         <div id="calendar-overlay"></div>
 
@@ -101,7 +98,6 @@
             </header>
             <div class="ai-content">
                 
-                <!-- 🚀 스텝 순서 변경: 일정(날짜)이 1번으로 옴 -->
                 <div class="ai-step active" id="ai-step-1">
                     <h2 class="ai-question">여행 일정이<br>어떻게 되시나요?</h2><p class="ai-desc">일정에 맞춰 최적의 동선을 짜드려요.</p>
                     <div class="ai-date-select-card ripple-btn" id="btn-open-calendar-ai">
@@ -111,34 +107,24 @@
                     </div>
                 </div>
 
-                <!-- 🚀 2번 스텝: 다중 여행지(Multi-city) 입력 폼 -->
+                <!-- 🚀 스텝 2: 여행지 입력 폼 개선 및 AI 위임 스위치 추가 -->
                 <div class="ai-step" id="ai-step-2">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                        <div><h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2><p class="ai-desc">여러 곳을 간다면 추가 버튼을 눌러주세요.</p></div>
-                        <!-- 최적 동선 재배치 버튼 (기본 숨김) -->
-                        <button id="btn-optimize-route" class="auto-sort-btn" style="display:none;"><span class="material-symbols-rounded">sync</span> AI 최적 순서</button>
-                    </div>
+                    <h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2><p class="ai-desc">여러 곳을 간다면 아래 추가 버튼을 눌러주세요.</p>
                     
                     <div id="dest-form-container">
-                        <!-- 첫 번째 여행지 폼 뼈대 -->
-                        <div class="dest-item" data-index="0">
-                            <div class="dest-num" style="display:none;">1</div>
-                            <div class="dest-inputs">
-                                <div class="dest-row">
-                                    <button class="country-select-btn ripple-btn">국가를 선택하세요<span class="material-symbols-rounded">expand_more</span></button>
-                                </div>
-                                <div class="dest-row">
-                                    <input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력">
-                                    <div class="stay-days-box" style="display:none;">
-                                        <input type="number" class="stay-days-input" placeholder="체류 일수"><span>일</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="icon-btn remove-dest-btn" style="display:none; color:#EF4444;"><span class="material-symbols-rounded">do_not_disturb_on</span></button>
-                        </div>
+                        <!-- JS로 동적 생성 -->
                     </div>
                     
-                    <button class="add-dest-btn ripple-btn" id="btn-add-dest"><span class="material-symbols-rounded">add</span> 여행지 추가하기</button>
+                    <div style="display:flex; justify-content:flex-end; margin-bottom: 24px;">
+                        <button class="add-dest-text-btn" id="btn-add-dest"><span class="material-symbols-rounded" style="font-size:18px;">add</span> 여행지 추가</button>
+                    </div>
+
+                    <label class="ai-optimize-toggle" id="ai-optimize-wrapper" style="display:none;">
+                        <input type="checkbox" id="chk-optimize-route">
+                        <div class="toggle-icon"><span class="material-symbols-rounded">auto_awesome</span></div>
+                        <div class="toggle-text">AI에게 최적 동선 순서 맡기기</div>
+                        <div class="toggle-switch"></div>
+                    </label>
                 </div>
 
                 <div class="ai-step" id="ai-step-3"><h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>

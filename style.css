@@ -68,7 +68,9 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: var(--card-bg); box-shadow: 0 2px 10px var(--shadow-color); z-index: 10; }
 .header-left, .header-right { width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
 .sub-header h2 { font-size: 18px; color: var(--text-main); font-weight: 800; text-align: center; margin: 0; word-break: keep-all; white-space: nowrap; }
-.icon-btn { background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0; }
+
+/* 🚀 해결됨: X버튼 모달 헤더 깨짐 수정 (width/height 32px 고정) */
+.icon-btn { background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; flex-shrink: 0; }
 .search-btn { margin-top: 10px; width: 100%; padding: 18px; border: none; border-radius: 16px; background: linear-gradient(135deg, #2563EB, #4FACFE); color: white; font-size: 18px; font-weight: 800; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3); cursor: pointer; position: relative; overflow:hidden;}
 
 #calendar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; }
@@ -106,21 +108,29 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .ai-date-texts .value { font-size: 16px; font-weight: 800; color: var(--text-main); }
 .ai-date-select-card .arrow { color: #CBD5E1; }
 
-/* 🚀 목적지 다중 입력 폼 전용 CSS */
-#dest-form-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-.dest-item { display: flex; gap: 12px; align-items: stretch; }
-.dest-num { width: 24px; height: 24px; border-radius: 50%; background: #8B5CF6; color: white; font-size: 12px; font-weight: 800; display: flex; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 16px; }
-.dest-inputs { flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--icon-bg); padding: 12px; border-radius: 16px; }
-.dest-row { display: flex; gap: 8px; align-items: center; }
-.country-select-btn { flex: 1; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-.city-input { flex: 1; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); outline: none; }
-.stay-days-box { width: 80px; display: flex; align-items: center; gap: 4px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 0 10px; }
-.stay-days-input { width: 100%; padding: 12px 0; text-align: center; border: none; background: transparent; font-size: 15px; font-weight: 700; outline: none; }
-.stay-days-box span { font-size: 14px; font-weight: 700; color: var(--text-sub); }
-.add-dest-btn { width: 100%; padding: 16px; border: 2px dashed #CBD5E1; background: transparent; border-radius: 16px; color: var(--text-sub); font-size: 15px; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 40px; }
-.auto-sort-btn { background: rgba(37,99,235,0.1); color: #2563EB; border: none; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; margin-bottom: 12px; }
+/* 🚀 다중 여행지 폼 UI 및 삭제/추가 버튼 디자인 리뉴얼 */
+#dest-form-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 12px; }
+.dest-item { display: flex; gap: 12px; align-items: flex-start; position: relative; margin-bottom: 8px;}
+.dest-num { width: 24px; height: 24px; border-radius: 50%; background: var(--text-main); color: white; font-size: 12px; font-weight: 800; display: flex; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 14px; }
+.dest-inputs { flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--card-bg); padding: 16px; border-radius: 16px; border: 1px solid var(--card-border); box-shadow: 0 4px 12px var(--shadow-color);}
+.country-select-btn { width: 100%; padding: 12px 16px; background: var(--icon-bg); border: none; border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.city-input { flex: 1; padding: 12px 16px; background: var(--icon-bg); border: none; border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); outline: none; }
+.stay-days-box { width: 80px; display: flex; align-items: center; gap: 4px; background: var(--icon-bg); border: none; border-radius: 10px; padding: 0 10px; }
+.stay-days-input { width: 100%; padding: 12px 0; text-align: center; border: none; background: transparent; font-size: 15px; font-weight: 700; outline: none; color: var(--text-main);}
+.remove-dest-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: white; color: #EF4444; border: 1px solid #E2E8F0; border-radius: 50%; font-size: 16px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+.add-dest-text-btn { background: none; border: none; color: #2563EB; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 8px 4px; transition: 0.2s; }
+.add-dest-text-btn:active { opacity: 0.7; }
 
-/* 대륙-국가 모달 리스트 */
+/* 🚀 AI 위임 토글 스위치 (Toss 스타일) */
+.ai-optimize-toggle { display: flex; align-items: center; gap: 12px; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); padding: 16px; border-radius: 16px; cursor: pointer; margin-bottom: 20px;}
+.ai-optimize-toggle .toggle-icon { color: #8B5CF6; display:flex; align-items:center;}
+.ai-optimize-toggle .toggle-text { flex: 1; font-size: 14px; font-weight: 700; color: var(--text-main); }
+.toggle-switch { width: 44px; height: 24px; background: #CBD5E1; border-radius: 20px; position: relative; transition: 0.3s; flex-shrink:0;}
+.toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+input[type="checkbox"]:checked ~ .toggle-switch { background: #8B5CF6; }
+input[type="checkbox"]:checked ~ .toggle-switch::after { transform: translateX(20px); }
+input[type="checkbox"] { display: none; }
+
 .country-list-item { padding: 16px; border-bottom: 1px solid var(--card-border); font-size: 16px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
 .country-list-item:active { background: var(--icon-bg); }
 
@@ -164,6 +174,7 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 #ai-loading-overlay p { font-size: 14px; color: var(--text-sub); font-weight: 600; }
 .leaflet-control-attribution { display: none !important; }
 
+/* 마이페이지 */
 .account-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; }
 .profile-header { display: flex; align-items: center; gap: 20px; background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--card-border); }
 .profile-pic-large { width: 64px; height: 64px; border-radius: 50%; background-color: var(--icon-bg); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2394A3B8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'); background-size: cover; background-position: center; border: 2px solid var(--card-border); }
@@ -178,6 +189,7 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .menu-item > span:nth-child(2) { flex: 1; font-size: 15px; font-weight: 700; color: var(--text-main); }
 .menu-item .arrow { color: #CBD5E1; font-size: 20px; }
 
+/* 타임라인 결과 화면 */
 .day-tabs-container { display: flex; gap: 8px; padding: 16px 24px; overflow-x: auto; background: var(--bg-app); border-bottom: 1px solid var(--card-border); scrollbar-width: none; z-index: 10; }
 .day-tabs-container::-webkit-scrollbar { display: none; }
 .day-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 16px; background: var(--icon-bg); color: var(--text-sub); min-width: 72px; cursor: pointer; transition: 0.2s; }

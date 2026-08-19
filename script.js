@@ -71,21 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAiNext = document.getElementById('btn-ai-next');
     const aiScreen = document.getElementById('ai-screen'); 
     
-    // 여행 데이터 통합 보관
     let aiData = { 
-        startDate: null, 
-        endDate: null, 
-        totalTripDays: 0,
-        destinations: [{ country: '', city: '', stayDays: 0 }], // 다중 여행지 배열
-        arrTime: '', 
-        depTime: '', 
-        accom: '', 
-        companion: '', 
-        people: 1, 
-        styles: [], 
-        myStyles: [], 
-        ptStyles: [], 
-        stamina: 3 
+        startDate: null, endDate: null, totalTripDays: 0,
+        destinations: [{ country: '', city: '', stayDays: 0 }], 
+        isOptimizeRoute: false, // 🚀 AI 동선 최적화 여부
+        arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 
     };
 
     // 🚀 2. 스텝 1: 달력 로직 (일정 먼저 묻기)
@@ -109,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('label-arr-date').innerText = aiData.startDate ? `(${aiData.startDate.getMonth()+1}/${aiData.startDate.getDate()})` : ''; 
         document.getElementById('label-dep-date').innerText = aiData.endDate ? `(${aiData.endDate.getMonth()+1}/${aiData.endDate.getDate()})` : ''; 
         
-        // 날짜가 정해졌을 때만 체류 일수 자동 계산 로직 업데이트
         updateStayDaysUI();
         validateAiStep();
     };
@@ -125,9 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-confirm-date')?.addEventListener('click', () => {
         if (!tempStartDate || !tempEndDate) { alert('시작일과 종료일을 모두 선택해주세요.'); return; }
-        aiData.startDate = tempStartDate; 
-        aiData.endDate = tempEndDate;
-        // 총 여행 일수 계산 (시작일 포함이므로 +1)
+        aiData.startDate = tempStartDate; aiData.endDate = tempEndDate;
         aiData.totalTripDays = Math.round((tempEndDate - tempStartDate) / (1000 * 60 * 60 * 24)) + 1;
         updateDateTexts(); closeCalendar();
     });
@@ -159,12 +146,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 3. 스텝 2: 다중 여행지 (국가 및 도시) 선택 로직
+    // 🚀 3. 스텝 2: 다중 여행지 (국가 50여 개 세팅)
     const countryData = {
-        '아시아': ['일본', '태국', '베트남', '대만', '중국', '필리핀', '싱가포르', '인도네시아', '말레이시아'],
-        '유럽': ['프랑스', '이탈리아', '영국', '스페인', '독일', '스위스', '체코', '오스트리아'],
-        '아메리카': ['미국', '캐나다', '멕시코', '브라질', '아르헨티나'],
-        '오세아니아/기타': ['호주', '뉴질랜드', '괌', '사이판']
+        '아시아': ['대한민국', '일본', '중국', '대만', '홍콩', '마카오', '태국', '베트남', '필리핀', '싱가포르', '말레이시아', '인도네시아', '인도', '몰디브', '몽골'],
+        '유럽': ['영국', '프랑스', '이탈리아', '스페인', '스위스', '독일', '체코', '오스트리아', '헝가리', '크로아티아', '네덜란드', '포르투갈', '그리스', '노르웨이', '스웨덴', '핀란드', '튀르키예', '아이슬란드'],
+        '아메리카': ['미국', '캐나다', '멕시코', '페루', '브라질', '아르헨티나', '칠레', '콜롬비아', '쿠바', '볼리비아'],
+        '오세아니아/기타': ['호주', '뉴질랜드', '괌', '사이판', '피지', '팔라우', '이집트', '모로코']
     };
 
     const destContainer = document.getElementById('dest-form-container');
@@ -173,15 +160,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCountryBack = document.getElementById('btn-country-back');
     const countryModalTitle = document.getElementById('country-modal-title');
     
-    let activeDestIndex = 0; // 현재 국가 모달을 띄운 폼의 인덱스
+    let activeDestIndex = 0; 
 
-    // 여행지가 여러 개일 때 UI 처리 (번호 달기, 날짜 칸 띄우기)
+    // UI 동적 갱신
     const updateStayDaysUI = () => {
         const destItems = document.querySelectorAll('.dest-item');
         const isMulti = destItems.length > 1;
         
-        if (isMulti) document.getElementById('btn-optimize-route').style.display = 'flex';
-        else document.getElementById('btn-optimize-route').style.display = 'none';
+        // 🚀 다중 여행지면 AI 정렬 스위치 노출
+        if (isMulti) document.getElementById('ai-optimize-wrapper').style.display = 'flex';
+        else {
+            document.getElementById('ai-optimize-wrapper').style.display = 'none';
+            document.getElementById('chk-optimize-route').checked = false;
+            aiData.isOptimizeRoute = false;
+        }
 
         destItems.forEach((item, idx) => {
             const numBadge = item.querySelector('.dest-num');
@@ -191,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isMulti) {
                 numBadge.style.display = 'flex'; numBadge.innerText = idx + 1;
                 removeBtn.style.display = 'flex';
-                // 전체 여행 일수가 설정되어 있으면 며칠 묵을지 묻는 폼 켜기
                 if(aiData.totalTripDays > 0) stayBox.style.display = 'flex';
                 else stayBox.style.display = 'none';
             } else {
@@ -202,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // 국가 선택 모달 열기
+    // 국가 모달
     const openCountryModal = (index) => {
         activeDestIndex = index;
         countryModalTitle.innerText = '대륙 선택';
@@ -217,30 +208,24 @@ document.addEventListener('DOMContentLoaded', () => {
         calendarOverlay.style.display = 'block'; 
         setTimeout(() => countryModal.classList.add('active'), 10);
         
-        // 대륙 클릭 시 -> 국가 리스트로 전환 (가나다순 정렬)
         document.querySelectorAll('.country-list-item').forEach(el => {
             el.addEventListener('click', () => {
                 const cont = el.getAttribute('data-continent');
                 countryModalTitle.innerText = cont;
                 btnCountryBack.style.display = 'flex';
                 
-                const countries = countryData[cont].sort();
+                const countries = countryData[cont].sort(); // 가나다 정렬
                 let subHtml = '';
-                countries.forEach(c => {
-                    subHtml += `<div class="country-list-item final-country" data-country="${c}">${c}</div>`;
-                });
+                countries.forEach(c => { subHtml += `<div class="country-list-item final-country" data-country="${c}">${c}</div>`; });
                 countryListContainer.innerHTML = subHtml;
 
-                // 국가 최종 클릭 시 -> 폼에 반영하고 닫기
                 document.querySelectorAll('.final-country').forEach(cel => {
                     cel.addEventListener('click', () => {
                         const selectedCountry = cel.getAttribute('data-country');
                         aiData.destinations[activeDestIndex].country = selectedCountry;
                         const btn = document.querySelector(`.dest-item[data-index="${activeDestIndex}"] .country-select-btn`);
                         btn.innerHTML = `<span style="color:#2563EB;">${selectedCountry}</span><span class="material-symbols-rounded">expand_more</span>`;
-                        
-                        closeCountryModal();
-                        validateAiStep();
+                        closeCountryModal(); validateAiStep();
                     });
                 });
             });
@@ -249,9 +234,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const closeCountryModal = () => { countryModal.classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); };
     document.getElementById('btn-close-country')?.addEventListener('click', closeCountryModal);
-    btnCountryBack?.addEventListener('click', () => openCountryModal(activeDestIndex)); // 뒤로가기 누르면 대륙 선택으로
+    btnCountryBack?.addEventListener('click', () => openCountryModal(activeDestIndex));
 
-    // 이벤트 델리게이션으로 폼 버튼들 관리
+    // 이벤트 델리게이션
     destContainer?.addEventListener('click', (e) => {
         const item = e.target.closest('.dest-item');
         if(!item) return;
@@ -264,13 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(aiData.destinations.length > 1) {
                 aiData.destinations.splice(index, 1);
                 item.remove();
-                
-                // 인덱스 재정비
-                document.querySelectorAll('.dest-item').forEach((el, newIdx) => {
-                    el.setAttribute('data-index', newIdx);
-                });
-                updateStayDaysUI();
-                validateAiStep();
+                document.querySelectorAll('.dest-item').forEach((el, newIdx) => { el.setAttribute('data-index', newIdx); });
+                updateStayDaysUI(); validateAiStep();
             }
         }
     });
@@ -280,55 +260,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!item) return;
         const index = parseInt(item.getAttribute('data-index'));
         
-        if(e.target.classList.contains('city-input')) {
-            aiData.destinations[index].city = e.target.value.trim();
-            validateAiStep();
-        }
-        if(e.target.classList.contains('stay-days-input')) {
-            aiData.destinations[index].stayDays = parseInt(e.target.value) || 0;
-            validateAiStep();
-        }
+        if(e.target.classList.contains('city-input')) { aiData.destinations[index].city = e.target.value.trim(); validateAiStep(); }
+        if(e.target.classList.contains('stay-days-input')) { aiData.destinations[index].stayDays = parseInt(e.target.value) || 0; validateAiStep(); }
     });
 
-    // 🚀 여행지 추가 버튼 (+) 로직
+    // 여행지 추가 버튼
     document.getElementById('btn-add-dest')?.addEventListener('click', () => {
         const newIndex = aiData.destinations.length;
         aiData.destinations.push({ country: '', city: '', stayDays: 0 });
         
         const html = `
             <div class="dest-item" data-index="${newIndex}">
-                <div class="dest-num"></div>
+                <div class="dest-num" style="display:none;"></div>
                 <div class="dest-inputs">
-                    <div class="dest-row">
-                        <button class="country-select-btn ripple-btn">국가를 선택하세요<span class="material-symbols-rounded">expand_more</span></button>
-                    </div>
+                    <button class="country-select-btn ripple-btn">국가를 선택하세요<span class="material-symbols-rounded">expand_more</span></button>
                     <div class="dest-row">
                         <input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력">
-                        <div class="stay-days-box">
-                            <input type="number" class="stay-days-input" placeholder="체류 일수"><span>일</span>
-                        </div>
+                        <div class="stay-days-box" style="display:none;"><input type="number" class="stay-days-input" placeholder="체류일"><span>일</span></div>
                     </div>
                 </div>
-                <button class="icon-btn remove-dest-btn" style="color:#EF4444;"><span class="material-symbols-rounded">do_not_disturb_on</span></button>
+                <div class="remove-dest-btn"><span class="material-symbols-rounded" style="font-size:16px;">close</span></div>
             </div>
         `;
         destContainer.insertAdjacentHTML('beforeend', html);
-        updateStayDaysUI();
-        validateAiStep();
+        updateStayDaysUI(); validateAiStep();
     });
 
-    // AI 동선 최적화 버튼 (시각적 액션만 보여줌)
-    document.getElementById('btn-optimize-route')?.addEventListener('click', () => {
-        alert("AI가 여행지 간의 거리와 교통편을 계산하여 가장 효율적인 순서로 동선을 재배치했습니다! 🔄");
-        // 실제 배열 순서를 바꾸는 척 (UI만 리렌더링)
+    // 🚀 AI 위임 토글 스위치 이벤트
+    document.getElementById('chk-optimize-route')?.addEventListener('change', (e) => {
+        aiData.isOptimizeRoute = e.target.checked;
     });
 
-    // 4. 나머지 AI 생성기 설정
+    // 4. 나머지 폼 로직
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
-    document.getElementById('btn-back-ai')?.addEventListener('click', () => { if(confirm("일정 짜기를 그만두시겠습니까?")) aiScreen.classList.remove('active'); });
+    document.getElementById('btn-back-ai')?.addEventListener('click', () => { if(confirm("일정 짜기를 그만두시겠습니까?\n진행 중인 정보는 저장되지 않습니다.")) aiScreen.classList.remove('active'); });
 
     let map = null; let marker = null; 
+    const tryGeolocation = () => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { map.setView([pos.coords.latitude, pos.coords.longitude], 13); }, () => {}); } };
     const initMap = () => {
         if(!map) { 
             map = L.map('map-container').setView([37.5665, 126.9780], 13); 
@@ -351,21 +320,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if(stepEl) stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; 
         }
         
-        // 데이터 초기화
-        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', stayDays: 0 }], arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 }; 
-        aiStartDate = null; aiEndDate = null; updateDateTexts(); 
+        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', stayDays: 0 }], isOptimizeRoute: false, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 }; 
+        tempStartDate = null; tempEndDate = null; updateDateTexts(); 
         
-        // 폼 UI 초기화
         destContainer.innerHTML = `
             <div class="dest-item" data-index="0">
                 <div class="dest-num" style="display:none;">1</div>
                 <div class="dest-inputs">
-                    <div class="dest-row"><button class="country-select-btn ripple-btn">국가를 선택하세요<span class="material-symbols-rounded">expand_more</span></button></div>
-                    <div class="dest-row"><input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력"><div class="stay-days-box" style="display:none;"><input type="number" class="stay-days-input" placeholder="체류 일수"><span>일</span></div></div>
+                    <button class="country-select-btn ripple-btn">국가를 선택하세요<span class="material-symbols-rounded">expand_more</span></button>
+                    <div class="dest-row"><input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력"><div class="stay-days-box" style="display:none;"><input type="number" class="stay-days-input" placeholder="체류일"><span>일</span></div></div>
                 </div>
-                <button class="icon-btn remove-dest-btn" style="display:none; color:#EF4444;"><span class="material-symbols-rounded">do_not_disturb_on</span></button>
+                <div class="remove-dest-btn" style="display:none;"><span class="material-symbols-rounded" style="font-size:16px;">close</span></div>
             </div>
         `;
+        document.getElementById('chk-optimize-route').checked = false;
         updateStayDaysUI();
         
         document.getElementById('ai-input-arr-time').value = ''; document.getElementById('ai-input-dep-time').value = ''; document.getElementById('ai-input-accom').value = ''; document.getElementById('people-count').innerText = '1명'; 
@@ -376,19 +344,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else { document.getElementById('step-7-standard').style.display = 'none'; document.getElementById('step-7-tension').style.display = 'block'; }
     };
     
-    // 🚀 단계별 꼼꼼한 검증 로직 추가
     const validateAiStep = () => { 
         if(!btnAiNext) return; 
-        
-        if(currentAiStep === 1) {
-            btnAiNext.disabled = !(aiData.startDate && aiData.endDate);
-        }
-        else if(currentAiStep === 2) {
-            // 모든 폼에 최소한 '도시 이름'은 적혀있어야 통과
-            const isAllFilled = aiData.destinations.every(d => d.city.trim() !== '');
-            // 다중 여행지면 체류 일수 합이 전체 일정과 맞는지 검증할 수도 있음 (여기선 일단 입력만 하면 통과)
-            btnAiNext.disabled = !isAllFilled; 
-        } 
+        if(currentAiStep === 1) btnAiNext.disabled = !(aiData.startDate && aiData.endDate);
+        else if(currentAiStep === 2) btnAiNext.disabled = !aiData.destinations.every(d => d.city.trim() !== '');
         else if(currentAiStep === 3 || currentAiStep === 4) btnAiNext.disabled = false; 
         else if(currentAiStep === 5) btnAiNext.disabled = aiData.companion === ''; 
         else if(currentAiStep === 6) btnAiNext.disabled = false; 
@@ -399,10 +358,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(currentAiStep === 8) btnAiNext.disabled = false;
     };
     
+    // 이벤트 바인딩
     document.querySelectorAll('.ai-option-card').forEach(card => { 
         card.addEventListener('click', () => { document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected'); aiData.companion = card.getAttribute('data-val'); validateAiStep(); }); 
     });
-    
     document.getElementById('btn-minus-people')?.addEventListener('click', () => { if(aiData.people > 1) { aiData.people--; document.getElementById('people-count').innerText = `${aiData.people}명`; }}); 
     document.getElementById('btn-plus-people')?.addEventListener('click', () => { if(aiData.people < 20) { aiData.people++; document.getElementById('people-count').innerText = `${aiData.people}명`; }});
 
@@ -481,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===================================================================
-    // 🚀 5. 대망의 AI 타임라인 생성 
+    // 🚀 5. 대망의 AI 타임라인 알고리즘 로직
     // ===================================================================
     let routeMap = null; 
     let routeLayerGroup = null;
@@ -491,13 +450,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let dailyPlans = {}; 
     let isMapView = false;
     
-    // 여행지 데이터베이스 (사진 URL - Unsplash 리얼 이미지 적용)
+    // 여행지 데이터베이스
     const spotDB = {
         '오사카': {
-            tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'} ],
+            tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'}, {n: '츠텐카쿠 전망대', d: '레트로한 분위기의 신세카이 중심', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'} ],
             food: [ {n: '도톤보리 타코야키', d: '입천장 데여도 포기할 수 없는 겉바속촉', img: 'https://images.unsplash.com/photo-1574484284002-952d92456975'}, {n: '쿠시카츠 다루마', d: '원조 튀김 꼬치와 시원한 생맥주의 조합', img: 'https://images.unsplash.com/photo-1583339824000-60eaeb00f40d'}, {n: '이치란 라멘', d: '한국인 입맛에 가장 잘 맞는 독서실 라멘', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624'} ],
             cafe: [ {n: '나카자키초 카페거리', d: '골목골목 숨겨진 빈티지 감성 카페 탐방', img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24'}, {n: '리버뷰 테라스 카페', d: '강가를 바라보며 마시는 여유로운 커피 한 잔', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93'} ],
             indoor: [ {n: '가이유칸 수족관', d: '고래상어를 볼 수 있는 세계 최대 규모의 수족관', img: 'https://images.unsplash.com/photo-1582967788606-a171c1080cb0'}, {n: '파르코 백화점', d: '지브리 스토어와 짱구 샵이 있는 쇼핑 천국', img: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6'} ]
+        },
+        '파리': {
+            tour: [ {n: '에펠탑 피크닉', d: '마르스 광장에서 와인과 함께 즐기는 로맨틱 피크닉', img: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34'}, {n: '몽마르뜨 언덕', d: '예술가들의 숨결이 느껴지는 파리 시내 전경', img: 'https://images.unsplash.com/photo-1549144511-f099e773c147'}, {n: '센 강 유람선', d: '바토무슈를 타고 감상하는 파리의 야경', img: 'https://images.unsplash.com/photo-1509356843151-3e7d96a6443c'} ],
+            food: [ {n: '테라스 미슐랭', d: '분위기 좋은 노천 레스토랑에서 즐기는 정찬', img: 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c'}, {n: '현지 바게트 맛집', d: '갓 구운 크루아상과 바게트 샌드위치', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff'} ],
+            cafe: [ {n: '마레지구 테라스 카페', d: '파리지앵처럼 에스프레소 마시기', img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24'}, {n: '파티세리 앙젤리나', d: '꾸덕한 쇼콜라쇼와 몽블랑 디저트', img: 'https://images.unsplash.com/photo-1551024601-bec78aea704b'} ],
+            indoor: [ {n: '루브르 박물관', d: '모나리자를 비롯한 세계 최고의 예술품들', img: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a'}, {n: '오르세 미술관', d: '기차역을 개조한 인상파 화가들의 성지', img: 'https://images.unsplash.com/photo-1580540455581-ea93335b1c55'} ]
         }
     };
 
@@ -514,32 +479,36 @@ document.addEventListener('DOMContentLoaded', () => {
         if(dbCity && spotDB[dbCity][type]) return spotDB[dbCity][type];
         
         return [
-            {n: `${validCity} 핫플 1`, d: '여행자들의 필수 코스', img: `https://images.unsplash.com/photo-${fallbackImages[type]?.[0] || '1476514525535-07fb3b4ae5f1'}`},
-            {n: `${validCity} 핫플 2`, d: '현지 느낌 물씬 나는 곳', img: `https://images.unsplash.com/photo-${fallbackImages[type]?.[1] || '1506012787146-f92b2d7d6d96'}`}
+            {n: `${validCity} 명소`, d: '방문하기 좋은 곳입니다.', img: `https://images.unsplash.com/photo-${fallbackImages[type]?.[0] || '1476514525535-07fb3b4ae5f1'}`},
+            {n: `${validCity} 핫플`, d: '요즘 현지인들에게 뜨는 곳', img: `https://images.unsplash.com/photo-${fallbackImages[type]?.[1] || '1506012787146-f92b2d7d6d96'}`}
         ];
     };
 
     const generateAiTimeline = () => {
         const resultScreen = document.getElementById('ai-result-screen');
         
-        // 🚀 다중 여행지 첫 번째 도시를 메인 타이틀로 사용
-        const mainDest = aiData.destinations[0].city || '미지의 여행지';
-        document.getElementById('ai-result-title').innerText = `${mainDest} 일정`;
+        // 🚀 다중 여행지 데이터를 기반으로 타이틀 구성
+        const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
+        const mainDest = dests[0] || '미지의 여행지';
+        const titleText = dests.length > 1 ? `${mainDest} 외 ${dests.length - 1}곳 일정` : `${mainDest} 일정`;
+        document.getElementById('ai-result-title').innerText = titleText;
         
         let subText = `${fm(aiData.startDate)} ~ ${fm(aiData.endDate)} · `;
         if(aiMode === 'standard' && aiData.styles.length > 0) subText += `${aiData.styles[0]} 위주`;
         else if (aiMode === 'tension') subText += `우당탕탕 타협 플랜`;
         else subText += `자유 여행`;
+        
+        // AI 스위치를 켰다면 문구 추가
+        if(aiData.isOptimizeRoute) subText += ` (AI 최적 동선 ✨)`;
         document.getElementById('ai-result-subtitle').innerText = subText;
 
-        // 상단 날짜 탭
-        const totalDays = aiData.totalTripDays > 0 ? aiData.totalTripDays : 3; 
+        const totalDays = aiData.totalTripDays > 0 ? aiData.totalTripDays : 1; 
         let tabsHtml = '';
         for(let i=1; i<=totalDays; i++) {
             const activeCls = i === 1 ? 'active' : '';
-            // 임시로 월 계산 로직 단순화
-            let dateNum = aiData.startDate.getDate() + (i-1);
-            tabsHtml += `<div class="day-tab ${activeCls}" data-day="${i}"><div class="d-day">Day ${i}</div><div class="d-date">${aiData.startDate.getMonth()+1}.${dateNum}</div></div>`;
+            let tempDate = new Date(aiData.startDate);
+            tempDate.setDate(tempDate.getDate() + (i - 1));
+            tabsHtml += `<div class="day-tab ${activeCls}" data-day="${i}"><div class="d-day">Day ${i}</div><div class="d-date">${tempDate.getMonth()+1}.${tempDate.getDate()}</div></div>`;
         }
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
@@ -547,7 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const allTags = aiMode === 'standard' ? aiData.styles : [...aiData.myStyles, ...aiData.ptStyles];
         const userPrefs = allTags.map(s => { const cleanStyle = s.replace('나: ', '').replace('동행: ', ''); return styleToCat[cleanStyle] || 'tour'; });
 
-        // Day별 일정 데이터 생성
         dailyPlans = {};
         for(let d=1; d<=totalDays; d++) {
             let hpPercent = 50; let scheduleTemplate = [];
@@ -563,9 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             let daySpots = [];
+            
+            // 날짜 분배를 위해 대충 현재 도시에 매핑 (실제 서비스에서는 stayDays 비례 분배 알고리즘 필요)
+            let currentCity = dests[Math.min(d - 1, dests.length - 1)] || mainDest;
+
             scheduleTemplate.forEach(slot => {
-                // 다중 여행지 배열에 맞춰서 이 날짜에 해당하는 도시를 가져오도록 고도화 가능 (현재는 메인 도시 고정)
-                const currentCity = mainDest; 
                 const spots = getSpots(currentCity, slot.type);
                 const randomSpot = spots[Math.floor(Math.random() * spots.length)];
                 
@@ -795,6 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // 뒤로가기 클릭 시 경고
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
         if(confirm("저장하지 않고 홈 화면으로 돌아가시겠습니까?\n작성된 일정은 모두 사라집니다.")) {
             document.getElementById('ai-result-screen').classList.remove('active'); 
