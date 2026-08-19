@@ -2,7 +2,7 @@ import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 0. 스플래시 화면
+    // 0. 스플래시 & 로비
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
         setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1500);
@@ -133,7 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
-    document.getElementById('btn-back-ai')?.addEventListener('click', () => aiScreen.classList.remove('active'));
+    
+    // 🚀 뒤로가기 클릭 시 경고 팝업
+    document.getElementById('btn-back-ai')?.addEventListener('click', () => { 
+        if(confirm("일정 짜기를 그만두시겠습니까? 진행 중인 정보는 저장되지 않습니다.")) {
+            aiScreen.classList.remove('active'); 
+        }
+    });
 
     let currentAiStep = 1; const totalAiSteps = 8;
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
@@ -240,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 🚀 수정됨: 뻗는 버그 완벽 방어 (Try-Catch)
     if(btnAiNext) {
         btnAiNext.addEventListener('click', () => {
             if (currentAiStep < totalAiSteps) {
@@ -262,12 +269,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('ai-loading-overlay').classList.add('active');
                     
                     setTimeout(() => {
-                        document.getElementById('ai-loading-overlay').classList.remove('active');
-                        generateAiTimeline(); 
-                        aiScreen.classList.remove('active');
+                        try {
+                            document.getElementById('ai-loading-overlay').classList.remove('active');
+                            generateAiTimeline(); 
+                            aiScreen.classList.remove('active');
+                        } catch(err) {
+                            document.getElementById('ai-loading-overlay').classList.remove('active');
+                            console.error(err);
+                            alert("앗, 일정 분석 중 오류가 났습니다. 다시 시도해주세요! (" + err.message + ")");
+                        }
                     }, 2500);
                 } catch(e) {
-                    console.error("일정 생성 중 에러 발생:", e);
+                    console.error(e);
                     alert("데이터 처리 중 오류가 발생했습니다.");
                 }
             }
@@ -282,11 +295,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let movingMarker = null;
     let currentMarkerIndex = -1;
     let currentSelectedDay = 1; 
+    let dailyPlans = {}; // 생성된 일정을 담아두는 전역 객체
+    let isMapView = false;
     
-    // 여행지 데이터베이스 (사진 URL 연동 포함)
+    // 여행지 데이터베이스 (사진 URL 연동 포함 - Unsplash 리얼 이미지)
     const spotDB = {
         '오사카': {
-            tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'} ],
+            tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'}, {n: '츠텐카쿠 전망대', d: '레트로한 분위기의 신세카이 중심', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'} ],
             food: [ {n: '도톤보리 타코야키', d: '입천장 데여도 포기할 수 없는 겉바속촉', img: 'https://images.unsplash.com/photo-1574484284002-952d92456975'}, {n: '쿠시카츠 다루마', d: '원조 튀김 꼬치와 시원한 생맥주의 조합', img: 'https://images.unsplash.com/photo-1583339824000-60eaeb00f40d'}, {n: '이치란 라멘', d: '한국인 입맛에 가장 잘 맞는 독서실 라멘', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624'} ],
             cafe: [ {n: '나카자키초 카페거리', d: '골목골목 숨겨진 빈티지 감성 카페 탐방', img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24'}, {n: '리버뷰 테라스 카페', d: '강가를 바라보며 마시는 여유로운 커피 한 잔', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93'} ],
             indoor: [ {n: '가이유칸 수족관', d: '고래상어를 볼 수 있는 세계 최대 규모의 수족관', img: 'https://images.unsplash.com/photo-1582967788606-a171c1080cb0'}, {n: '파르코 백화점', d: '지브리 스토어와 짱구 샵이 있는 쇼핑 천국', img: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6'} ]
@@ -299,26 +314,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 대체용 무작위 사진들
+    const fallbackImages = {
+        tour: ['1527631509225-7e23115584a3', '1552733407-5d5c46c3bb3b', '1506012787146-f92b2d7d6d96', '1519567241046-7f570eee3ce6', '1549144511-f099e773c147'],
+        food: ['1504674900247-0877df9cc836', '1550966871-3ed3cdb5ed0c', '1569718212165-3a8278d5f624', '1574484284002-952d92456975', '1583339824000-60eaeb00f40d'],
+        cafe: ['1509042239860-f550ce710b93', '1554118811-1e0d58224f24', '1497935586351-b67a49e012bf', '1551024601-bec78aea704b', '1520668611843-7f212d26fdf2'],
+        indoor: ['1582967788606-a171c1080cb0', '1519567241046-7f570eee3ce6', '1499856871958-5b9627545d1a', '1580540455581-ea93335b1c55', '1590252973167-27e1f4d90ce3']
+    };
+
     const getSpots = (city, type) => {
         const validCity = city || '여행지';
         const dbCity = Object.keys(spotDB).find(k => validCity.includes(k));
         if(dbCity && spotDB[dbCity][type]) return spotDB[dbCity][type];
         
-        // DB에 없으면 기본 이미지와 텍스트로 생성
-        const defImg = type === 'food' ? 'https://images.unsplash.com/photo-1504674900247-0877df9cc836' : (type === 'cafe' ? 'https://images.unsplash.com/photo-1509042239860-f550ce710b93' : 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1');
-        return [
-            {n: `${validCity} 대표 명소`, d: '여행자들의 필수 방문 코스', img: defImg},
-            {n: `${validCity} 로컬 핫플`, d: '현지인들이 더 많이 찾는 숨은 명소', img: defImg}
+        // DB에 없으면 유저의 입력값을 바탕으로 그럴싸한 데이터 즉석 생성 (Unsplash 실제 이미지 매핑)
+        if(type === 'tour') return [
+            {n: `${validCity} 대표 랜드마크`, d: '여행자 필수 방문 코스', img: `https://images.unsplash.com/photo-${fallbackImages.tour[0]}`},
+            {n: `${validCity} 야경 뷰포인트`, d: '로맨틱한 밤을 보내는 곳', img: `https://images.unsplash.com/photo-${fallbackImages.tour[1]}`},
+            {n: `${validCity} 전통 시장`, d: '현지 느낌 물씬 나는 시장', img: `https://images.unsplash.com/photo-${fallbackImages.tour[2]}`},
+            {n: `${validCity} 역사 유적지`, d: '오랜 역사를 간직한 곳', img: `https://images.unsplash.com/photo-${fallbackImages.tour[3]}`}
         ];
+        if(type === 'food') return [
+            {n: `${validCity} 평점 4.8 로컬 맛집`, d: '현지인들이 더 많이 찾는 숨은 명소', img: `https://images.unsplash.com/photo-${fallbackImages.food[0]}`},
+            {n: `${validCity} 현지인 추천 식당`, d: '실패 없는 완벽한 한 끼', img: `https://images.unsplash.com/photo-${fallbackImages.food[1]}`},
+            {n: `${validCity} 야시장 먹거리`, d: '다양한 길거리 음식 탐방', img: `https://images.unsplash.com/photo-${fallbackImages.food[2]}`}
+        ];
+        if(type === 'cafe') return [
+            {n: `${validCity} 감성 충만 카페`, d: '조용하고 분위기 좋은 휴식 공간', img: `https://images.unsplash.com/photo-${fallbackImages.cafe[0]}`},
+            {n: `${validCity} 뷰 좋은 테라스`, d: '멋진 풍경을 보며 마시는 커피', img: `https://images.unsplash.com/photo-${fallbackImages.cafe[1]}`}
+        ];
+        if(type === 'indoor') return [
+            {n: `${validCity} 대형 쇼핑몰`, d: '기념품과 특산품 쇼핑하기 좋은 곳', img: `https://images.unsplash.com/photo-${fallbackImages.indoor[0]}`},
+            {n: `${validCity} 국립 박물관`, d: '도시의 역사와 예술을 한눈에', img: `https://images.unsplash.com/photo-${fallbackImages.indoor[1]}`}
+        ];
+        
+        return [{n: `${validCity} 명소`, d: '즐거운 여행지', img: `https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96`}];
     };
-
-    // 🚀 Day 탭 데이터 동적 생성기
-    let dailyPlans = {}; 
 
     const generateAiTimeline = () => {
         const resultScreen = document.getElementById('ai-result-screen');
         const dest = aiData.dest || '새로운 여행지';
+        const totalDays = 3; // 기본 3일치 고정 생성
         
+        // 화면 타이틀 세팅
         document.getElementById('ai-result-title').innerText = `${dest} 일정`;
         let subText = `${aiData.startDate || '미정'} ~ ${aiData.endDate || '미정'} · `;
         if(aiMode === 'standard' && aiData.styles.length > 0) subText += `${aiData.styles[0]} 위주`;
@@ -326,8 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else subText += `자유 여행`;
         document.getElementById('ai-result-subtitle').innerText = subText;
 
-        // 여행 기간(Day) 계산 로직 (임시로 무조건 3일 생성)
-        const totalDays = 3;
+        // 탭 세팅
         let tabsHtml = '';
         for(let i=1; i<=totalDays; i++) {
             const activeCls = i === 1 ? 'active' : '';
@@ -335,25 +372,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
+        // 유저 취향 태그 분석
+        const styleToCat = { '힐링': 'cafe', '먹방': 'food', '관광': 'tour', '쇼핑': 'indoor', '액티비티': 'tour', '자연': 'tour', '예술': 'indoor', '호캉스': 'cafe' };
+        const allTags = aiMode === 'standard' ? aiData.styles : [...aiData.myStyles, ...aiData.ptStyles];
+        const userPrefs = allTags.map(s => {
+            const cleanStyle = s.replace('나: ', '').replace('동행: ', '');
+            return styleToCat[cleanStyle] || 'tour';
+        });
+
         // Day별 일정 데이터 뼈대 만들기
         dailyPlans = {};
         for(let d=1; d<=totalDays; d++) {
             let hpPercent = 50; let scheduleTemplate = [];
             if(aiData.stamina == 1 || aiData.stamina == 2) {
-                hpPercent = 90;
-                scheduleTemplate = [ {time: '11:00', type: 'food'}, {time: '13:00', type: 'tour'}, {time: '15:30', type: 'cafe'}, {time: '18:00', type: 'food'} ];
+                hpPercent = 90; // 저질체력 소모도 높음 (느긋한 일정)
+                scheduleTemplate = [ {time: '11:00', type: 'food', text: '느지막히 일어나 든든한 아점'}, {time: '13:00', type: userPrefs[0] || 'tour', text: '메인 목적지 한 곳만 가볍게 탐방'}, {time: '15:30', type: 'cafe', text: '체력이 떨어졌으니 긴 휴식'}, {time: '18:00', type: 'food', text: '저녁 식사 및 숙소 복귀'} ];
             } else if(aiData.stamina == 3) {
-                hpPercent = 65;
-                scheduleTemplate = [ {time: '10:00', type: 'tour'}, {time: '12:30', type: 'food'}, {time: '14:00', type: 'tour'}, {time: '16:30', type: 'cafe'}, {time: '18:30', type: 'food'} ];
+                hpPercent = 65; // 보통 체력
+                scheduleTemplate = [ {time: '10:00', type: userPrefs[0] || 'tour', text: '활기찬 오전 관광'}, {time: '12:30', type: 'food', text: '점심 식사'}, {time: '14:00', type: userPrefs[1] || 'tour', text: '오후 메인 투어'}, {time: '16:30', type: 'cafe', text: '당 충전 및 휴식'}, {time: '18:30', type: 'food', text: '저녁 식사'} ];
             } else {
-                hpPercent = 30;
-                scheduleTemplate = [ {time: '09:00', type: 'tour'}, {time: '11:30', type: 'tour'}, {time: '13:30', type: 'food'}, {time: '15:00', type: 'indoor'}, {time: '18:00', type: 'food'}, {time: '20:00', type: 'tour'} ];
+                hpPercent = 30; // 강철체력 (타이트한 일정)
+                scheduleTemplate = [ {time: '09:00', type: userPrefs[0] || 'tour', text: '눈 뜨자마자 아침 투어 시작'}, {time: '11:30', type: userPrefs[1] || 'tour', text: '랜드마크 도장 깨기'}, {time: '13:30', type: 'food', text: '늦은 점심'}, {time: '15:00', type: userPrefs[2] || 'indoor', text: '폭풍 쇼핑 및 실내 관광'}, {time: '18:00', type: 'food', text: '저녁 식사'}, {time: '20:00', type: 'tour', text: '지치지 않는 야경 투어 추가'} ];
             }
 
             let daySpots = [];
             scheduleTemplate.forEach(slot => {
                 const spots = getSpots(dest, slot.type);
-                const randomSpot = spots[Math.floor(Math.random() * spots.length)]; // 사진, 이름, 설명이 담긴 객체
+                const randomSpot = spots[Math.floor(Math.random() * spots.length)];
                 
                 let iconColor = '#8B5CF6'; let iconBg = '#F1F5F9'; let catName = '이동';
                 if(slot.type === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; catName = '식사'; }
@@ -363,22 +408,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let survivalTip = '';
                 if(slot.type === 'food' && Math.random() > 0.4) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">꿀팁: 영어가 안 통할 수 있으니 파파고 번역기를 켜두세요!</span></div>`;
-                if(slot.type === 'tour' && Math.random() > 0.4) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">꿀팁: 해 질 녘(일몰) 시간에 맞춰 가면 예쁜 인생샷이 나옵니다.</span></div>`;
+                if(slot.type === 'tour' && Math.random() > 0.4) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">photo_camera</span><span class="tip-text">꿀팁: 해 질 녘(일몰) 시간에 맞춰 가면 예쁜 인생샷이 나옵니다.</span></div>`;
 
-                daySpots.push({ time: slot.time, type: slot.type, catName: catName, name: randomSpot.n, desc: randomSpot.d, img: randomSpot.img, color: iconColor, bg: iconBg, tip: survivalTip });
+                daySpots.push({ time: slot.time, type: slot.type, catName: catName, name: randomSpot.n, desc: slot.text, img: randomSpot.img, color: iconColor, bg: iconBg, tip: survivalTip });
             });
             dailyPlans[d] = { hp: hpPercent, spots: daySpots };
         }
 
-        // 특정 Day 렌더링 함수
+        // 🚀 특정 Day 렌더링 함수
         const renderDayPlan = (day, isPlanB) => {
             currentSelectedDay = day;
             const plan = dailyPlans[day];
             
             let timelineHtml = `
                 <div class="plan-b-toggle">
-                    <div class="plan-b-btn ${!isPlanB ? 'active' : ''}" id="btn-plan-a">☀️ 기본 일정</div>
-                    <div class="plan-b-btn ${isPlanB ? 'active' : ''}" id="btn-plan-b">☔ 비 올 때 (플랜 B)</div>
+                    <div class="plan-b-btn ${!isPlanB ? 'active' : ''}" id="btn-plan-a"><span class="material-symbols-rounded">wb_sunny</span>기본 일정</div>
+                    <div class="plan-b-btn ${isPlanB ? 'active' : ''}" id="btn-plan-b"><span class="material-symbols-rounded">umbrella</span>우천 시 (플랜 B)</div>
                     <div class="plan-b-bg" style="transform: translateX(${isPlanB ? '100%' : '0'});"></div>
                 </div>
                 <div class="hp-bar-container"><div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${plan.hp}%</span></div><div class="hp-track"><div class="hp-fill" style="width: ${plan.hp}%;"></div></div><p style="font-size:11px; color:var(--text-sub); margin-top:8px; font-weight:600;">${plan.hp > 80 ? '⚠️ 체력 소모가 매우 큽니다. 편한 신발을 신고 휴식을 챙기세요!' : '✨ 컨디션 안배에 딱 좋은 완벽한 플랜입니다.'}</p></div>
@@ -386,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             plan.spots.forEach(spot => {
                 let currentCat = spot.catName;
-                if(isPlanB && spot.type === 'tour') currentCat = '실내 대체'; // 우천시 실내로 텍스트 변경
+                if(isPlanB && spot.type === 'tour') currentCat = '실내 대체'; // 우천시 텍스트 변경
                 
                 let imgHtml = spot.img ? `<div class="tc-img" style="background-image: url('${spot.img}?q=80&w=400&auto=format&fit=crop');"></div>` : '';
 
@@ -413,7 +458,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // 🚀 Day 탭 클릭 시 이벤트
+        // 초기 렌더링
+        renderDayPlan(1, false);
+
+        // 🚀 상단 Day 탭 클릭 시 이벤트 연동
         document.querySelectorAll('.day-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
@@ -423,8 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        renderDayPlan(1, false);
-
+        // 지도 렌더링
         if(!routeMap) {
             routeMap = L.map('ai-result-map', { zoomControl: false }).setView([37.5665, 126.9780], 13);
             L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko').addTo(routeMap);
@@ -440,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(()=>{});
         }
 
-        // 초기화
+        // 상태 초기화
         isMapView = false; currentMarkerIndex = -1;
         document.getElementById('ai-timeline-container').style.display = 'flex';
         document.getElementById('ai-explore-container').style.display = 'none';
@@ -454,17 +501,17 @@ document.addEventListener('DOMContentLoaded', () => {
         resultScreen.classList.add('active');
     };
 
-    // 🚀 뒤로가기 클릭 시 경고 팝업
+    // 🚀 뒤로가기 클릭 시 경고 팝업 (저장 유도)
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
-        if(confirm("저장하지 않고 홈 화면으로 돌아가시겠습니까? 작성된 일정은 모두 사라집니다.")) {
+        if(confirm("저장하지 않고 홈 화면으로 돌아가시겠습니까?\n작성된 일정은 모두 사라집니다.")) {
             document.getElementById('ai-result-screen').classList.remove('active'); 
         }
     });
 
-    // 🚀 애니메이션 (자동차, 걷기) 지도 이동
+    // 🚀 애니메이션 (자동차/사람 마커 이동)
     const animateMovement = (startLatLng, endLatLng, iconHtml, duration, callback) => {
         if(movingMarker) routeMap.removeLayer(movingMarker);
-        const icon = L.divIcon({ className: 'moving-transport', html: iconHtml, iconSize: [32, 32], iconAnchor: [16, 16] });
+        const icon = L.divIcon({ className: 'moving-transport', html: iconHtml, iconSize: [36, 36], iconAnchor: [18, 18] });
         movingMarker = L.marker(startLatLng, {icon, zIndexOffset: 1000}).addTo(routeMap);
 
         const startTime = performance.now();
@@ -519,7 +566,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 if (index > 0 && currentMarkerIndex < index) {
-                    const transportIcon = Math.random() > 0.5 ? '🚗' : '🚶‍♂️';
+                    // 🚀 예쁜 머티리얼 아이콘으로 자동차/사람 이동 애니메이션
+                    const transportIcon = Math.random() > 0.5 ? '<span class="material-symbols-rounded" style="color:#2563EB; font-size:24px;">directions_car</span>' : '<span class="material-symbols-rounded" style="color:#10B981; font-size:24px;">directions_walk</span>';
                     animateMovement(points[index-1], p, transportIcon, 1200, showCard);
                 } else {
                     showCard();
@@ -540,7 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if(isMapView) {
             timelineContainer.style.display = 'none'; exploreContainer.style.display = 'none';
-            resultMap.style.display = 'block'; mapIcon.innerText = 'list'; 
+            resultMap.style.display = 'block'; mapIcon.innerText = 'format_list_bulleted'; 
             if(routeMap) {
                 setTimeout(() => routeMap.invalidateSize(), 100);
                 drawRoute(routeMap.getCenter().lat, routeMap.getCenter().lng, dailyPlans[currentSelectedDay].spots);
@@ -553,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 🚀 탐색 카테고리 칩 (실제 사진 연동)
+    // 🚀 탐색 카테고리 칩 (실제 사진 연동 및 내용 잘림 완벽 방지)
     document.querySelectorAll('.explore-chip').forEach(chip => {
         chip.addEventListener('click', () => {
             document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active')); chip.classList.add('active');
@@ -570,21 +618,20 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 timelineContainer.style.display = 'none'; resultMap.style.display = 'none'; exploreContainer.style.display = 'flex';
                 
-                // 해당 카테고리의 실제 DB 데이터 가져오기
                 const spots = getSpots(aiData.dest || '도시', type);
                 let html = '';
                 
                 spots.forEach((spot, i) => {
-                    // DB에 img가 있으면 쓰고, 없으면 카테고리별 기본 이미지 사용
-                    let imgUrl = spot.img || (type === 'food' ? 'https://images.unsplash.com/photo-1504674900247-0877df9cc836' : (type === 'cafe' ? 'https://images.unsplash.com/photo-1509042239860-f550ce710b93' : 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1'));
+                    let imgUrl = spot.img || `https://images.unsplash.com/photo-${fallbackImages.tour[0]}`;
                     let spotName = spot.n || spot;
+                    let spotDesc = spot.d || '멋진 여행지입니다.';
                     
                     html += `
                     <div class="explore-card">
                         <div class="explore-card-img" style="background-image: url('${imgUrl}?q=80&w=200&auto=format&fit=crop');"></div>
                         <div class="explore-card-info">
                             <div class="explore-card-title">${spotName}</div>
-                            <div class="explore-card-sub">별점 4.${8-i} · ${aiData.dest || '이곳'} 중심가</div>
+                            <div class="explore-card-sub">별점 4.${8-i} · ${spotDesc}</div>
                             <button class="explore-add-btn ripple-btn" onclick="alert('내 일정에 추가되었습니다! 😆')">+ 내 일정에 추가/교체</button>
                         </div>
                     </div>`;

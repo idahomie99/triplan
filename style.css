@@ -175,8 +175,9 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .explore-chip.active { background: #8B5CF6; color: white; border-color: #8B5CF6; }
 .chip-icon { font-size: 18px; margin-top: 1px; }
 
-/* 🚀 리스트 하단 잘림 방지를 위해 패딩 대폭 증가 */
-.explore-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 250px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+/* 🚀 리스트 하단 잘림 방지를 위해 ::after 가상 요소로 확실한 여백 확보 */
+.explore-bg { flex: 1; background: var(--bg-body); padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.explore-bg::after { content: ''; display: block; min-height: 120px; flex-shrink: 0; }
 .explore-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--card-border); display: flex; padding: 12px; gap: 12px; }
 .explore-card-img { width: 90px; height: 90px; border-radius: 12px; background: #CBD5E1; background-size: cover; background-position: center; flex-shrink: 0; }
 .explore-card-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;}
@@ -185,9 +186,11 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .explore-add-btn { align-self: flex-start; padding: 8px 14px; background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;}
 .explore-add-btn:active { background: #8B5CF6; color: white; }
 
-.timeline-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 250px 24px; display: flex; flex-direction: column; overflow-y: auto; }
+.timeline-bg { flex: 1; background: var(--bg-body); padding: 24px; display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.timeline-bg::after { content: ''; display: block; min-height: 120px; flex-shrink: 0; }
 .plan-b-toggle { display: flex; background: var(--card-border); border-radius: 12px; padding: 4px; margin-bottom: 24px; position: relative; }
-.plan-b-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 800; color: var(--text-sub); cursor: pointer; z-index: 2; transition: color 0.3s; }
+.plan-b-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 800; color: var(--text-sub); cursor: pointer; z-index: 2; transition: color 0.3s; display: flex; justify-content: center; align-items: center; gap: 6px; }
+.plan-b-btn span { font-size: 18px; }
 .plan-b-btn.active { color: #2563EB; }
 .plan-b-bg { position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px); background: var(--card-bg); border-radius: 8px; box-shadow: 0 2px 8px var(--shadow-color); transition: transform 0.3s ease; z-index: 1; }
 
@@ -197,7 +200,7 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .hp-fill { height: 100%; background: linear-gradient(90deg, #10B981, #F59E0B, #DC2626); border-radius: 4px; transition: width 1s ease; }
 
 .timeline-item { display: flex; gap: 16px; position: relative; padding-bottom: 28px; }
-.timeline-item:last-child { padding-bottom: 40px; }
+.timeline-item:last-child { padding-bottom: 0; }
 .timeline-time { width: 45px; flex-shrink: 0; font-size: 14px; font-weight: 800; color: var(--text-main); padding-top: 2px; text-align: right; letter-spacing: -0.5px; }
 .timeline-line-container { display: flex; flex-direction: column; align-items: center; position: relative; }
 .timeline-dot { width: 14px; height: 14px; border-radius: 50%; background: #8B5CF6; border: 3px solid var(--bg-body); z-index: 2; box-shadow: 0 0 0 1px #CBD5E1; }
@@ -209,7 +212,7 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .timeline-card { flex: 1; background: var(--card-bg); border-radius: 16px; padding: 16px; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--card-border); margin-top: -6px; }
 .timeline-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
 .tc-title { font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; line-height: 1.3; word-break: keep-all; }
-.tc-category { font-size: 11px; font-weight: 800; color: #8B5CF6; background: rgba(139, 92, 246, 0.1); padding: 4px 8px; border-radius: 6px; }
+.tc-category { font-size: 11px; font-weight: 800; color: #8B5CF6; background: rgba(139, 92, 246, 0.1); padding: 4px 8px; border-radius: 6px; display: flex; align-items: center; gap: 3px; }
 .tc-desc { font-size: 13px; color: var(--text-sub); font-weight: 600; line-height: 1.4; word-break: keep-all; }
 .tc-img { width: 100%; height: 120px; border-radius: 10px; background: #CBD5E1; margin-top: 12px; background-size: cover; background-position: center; }
 
@@ -220,7 +223,8 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .custom-route-marker { background: #8B5CF6; color: white; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; transition: transform 0.2s; }
 .custom-route-marker:active { transform: scale(0.9); }
 
-.moving-transport { font-size: 28px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.2)); z-index: 1000 !important; }
+/* 🚀 지도 애니메이션 자동차/사람 아이콘을 둥근 화이트 뱃지 형태로 예쁘게 변경 */
+.moving-transport { display: flex; justify-content: center; align-items: center; background: white; border-radius: 50%; width: 36px !important; height: 36px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000 !important; }
 
 .map-info-card { position: absolute; bottom: 100px; left: 24px; right: 24px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 16px; display: flex; gap: 16px; align-items: center; transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; border: 1px solid var(--card-border); }
 .map-info-card.active { transform: translateY(0); }
