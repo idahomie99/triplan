@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const bindRipple = () => {
-        // 🚀 pill-btn, rec-list-item 에 리플 효과 적용
         const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn, .pill-btn, .rec-list-item');
         rippleBtns.forEach(btn => {
             btn.addEventListener('click', function(e) {
@@ -65,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
     document.getElementById('btn-logout')?.addEventListener('click', () => { if(confirm("정말 로그아웃 하시겠습니까?")) signOut(auth).then(() => alert("성공적으로 로그아웃 되었습니다.")); });
 
-    // 2. 공용 달력 로직 
+    // 2. 달력 로직 
     let aiStartDate = null; let aiEndDate = null;
     const fm = (d) => `${d.getMonth()+1}.${d.getDate()}`;
     const updateDateTexts = () => {
@@ -124,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 3. AI 일정 생성기 (개편된 Pill 버튼 연동)
+    // 3. AI 일정 생성기 
     let aiMode = 'standard'; 
     const aiScreen = document.getElementById('ai-screen'); 
     
@@ -136,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
     let aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 };
 
-    // 무료 지도 (GPS 연동)
+    // AI 입력창 내 숙소 검색 지도
     let map = null; let marker = null; 
     const tryGeolocation = () => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { map.setView([pos.coords.latitude, pos.coords.longitude], 13); }, () => { }); } };
     const initMap = () => {
@@ -260,7 +259,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🚀 5. 대망의 타임라인 생성
+    // 🚀 4. 타임라인 및 결과 지도(Map View) 생성 
+    let routeMap = null;
+    let routeLayerGroup = null;
+
     const generateAiTimeline = () => {
         const resultScreen = document.getElementById('ai-result-screen');
         document.getElementById('ai-result-title').innerText = `${aiData.dest} 일정`;
@@ -311,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="timeline-card">
                     <div class="timeline-card-header"><h3 class="tc-title">로컬 감성 식당</h3><span class="tc-category" style="color:#DC2626; background:rgba(220,38,38,0.1);">식사</span></div>
                     <p class="tc-desc">현지인들이 줄 서서 먹는 평점 4.5 찐 맛집에서 점심을 해결합니다.</p>
-                    
                     <div class="survival-tip">
                         <span class="material-symbols-rounded tip-icon">lightbulb</span>
                         <span class="tip-text">현지어 꿀팁: 고수를 못 드신다면 주문할 때 꼭 "부야오 샹차이(不要香菜)"라고 말해보세요!</span>
@@ -326,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="timeline-card-header"><h3 class="tc-title">${aiData.dest} 핵심 랜드마크</h3><span class="tc-category">관광</span></div>
                     <p class="tc-desc">${aiData.dest}에서 무조건 가야 하는 핫플레이스! 인생샷을 남겨보세요.</p>
                     <div class="tc-img" style="background-image: url('https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=400&auto=format&fit=crop');"></div>
-                    
                     <div class="survival-tip">
                         <span class="material-symbols-rounded tip-icon">lightbulb</span>
                         <span class="tip-text">사진 꿀팁: 오후 2시쯤엔 역광이니 입구 반대편 조각상 앞에서 찍는 게 훨씬 예쁩니다.</span>
@@ -344,8 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
-        resultScreen.classList.add('active');
-
+        
+        // 플랜 B 스위치
         const planBtns = document.querySelectorAll('.plan-b-btn');
         const planBg = document.querySelector('.plan-b-bg');
         planBtns.forEach((btn, index) => {
@@ -357,7 +357,87 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(index === 1) setTimeout(() => alert('비가 오네요! 미술관과 쇼핑몰 중심의 실내 일정으로 동선을 전면 수정합니다 ☔'), 300);
             });
         });
+
+        // 🚀 결과 지도(Route Map) 초기화
+        if(!routeMap) {
+            routeMap = L.map('ai-result-map', { zoomControl: false }).setView([37.5665, 126.9780], 13);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko').addTo(routeMap);
+            routeLayerGroup = L.layerGroup().addTo(routeMap);
+        }
+
+        // 목적지를 검색해서 그곳에 마커를 찍어줌
+        if(aiData.dest) {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(aiData.dest)}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data && data.length > 0) drawRoute(parseFloat(data[0].lat), parseFloat(data[0].lon));
+                else drawRoute(37.5665, 126.9780);
+            }).catch(() => drawRoute(37.5665, 126.9780));
+        } else {
+            drawRoute(37.5665, 126.9780);
+        }
+
+        // 맵뷰 토글은 처음엔 무조건 '리스트 보기'
+        isMapView = false;
+        document.getElementById('ai-timeline-container').style.display = 'flex';
+        document.getElementById('ai-result-map').style.display = 'none';
+        document.getElementById('toggle-map-icon').innerText = 'map';
+        document.getElementById('toggle-map-text').innerText = '지도 보기';
+
+        resultScreen.classList.add('active');
     };
+
+    // 🚀 지도 위에 동선 그려주는 함수
+    const drawRoute = (lat, lng) => {
+        routeLayerGroup.clearLayers();
+        
+        // 목적지 주변에 임의의 동선 4개 생성 (프로토타입용 가짜 좌표)
+        const points = [
+            [lat + 0.005, lng - 0.005], // 1. 숙소 출발
+            [lat + 0.015, lng + 0.002], // 2. 식당
+            [lat - 0.002, lng + 0.015], // 3. 랜드마크
+            [lat - 0.010, lng - 0.008]  // 4. 카페 휴식
+        ];
+        
+        // 점선 그리기
+        const polyline = L.polyline(points, {color: '#8B5CF6', weight: 4, dashArray: '8, 8'}).addTo(routeLayerGroup);
+        
+        // 커스텀 번호 마커 달기
+        points.forEach((p, index) => {
+            const icon = L.divIcon({
+                className: 'custom-route-marker',
+                html: `<div>${index + 1}</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+            L.marker(p, {icon}).addTo(routeLayerGroup);
+        });
+        
+        routeMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+    };
+
+    // 🚀 지도 보기 ↔ 일정표 보기 토글 로직
+    let isMapView = false;
+    document.getElementById('btn-toggle-map')?.addEventListener('click', () => {
+        isMapView = !isMapView;
+        const timelineContainer = document.getElementById('ai-timeline-container');
+        const resultMap = document.getElementById('ai-result-map');
+        const mapIcon = document.getElementById('toggle-map-icon');
+        const mapText = document.getElementById('toggle-map-text');
+
+        if(isMapView) {
+            timelineContainer.style.display = 'none';
+            resultMap.style.display = 'block';
+            mapIcon.innerText = 'list';
+            mapText.innerText = '일정표 보기';
+            if(routeMap) setTimeout(() => routeMap.invalidateSize(), 100);
+        } else {
+            timelineContainer.style.display = 'flex';
+            resultMap.style.display = 'none';
+            mapIcon.innerText = 'map';
+            mapText.innerText = '지도 보기';
+        }
+    });
 
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { document.getElementById('ai-result-screen').classList.remove('active'); });
     const navHome = document.getElementById('nav-home'); 

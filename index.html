@@ -26,7 +26,6 @@
                 <p class="sub-greeting">단 1분 만에 완성되는 완벽한 여행 플랜</p>
             </section>
 
-            <!-- 🚀 화이트 베이스 + 캡슐형(Pill) 디자인으로 세련되게 변경 -->
             <section class="main-action-group">
                 <button class="pill-btn ripple-btn" id="btn-ai-standard">
                     <div class="pill-icon" style="color: #8B5CF6; background: rgba(139, 92, 246, 0.1);"><span class="material-symbols-rounded">auto_awesome</span></div>
@@ -221,8 +220,8 @@
             </div>
         </div>
 
-        <!-- 대망의 AI 타임라인 결과 화면 -->
-        <div id="ai-result-screen" class="sub-screen" style="z-index: 130;">
+        <!-- 🚀 6. 대망의 AI 타임라인 결과 화면 (지도 영역 추가) -->
+        <div id="ai-result-screen" class="sub-screen" style="z-index: 130; overflow: hidden;">
             <header class="sub-header" style="background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; border-bottom: none; box-shadow: none;">
                 <div class="header-left"><button class="icon-btn" id="btn-back-ai-result" style="color: white;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
                 <div class="result-header-info">
@@ -234,13 +233,24 @@
             
             <div class="date-tabs" id="ai-result-tabs" style="background: linear-gradient(135deg, #8B5CF6, #D946EF); padding-top: 0; border-bottom: none;"></div>
             
+            <!-- 리스트 영역 -->
             <div class="timeline-bg" id="ai-timeline-container">
                 <!-- JS 동적 생성 -->
             </div>
+
+            <!-- 🚀 지도 영역 (기본은 숨김 처리) -->
+            <div id="ai-result-map"></div>
             
-            <button class="floating-filter-btn ripple-btn" style="background: #0F172A; width: auto; padding: 16px 32px; font-size: 16px;">
-                <span class="material-symbols-rounded" style="font-size: 20px;">bookmark</span> 내 일정에 저장하기
-            </button>
+            <!-- 🚀 하단 플로팅 액션 구역 (토글 + 저장 버튼) -->
+            <div class="result-action-area">
+                <button class="map-toggle-btn ripple-btn" id="btn-toggle-map">
+                    <span class="material-symbols-rounded" id="toggle-map-icon">map</span>
+                    <span id="toggle-map-text">지도 보기</span>
+                </button>
+                <button class="floating-save-btn ripple-btn">
+                    <span class="material-symbols-rounded">bookmark</span> 내 일정에 저장하기
+                </button>
+            </div>
         </div>
 
         <script type="module" src="firebase-config.js"></script>
