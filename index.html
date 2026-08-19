@@ -9,25 +9,22 @@
 </head>
 <body>
     <div id="app-container">
-        <!-- 🚀 0. 스플래시(인트로) 화면 -->
+        <!-- 스플래시 화면 -->
         <div id="splash-screen">
             <div class="splash-logo">Triplan.</div>
         </div>
 
-        <!-- 탑 헤더 -->
         <header class="top-header" id="top-header">
             <div class="logo">Triplan.</div>
             <div class="profile-pic"></div>
         </header>
 
-        <!-- 메인 컨텐츠 -->
         <main id="main-content">
             <section class="hero-section">
                 <h1 class="greeting">어디로 떠나시나요?</h1>
                 <p class="sub-greeting">나만의 완벽한 여행을 계획해보세요</p>
             </section>
 
-            <!-- 가로 원형 퀵 메뉴 -->
             <section class="quick-menu-section">
                 <div class="quick-item small-ripple-btn" id="btn-flight">
                     <div class="circle-icon flight"><span class="material-symbols-rounded">flight_takeoff</span></div>
@@ -37,13 +34,13 @@
                     <div class="circle-icon hotel"><span class="material-symbols-rounded">bed</span></div>
                     <span>숙소</span>
                 </div>
+                <!-- 🚀 AI 일정 버튼 -->
                 <div class="quick-item small-ripple-btn" id="btn-itinerary">
                     <div class="circle-icon ai"><span class="material-symbols-rounded">auto_awesome</span></div>
                     <span>AI 일정</span>
                 </div>
             </section>
 
-            <!-- 추천 여행지 -->
             <section class="recommend-section">
                 <h2 class="section-title">여행 영감 찾기</h2>
                 <div class="rec-card ripple-btn" id="rec-month">
@@ -65,7 +62,6 @@
             </section>
         </main>
 
-        <!-- 플로팅 바텀 네비게이션 -->
         <nav id="bottom-nav">
             <div class="nav-item active small-ripple-btn" id="nav-home">
                 <div class="nav-icon"><span class="material-symbols-rounded">home</span></div>
@@ -77,16 +73,13 @@
             </div>
         </nav>
 
-        <!-- 🚀 1. 항공권 검색 서브 화면 -->
+        <!-- 1. 항공권 서브 화면 (기존 동일) -->
         <div id="flight-screen" class="sub-screen">
             <header class="sub-header">
-                <button class="icon-btn" id="btn-back-flight">
-                    <span class="material-symbols-rounded">arrow_back_ios_new</span>
-                </button>
+                <button class="icon-btn" id="btn-back-flight"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
                 <h2>항공권 검색</h2>
                 <div style="width: 24px;"></div>
             </header>
-
             <div class="flight-content">
                 <div class="trip-toggle">
                     <input type="radio" id="round-trip" name="trip-type" value="round" checked>
@@ -95,23 +88,19 @@
                     <label for="one-way">편도</label>
                     <div class="toggle-bg"></div>
                 </div>
-
                 <div class="location-card">
                     <div class="input-row" style="position: relative;">
                         <span class="material-symbols-rounded icon-blue">flight_takeoff</span>
                         <input type="text" placeholder="출발지 (예: 서울)" id="departure-input" autocomplete="off">
                         <div class="autocomplete-list" id="dep-autocomplete"></div>
                     </div>
-                    <button class="swap-btn small-ripple-btn" id="btn-swap-location">
-                        <span class="material-symbols-rounded">swap_vert</span>
-                    </button>
+                    <button class="swap-btn small-ripple-btn" id="btn-swap-location"><span class="material-symbols-rounded">swap_vert</span></button>
                     <div class="input-row" style="position: relative;">
                         <span class="material-symbols-rounded icon-red">flight_land</span>
                         <input type="text" placeholder="도착지 (예: 오사카)" id="destination-input" autocomplete="off">
                         <div class="autocomplete-list" id="dest-autocomplete"></div>
                     </div>
                 </div>
-
                 <div class="date-card ripple-btn" id="btn-open-calendar">
                     <div class="date-display">
                         <span class="material-symbols-rounded icon-purple">calendar_month</span>
@@ -121,59 +110,110 @@
                         </div>
                     </div>
                 </div>
-
                 <button class="search-btn ripple-btn" id="btn-search-flight">항공권 조회하기</button>
             </div>
         </div>
 
-        <!-- 🚀 2. 달력 바텀 시트(모달) -->
+        <!-- 2. 달력 모달 (기존 동일) -->
         <div id="calendar-modal" class="bottom-sheet">
             <div class="sheet-header">
                 <h3>날짜 선택</h3>
                 <button class="icon-btn" id="btn-close-calendar"><span class="material-symbols-rounded">close</span></button>
             </div>
             <div class="sheet-content" id="calendar-scroll-area">
-                <div class="week-days">
-                    <span style="color:#DC2626;">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span style="color:#2563EB;">토</span>
-                </div>
+                <div class="week-days"><span style="color:#DC2626;">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span style="color:#2563EB;">토</span></div>
                 <div id="calendar-grid-container"></div>
             </div>
-            <div class="sheet-footer">
-                <button class="search-btn ripple-btn" id="btn-confirm-date">선택 완료</button>
-            </div>
+            <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-date">선택 완료</button></div>
         </div>
         <div id="calendar-overlay"></div>
 
-        <!-- 🚀 3. 로딩 애니메이션 오버레이 -->
+        <!-- 3. 항공권 로딩/결과 (기존 동일) -->
         <div id="loading-overlay">
-            <div class="plane-loader">
-                <span class="material-symbols-rounded">flight</span>
-            </div>
+            <div class="plane-loader"><span class="material-symbols-rounded">flight</span></div>
             <h3 id="loading-text">최저가 항공권을 찾고 있어요</h3>
             <p>수백 개의 항공사와 여행사를 비교 중입니다...</p>
         </div>
-
-        <!-- 🚀 4. 항공권 검색 결과 서브 화면 -->
         <div id="result-screen" class="sub-screen" style="z-index: 120;">
             <header class="sub-header" style="background: #2563EB; color: white;">
-                <button class="icon-btn" id="btn-back-result" style="color: white;">
-                    <span class="material-symbols-rounded">arrow_back_ios_new</span>
-                </button>
+                <button class="icon-btn" id="btn-back-result" style="color: white;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
                 <div class="result-header-info">
                     <h2 id="result-route-text">서울 ➔ 오사카</h2>
                     <p id="result-date-text">8.20 ~ 8.24 · 성인 1명</p>
                 </div>
-                <button class="icon-btn" style="color: white;">
-                    <span class="material-symbols-rounded">notifications</span>
-                </button>
+                <button class="icon-btn" style="color: white;"><span class="material-symbols-rounded">notifications</span></button>
             </header>
-
             <div class="date-tabs" id="date-tabs-container"></div>
             <div class="result-content" id="flight-list-container"></div>
+            <button class="floating-filter-btn ripple-btn"><span class="material-symbols-rounded">tune</span> 필터 및 정렬</button>
+        </div>
 
-            <button class="floating-filter-btn ripple-btn">
-                <span class="material-symbols-rounded">tune</span> 필터 및 정렬
-            </button>
+        <!-- 🚀 4. AI 여행 일정 생성 서브 화면 -->
+        <div id="ai-screen" class="sub-screen">
+            <header class="sub-header">
+                <button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="ai-progress-bar"></div>
+                </div>
+                <div style="width: 24px;"></div>
+            </header>
+
+            <div class="ai-content">
+                <!-- 스텝 1: 누구와 -->
+                <div class="ai-step active" id="ai-step-1">
+                    <h2 class="ai-question">누구와 함께<br>여행을 떠나시나요?</h2>
+                    <p class="ai-desc">맞춤형 동선과 숙소를 추천해 드려요.</p>
+                    
+                    <div class="ai-options-grid">
+                        <div class="ai-option-card" data-val="solo">
+                            <span class="emoji">🚶</span><span class="text">혼자서</span>
+                        </div>
+                        <div class="ai-option-card" data-val="couple">
+                            <span class="emoji">💑</span><span class="text">연인과</span>
+                        </div>
+                        <div class="ai-option-card" data-val="friends">
+                            <span class="emoji">👯</span><span class="text">친구들과</span>
+                        </div>
+                        <div class="ai-option-card" data-val="family">
+                            <span class="emoji">👨‍👩‍👧</span><span class="text">가족과</span>
+                        </div>
+                        <div class="ai-option-card" data-val="parents">
+                            <span class="emoji">👵👴</span><span class="text">부모님과</span>
+                        </div>
+                        <div class="ai-option-card" data-val="kids">
+                            <span class="emoji">👶</span><span class="text">아이와</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 스텝 2: 여행 스타일 (다중 선택) -->
+                <div class="ai-step" id="ai-step-2">
+                    <h2 class="ai-question">어떤 스타일의<br>여행을 원하시나요?</h2>
+                    <p class="ai-desc">최대 3개까지 선택할 수 있어요.</p>
+                    
+                    <div class="ai-chips-container">
+                        <div class="ai-chip" data-val="힐링">🌴 여유로운 힐링</div>
+                        <div class="ai-chip" data-val="먹방">🍜 맛집 탐방</div>
+                        <div class="ai-chip" data-val="관광">📸 랜드마크 관광</div>
+                        <div class="ai-chip" data-val="쇼핑">🛍️ 폭풍 쇼핑</div>
+                        <div class="ai-chip" data-val="액티비티">🏄 다이나믹 액티비티</div>
+                        <div class="ai-chip" data-val="자연">🏔️ 대자연 속으로</div>
+                        <div class="ai-chip" data-val="예술">🎨 로컬 문화와 예술</div>
+                        <div class="ai-chip" data-val="호캉스">🏨 럭셔리 호캉스</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-footer">
+                <button class="search-btn ripple-btn" id="btn-ai-next" disabled>다음으로</button>
+            </div>
+        </div>
+
+        <!-- 🚀 5. AI 로딩 오버레이 (마법 같은 효과) -->
+        <div id="ai-loading-overlay">
+            <div class="magic-spinner"></div>
+            <h3 class="magic-text">AI가 완벽한 일정을<br>그려내고 있어요✨</h3>
+            <p>1분 1초가 아깝지 않은 동선을 짜는 중...</p>
         </div>
 
         <script type="module" src="firebase-config.js"></script>

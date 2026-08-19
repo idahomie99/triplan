@@ -426,4 +426,113 @@ document.addEventListener('DOMContentLoaded', () => {
     if(recSns) recSns.addEventListener('click', () => setTimeout(() => alert('📸 핫플레이스 화면 (개발 예정)'), 200));
 
     if(navHome) navHome.addEventListener('click', () => { navHome.classList.add('active'); if(btnAccount) btnAccount.classList.remove('active'); });
+
+// ----------------------------------------------------
+    // 🚀 8. AI 여행 일정 화면 제어 로직
+    // ----------------------------------------------------
+    const btnItineraryQuick = document.getElementById('btn-itinerary');
+    const aiScreen = document.getElementById('ai-screen');
+    const btnBackAi = document.getElementById('btn-back-ai');
+    
+    // AI 화면 열기/닫기
+    if(btnItineraryQuick) btnItineraryQuick.addEventListener('click', () => {
+        aiScreen.classList.add('active');
+        resetAiFlow(); // 열 때마다 스텝 초기화
+    });
+    if(btnBackAi) btnBackAi.addEventListener('click', () => aiScreen.classList.remove('active'));
+
+    // 스텝 제어 변수
+    let currentAiStep = 1;
+    const totalAiSteps = 2;
+    const aiProgressBar = document.getElementById('ai-progress-bar');
+    const btnAiNext = document.getElementById('btn-ai-next');
+    
+    const step1 = document.getElementById('ai-step-1');
+    const step2 = document.getElementById('ai-step-2');
+    
+    // 선택된 데이터 저장용
+    let aiData = { companion: null, styles: [] };
+
+    // 스텝 초기화 함수
+    const resetAiFlow = () => {
+        currentAiStep = 1;
+        aiProgressBar.style.width = '50%';
+        btnAiNext.innerText = '다음으로';
+        btnAiNext.disabled = true;
+        
+        step1.className = 'ai-step active';
+        step2.className = 'ai-step';
+        
+        // 데이터 초기화
+        aiData = { companion: null, styles: [] };
+        document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('.ai-chip').forEach(c => c.classList.remove('selected'));
+    };
+
+    // [스텝 1] 누구와 갈까요? (단일 선택)
+    const optionCards = document.querySelectorAll('.ai-option-card');
+    optionCards.forEach(card => {
+        card.addEventListener('click', () => {
+            // 다른 카드 선택 해제
+            optionCards.forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            aiData.companion = card.getAttribute('data-val');
+            btnAiNext.disabled = false; // 다음 버튼 활성화
+        });
+    });
+
+    // [스텝 2] 여행 스타일 (다중 선택, 최대 3개)
+    const styleChips = document.querySelectorAll('.ai-chip');
+    styleChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const val = chip.getAttribute('data-val');
+            if (chip.classList.contains('selected')) {
+                chip.classList.remove('selected');
+                aiData.styles = aiData.styles.filter(s => s !== val);
+            } else {
+                if (aiData.styles.length >= 3) {
+                    alert('최대 3개까지만 선택할 수 있어요!');
+                    return;
+                }
+                chip.classList.add('selected');
+                aiData.styles.push(val);
+            }
+            // 1개 이상 선택하면 버튼 활성화
+            btnAiNext.disabled = aiData.styles.length === 0;
+        });
+    });
+
+    // [다음으로 / 일정 생성] 버튼 로직
+    const aiLoadingOverlay = document.getElementById('ai-loading-overlay');
+    
+    if(btnAiNext) {
+        btnAiNext.addEventListener('click', () => {
+            if (currentAiStep === 1) {
+                // 스텝 1 -> 스텝 2 로 이동
+                step1.classList.remove('active');
+                step1.classList.add('exit');
+                setTimeout(() => {
+                    step2.classList.add('active');
+                }, 100);
+                
+                currentAiStep = 2;
+                aiProgressBar.style.width = '100%';
+                btnAiNext.innerText = 'AI 일정 생성하기';
+                // 스텝 2 선택 여부에 따라 버튼 상태 변경
+                btnAiNext.disabled = aiData.styles.length === 0;
+            } 
+            else if (currentAiStep === 2) {
+                // AI 일정 생성 시작 (서버 요청 전 로딩 연출)
+                console.log("Gemini API로 보낼 데이터:", aiData);
+                aiLoadingOverlay.classList.add('active');
+                
+                // 3초 뒤 가상 완료 처리
+                setTimeout(() => {
+                    aiLoadingOverlay.classList.remove('active');
+                    alert(`[테스트 완료]\n동행: ${aiData.companion}\n스타일: ${aiData.styles.join(', ')}\n\n(다음 스텝에서 여기에 타임라인 결과 화면이 뜹니다!)`);
+                    aiScreen.classList.remove('active');
+                }, 3000);
+            }
+        });
+    }
 });
