@@ -19,7 +19,7 @@
 body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
 #app-container { width: 100%; max-width: 480px; height: 100vh; background-color: var(--bg-app); display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 20px 40px var(--shadow-color); padding-top: env(safe-area-inset-top); }
 
-/* 🚀 스플래시 로고 위치 중앙보다 살짝 위로 조정 */
+/* 스플래시 로고 위치 중앙보다 살짝 위로 조정 */
 #splash-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-app); z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out, visibility 0.5s ease-out; }
 #splash-screen.hide { opacity: 0; visibility: hidden; }
 .splash-logo { font-size: 44px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, #2563EB, #8B5CF6); -webkit-background-clip: text; background-clip: text; color: transparent; animation: pulse 1.5s infinite; transform: translateY(-10vh); }
@@ -186,9 +186,10 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .h-price-val { font-size: 22px; font-weight: 900; color: #2563EB; }
 .floating-filter-btn { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1E293B; color: white; border: none; padding: 14px 24px; border-radius: 30px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 25px rgba(30, 41, 59, 0.4); z-index: 10; cursor: pointer; }
 
-/* AI 전용 로직 */
-.progress-bar-container { flex: 1; height: 6px; background: var(--card-border); border-radius: 4px; margin: 0 16px; overflow: hidden; }
+/* 🚀 AI 전용 로직 (프로그레스 바 수정 완료) */
+.progress-bar-container { width: 60%; max-width: 200px; height: 6px; background: var(--card-border); border-radius: 4px; margin: 0 auto; overflow: hidden; }
 .progress-bar { width: 14%; height: 100%; background: linear-gradient(90deg, #8B5CF6, #D946EF); border-radius: 4px; transition: width 0.4s ease-out; }
+
 .ai-content { flex: 1; padding: 24px; position: relative; overflow-x: hidden; }
 .ai-step { position: absolute; top: 24px; left: 24px; width: calc(100% - 48px); display: none; flex-direction: column; opacity: 0; transform: translateX(30px); transition: opacity 0.4s ease, transform 0.4s ease; padding-bottom: 100px; }
 .ai-step.active { display: flex; opacity: 1; transform: translateX(0); z-index: 2; }
@@ -200,7 +201,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .ai-text-input::placeholder { color: #CBD5E1; font-weight: 600; }
 .ai-time-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
 
-/* 🚀 지도 검색 버튼이 포함된 입력창 레이아웃 */
 .map-input-group { display: flex; gap: 10px; align-items: center; }
 .map-input-group .ai-text-input { flex: 1; }
 .map-open-btn { width: 56px; height: 56px; border-radius: 16px; border: none; background: #8B5CF6; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); cursor: pointer; position: relative; overflow: hidden; }
@@ -229,5 +229,4 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .magic-text { font-size: 22px; font-weight: 900; line-height: 1.4; background: linear-gradient(135deg, #8B5CF6, #D946EF); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 12px; }
 #ai-loading-overlay p { font-size: 14px; color: var(--text-sub); font-weight: 600; }
 
-/* 무료 지도 연동 시 UI 방지용 */
 .leaflet-control-attribution { display: none !important; }

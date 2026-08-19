@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (calendarOverlay) calendarOverlay.addEventListener('click', closeCalendar);
     
     if (btnConfirmDate) btnConfirmDate.addEventListener('click', () => {
-        const isRound = calendarTarget === 'flight' ? flightIsRoundTrip : true; // 호텔, AI는 무조건 범위 선택
+        const isRound = calendarTarget === 'flight' ? flightIsRoundTrip : true; 
         if (isRound && (!tempStartDate || !tempEndDate)) { alert('시작일과 종료일을 모두 선택해주세요.'); return; }
         if (!isRound && !tempStartDate) { alert('날짜를 선택해주세요.'); return; }
         
@@ -183,8 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. 공항 자동완성
     const popularAirports = [
         { cityKo: '서울', cityAlias: '', cityEn: 'Seoul', code: 'ICN', airportKo: '인천국제공항', airportEn: 'Incheon Intl' },
+        { cityKo: '서울', cityAlias: '', cityEn: 'Seoul', code: 'GMP', airportKo: '김포국제공항', airportEn: 'Gimpo Intl' },
         { cityKo: '오사카', cityAlias: '', cityEn: 'Osaka', code: 'KIX', airportKo: '간사이국제공항', airportEn: 'Kansai Intl' },
         { cityKo: '도쿄', cityAlias: '동경', cityEn: 'Tokyo', code: 'NRT', airportKo: '나리타국제공항', airportEn: 'Narita Intl' },
+        { cityKo: '도쿄', cityAlias: '동경', cityEn: 'Tokyo', code: 'HND', airportKo: '하네다국제공항', airportEn: 'Haneda Intl' },
+        { cityKo: '상하이', cityAlias: '상해', cityEn: 'Shanghai', code: 'PVG', airportKo: '푸둥국제공항', airportEn: 'Pudong Intl' },
         { cityKo: '방콕', cityAlias: '', cityEn: 'Bangkok', code: 'BKK', airportKo: '수완나품국제공항', airportEn: 'Suvarnabhumi' },
         { cityKo: '파리', cityAlias: '', cityEn: 'Paris', code: 'CDG', airportKo: '샤를드골국제공항', airportEn: 'Charles de Gaulle' }
     ];
@@ -298,14 +301,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
     let aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [] };
 
-    // 🌟 피드백 반영: 시간 입력창 터치 시 화면 중앙으로 스크롤하여 OS 팝업 위치 고정
-    document.querySelectorAll('input[type="time"]').forEach(input => {
-        input.addEventListener('click', (e) => {
-            setTimeout(() => { e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 150);
-        });
-    });
+    // 🌟 덜컹거리는 scrollIntoView 코드를 완전히 제거했습니다!
+    // (이제 입력창을 눌러도 화면이 멋대로 움직이지 않습니다)
 
-    // 🌟 무료 지도(OpenStreetMap + Leaflet) 로직
+    // 무료 지도(OpenStreetMap + Leaflet) 로직
     let map = null; let marker = null;
     const btnOpenMap = document.getElementById('btn-open-map');
     const mapModal = document.getElementById('map-modal');
@@ -314,7 +313,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const initMap = () => {
         if(!map) {
-            // 기본 도쿄 신주쿠 좌표
             map = L.map('map-container').setView([35.6895, 139.6917], 13); 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
@@ -322,19 +320,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(marker) map.removeLayer(marker);
                 marker = L.marker(e.latlng).addTo(map);
                 
-                // 좌표로 주소 찾기 (무료 Nominatim API)
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`)
                     .then(res => res.json())
                     .then(data => {
                         const placeName = data.name || data.address.suburb || data.display_name.split(',')[0];
                         document.getElementById('map-selected-address').innerText = placeName;
-                        document.getElementById('ai-input-accom').value = placeName; // 텍스트창에 연동
+                        document.getElementById('ai-input-accom').value = placeName; 
                     }).catch(() => {
                         document.getElementById('map-selected-address').innerText = "선택된 위치";
                     });
             });
         } else {
-            // 모달 안에서 지도가 깨지는 현상 방지
             setTimeout(() => map.invalidateSize(), 100);
         }
     };
@@ -350,8 +346,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnCloseMap) btnCloseMap.addEventListener('click', closeMap);
     if(btnConfirmMap) btnConfirmMap.addEventListener('click', closeMap);
 
-
-    // AI 스텝 진행 로직
     const resetAiFlow = () => {
         currentAiStep = 1; aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`;
         btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true;
@@ -424,7 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } 
             else if (currentAiStep === totalAiSteps) {
                 aiData.startDate = fm(aiStartDate); aiData.endDate = fm(aiEndDate);
-                console.log("✈️ Gemini 프롬프트 데이터:", aiData);
                 document.getElementById('ai-loading-overlay').classList.add('active');
                 setTimeout(() => {
                     document.getElementById('ai-loading-overlay').classList.remove('active');
