@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else aiText.innerText = aiEndDate ? `${fm(aiStartDate)} ~ ${fm(aiEndDate)}` : `${fm(aiStartDate)} ~ 선택 중`;
         }
         
-        // 🌟 피드백 반영: AI 스텝 3의 시간 라벨 옆에 (9/27) 형태로 날짜 자동 표시
+        // 🌟 시간 탭에 날짜 실시간 연동
         const labelArrDate = document.getElementById('label-arr-date');
         const labelDepDate = document.getElementById('label-dep-date');
         if(labelArrDate) { labelArrDate.innerText = aiStartDate ? `(${aiStartDate.getMonth()+1}/${aiStartDate.getDate()})` : ''; }
@@ -305,17 +305,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
     let aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [] };
 
-    // 🌟 무료 지도(OpenStreetMap + 구글 한국어 타일 꼼수) 로직
+    // 🌟 무료 지도(OpenStreetMap + 한국어 타일 + 도시 검색 + GPS)
     let map = null; let marker = null;
     const btnOpenMap = document.getElementById('btn-open-map');
     const mapModal = document.getElementById('map-modal');
     const btnCloseMap = document.getElementById('btn-close-map');
     const btnConfirmMap = document.getElementById('btn-confirm-map');
     
+    // GPS 현위치 가져오기 함수
+    const tryGeolocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => { map.setView([position.coords.latitude, position.coords.longitude], 13); },
+                (error) => { console.log("GPS 허용 거부됨 - 기본 서울로 유지"); }
+            );
+        }
+    };
+
     const initMap = () => {
         if(!map) {
-            map = L.map('map-container').setView([35.6895, 139.6917], 13); 
-            // 🌟 피드백 반영: 전 세계 어디든 100% 한국어로 강제 출력되는 구글 지도 래스터 타일 사용! (비용 완전 무료)
+            // 기본은 서울 시청 좌표
+            map = L.map('map-container').setView([37.5665, 126.9780], 13); 
+            // 전 세계 지도를 100% 한국어로 강제 출력 (구글맵 타일 꼼수)
             L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', { 
                 attribution: 'Map data © Google' 
             }).addTo(map);
@@ -327,16 +338,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${e.latlng.lat}&lon=${e.latlng.lng}`)
                     .then(res => res.json())
                     .then(data => {
-                        const placeName = data.name || data.address.suburb || data.display_name.split(',')[0];
+                        const placeName = data.name || data.address.suburb || data.address.city || data.display_name.split(',')[0];
                         document.getElementById('map-selected-address').innerText = placeName;
                         document.getElementById('ai-input-accom').value = placeName; 
                     }).catch(() => {
                         document.getElementById('map-selected-address').innerText = "선택된 위치";
                     });
             });
-        } else {
-            setTimeout(() => map.invalidateSize(), 100);
         }
+        
+        // 🌟 스텝 1에서 입력한 도시 이름을 기반으로 지도 이동
+        setTimeout(() => {
+            map.invalidateSize(); 
+            const destCity = document.getElementById('ai-input-dest').value.trim();
+            if (destCity) {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destCity)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            map.setView([data[0].lat, data[0].lon], 12);
+                        } else {
+                            tryGeolocation(); // 검색 실패 시 GPS
+                        }
+                    }).catch(() => tryGeolocation());
+            } else {
+                tryGeolocation(); // 빈칸이면 GPS
+            }
+        }, 100);
     };
 
     if(btnOpenMap) {
