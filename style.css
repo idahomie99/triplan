@@ -22,19 +22,15 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-/* 🚀 iOS Safe Area (노치/다이나믹 아일랜드) 배경 일치화 */
 body {
-    font-family: 'NanumSquare', sans-serif;
-    background-color: var(--bg-app); /* 노치 영역까지 앱 배경색 확장 */
-    display: flex; justify-content: center; align-items: flex-start; /* 상단 정렬로 변경 */
-    min-height: 100vh;
+    font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app);
+    display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;
 }
 
 #app-container {
-    width: 100%; max-width: 480px; height: 100vh;
-    background-color: var(--bg-app); display: flex; flex-direction: column;
-    position: relative; overflow: hidden; box-shadow: 0 20px 40px var(--shadow-color);
-    padding-top: env(safe-area-inset-top); /* 🚀 노치 영역만큼 컨텐츠 밀어내기 */
+    width: 100%; max-width: 480px; height: 100vh; background-color: var(--bg-app); 
+    display: flex; flex-direction: column; position: relative; overflow: hidden; 
+    box-shadow: 0 20px 40px var(--shadow-color); padding-top: env(safe-area-inset-top); 
 }
 
 /* 스플래시 화면 */
@@ -90,7 +86,7 @@ body {
 .sub-header h2 { font-size: 18px; color: var(--text-main); font-weight: 800; }
 .icon-btn { background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; display: flex; align-items: center; }
 
-/* 항공권 검색 UI */
+/* 폼 컨텐츠 UI */
 .flight-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
 .trip-toggle { display: flex; position: relative; background: var(--card-border); border-radius: 12px; padding: 4px; }
 .trip-toggle input[type="radio"] { display: none; }
@@ -102,6 +98,7 @@ body {
 .location-card, .date-card { background: var(--card-bg); border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); padding: 10px 20px; position: relative; }
 .input-row { display: flex; align-items: center; gap: 12px; padding: 15px 0; }
 .input-row:first-child { border-bottom: 1px solid var(--card-border); }
+.input-row:last-child { border-bottom: none; }
 .input-row input { flex: 1; border: none; outline: none; font-size: 18px; font-weight: 600; color: var(--text-main); background: transparent; }
 .icon-blue { color: #2563EB; } .icon-red { color: #DC2626; }
 .swap-btn { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: none; background: var(--card-border); color: var(--text-sub); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 3; }
@@ -115,26 +112,33 @@ body {
 
 .search-btn { margin-top: 10px; width: 100%; padding: 18px; border: none; border-radius: 16px; background: linear-gradient(135deg, #2563EB, #4FACFE); color: white; font-size: 18px; font-weight: 800; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3); cursor: pointer; position: relative; overflow:hidden;}
 
-/* 달력 모달 */
+/* 바텀 시트 공통 (달력 & 인원수) */
 #calendar-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; }
-.bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; height: 85%; background: var(--bg-app); border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); z-index: 200; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: env(safe-area-inset-bottom);}
+.bottom-sheet { position: absolute; bottom: 0; left: 0; width: 100%; max-height: 85%; background: var(--bg-app); border-top-left-radius: 24px; border-top-right-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); z-index: 200; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: env(safe-area-inset-bottom);}
 .bottom-sheet.active { transform: translateY(0); }
 .sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: var(--card-bg); border-radius: 24px 24px 0 0; }
 .sheet-header h3 { font-size: 18px; color: var(--text-main); font-weight: 800; }
 .sheet-content { flex: 1; overflow-y: auto; padding: 0 24px 20px 24px; background: var(--card-bg); }
 .sheet-footer { padding: 15px 24px 30px 24px; background: var(--card-bg); box-shadow: 0 -4px 15px var(--shadow-color); }
 
+/* 달력 모달 */
 .week-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 13px; font-weight: 800; color: var(--text-sub); padding: 15px 0; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; background: var(--card-bg); z-index: 5;}
 .month-title { font-size: 16px; font-weight: 800; color: var(--text-main); margin: 20px 0 10px 0; text-align: center; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px 0; margin-bottom: 20px; }
 .cal-day { aspect-ratio: 1/1; display: flex; justify-content: center; align-items: center; font-size: 15px; font-weight: 700; color: var(--text-main); cursor: pointer; position: relative; border-radius: 20px; transition: background-color 0.2s, color 0.2s;}
 .cal-day.disabled { color: var(--card-border); pointer-events: none; }
 .cal-day.today { border: 2px solid #3B82F6; }
-
 .cal-day.selected { background-color: #3B82F6; color: white; border-radius: 20px; z-index: 2; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);}
 .cal-day.in-range { background-color: rgba(59, 130, 246, 0.25); border-radius: 0; color: #3B82F6; box-shadow: none;}
 .cal-day.selected.range-start { border-radius: 20px 0 0 20px; }
 .cal-day.selected.range-end { border-radius: 0 20px 20px 0; }
+
+/* 🚀 숙소 인원/객실 선택 모달 */
+.guest-row { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--card-border); }
+.guest-row:last-child { border-bottom: none; }
+.guest-info h4 { font-size: 16px; color: var(--text-main); font-weight: 800; margin-bottom: 4px; }
+.guest-info p { font-size: 13px; color: var(--text-sub); font-weight: 600; }
+.count-text { font-size: 18px; font-weight: 800; color: var(--text-main); min-width: 32px; text-align: center; }
 
 /* 자동완성 */
 .autocomplete-list { position: absolute; top: 100%; left: 0; width: 100%; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: 0 10px 25px var(--shadow-color); z-index: 20; max-height: 220px; overflow-y: auto; display: none; flex-direction: column; padding: 8px 0; margin-top: 4px; }
@@ -146,7 +150,7 @@ body {
 .auto-city { font-size: 15px; font-weight: 800; color: var(--text-main); }
 .auto-airport { font-size: 12px; font-weight: 600; color: var(--text-sub); }
 
-/* 로딩 화면 (항공권) */
+/* 로딩 화면 */
 #loading-overlay { position: absolute; top:0; left:0; width: 100%; height: 100%; background: var(--bg-app); z-index: 250; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
 #loading-overlay.active { display: flex; }
 .plane-loader { width: 80px; height: 80px; border-radius: 50%; background: rgba(37, 99, 235, 0.1); display: flex; justify-content: center; align-items: center; margin-bottom: 24px; position: relative; }
@@ -155,7 +159,7 @@ body {
 #loading-text { font-size: 20px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
 #loading-overlay p { font-size: 14px; color: var(--text-sub); font-weight: 600; }
 
-/* 검색 결과 화면 */
+/* 검색 결과 화면 공용 (탭 + 리스트) */
 .result-header-info { text-align: center; flex: 1; }
 .result-header-info h2 { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
 .result-header-info p { font-size: 12px; font-weight: 600; opacity: 0.8; }
@@ -167,6 +171,8 @@ body {
 .date-tab .d-price { font-size: 14px; color: var(--text-main); font-weight: 800; }
 .date-tab.active .d-date, .date-tab.active .d-price { color: #2563EB; }
 .result-content { flex: 1; overflow-y: auto; padding: 20px 24px 80px 24px; background: var(--bg-body); display: flex; flex-direction: column; gap: 16px; }
+
+/* 티켓 디자인 */
 .ticket-card { background: var(--card-bg); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--card-border); }
 .ticket-leg { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .airline-info { display: flex; align-items: center; gap: 8px; width: 30%; }
@@ -184,45 +190,45 @@ body {
 .ticket-divider { height: 1px; background: dashed 1px var(--card-border); margin: 16px 0; }
 .ticket-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
 .ticket-price { font-size: 20px; font-weight: 800; color: var(--text-main); }
+
+/* 🚀 숙소 결과 카드 디자인 */
+.hotel-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--card-border); display: flex; flex-direction: column;}
+.hotel-img { width: 100%; height: 160px; background: #CBD5E1; position: relative; }
+.hotel-rating { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+.hotel-info { padding: 16px 20px; }
+.hotel-name { font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
+.hotel-loc { font-size: 13px; color: var(--text-sub); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-bottom: 16px; }
+.hotel-price-row { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--card-border); padding-top: 16px; }
+.h-price-label { font-size: 12px; color: var(--text-sub); font-weight: 600; }
+.h-price-val { font-size: 22px; font-weight: 900; color: #2563EB; }
+
 .select-btn { padding: 10px 20px; background: #2563EB; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
 .floating-filter-btn { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1E293B; color: white; border: none; padding: 14px 24px; border-radius: 30px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 25px rgba(30, 41, 59, 0.4); z-index: 10; cursor: pointer; }
 
-/* 🚀 AI 화면 전용 UI 추가 */
+/* AI 전용 로직 */
 .progress-bar-container { flex: 1; height: 6px; background: var(--card-border); border-radius: 4px; margin: 0 16px; overflow: hidden; }
 .progress-bar { width: 14%; height: 100%; background: linear-gradient(90deg, #8B5CF6, #D946EF); border-radius: 4px; transition: width 0.4s ease-out; }
-
 .ai-content { flex: 1; padding: 24px; position: relative; overflow-x: hidden; }
 .ai-step { position: absolute; top: 24px; left: 24px; width: calc(100% - 48px); display: none; flex-direction: column; opacity: 0; transform: translateX(30px); transition: opacity 0.4s ease, transform 0.4s ease; padding-bottom: 100px; }
 .ai-step.active { display: flex; opacity: 1; transform: translateX(0); z-index: 2; }
 .ai-step.exit { opacity: 0; transform: translateX(-30px); z-index: 1; }
-
 .ai-question { font-size: 24px; font-weight: 900; line-height: 1.4; color: var(--text-main); margin-bottom: 8px; }
 .ai-desc { font-size: 14px; font-weight: 600; color: var(--text-sub); margin-bottom: 32px; }
-
-/* 텍스트 인풋 (도시, 숙소, 시간) */
 .ai-text-input { width: 100%; padding: 16px 20px; font-size: 18px; font-weight: 700; color: var(--text-main); background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 16px; outline: none; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); }
 .ai-text-input:focus { border-color: #8B5CF6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
 .ai-text-input::placeholder { color: #CBD5E1; font-weight: 600; }
 .ai-time-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
-
-/* 옵션 카드 (누구와 - 로비 아이콘 스타일 적용) */
 .ai-options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .ai-option-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 20px; padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); }
 .ai-option-card .text { font-size: 15px; font-weight: 800; color: var(--text-main); }
 .ai-option-card.selected { border-color: #8B5CF6; background: rgba(139, 92, 246, 0.05); transform: translateY(-4px); box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2); }
-
-/* 인원수 조절기 */
 .people-counter-box { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; box-shadow: 0 4px 10px var(--shadow-color); }
 .counter-controls { display: flex; align-items: center; gap: 16px; }
-.counter-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: #F1F5F9; color: var(--text-main); display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; }
-.counter-btn:active { background: #E2E8F0; }
-#people-count { font-size: 18px; font-weight: 800; color: var(--text-main); min-width: 40px; text-align: center; }
-
-/* 다중 선택 칩 (연령대, 여행 스타일) */
+.counter-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--icon-bg); color: var(--text-main); display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer; }
+.counter-btn:active { background: var(--card-border); }
 .ai-chips-container { display: flex; flex-wrap: wrap; gap: 12px; }
 .ai-chip { padding: 14px 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 30px; font-size: 15px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); display: flex; align-items: center; gap: 6px; }
 .ai-chip.selected { background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; border-color: transparent; box-shadow: 0 8px 15px rgba(217, 70, 239, 0.3); }
-
 .ai-footer { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 24px 30px 24px; background: var(--bg-app); z-index: 10; padding-bottom: max(30px, env(safe-area-inset-bottom));}
 #btn-ai-next { background: linear-gradient(135deg, #8B5CF6, #D946EF); box-shadow: 0 10px 20px rgba(217, 70, 239, 0.3); transition: 0.3s; }
 #btn-ai-next:disabled { background: #CBD5E1; box-shadow: none; cursor: not-allowed; opacity: 0.6; }

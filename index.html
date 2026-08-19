@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- 🚀 모바일 상단 노치/상태바 배경색 일치화 -->
     <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
     <title>Triplan</title>
@@ -33,6 +32,7 @@
                     <div class="circle-icon flight"><span class="material-symbols-rounded">flight_takeoff</span></div>
                     <span>항공권</span>
                 </div>
+                <!-- 🚀 숙소 버튼 -->
                 <div class="quick-item small-ripple-btn" id="btn-hotel">
                     <div class="circle-icon hotel"><span class="material-symbols-rounded">bed</span></div>
                     <span>숙소</span>
@@ -116,7 +116,90 @@
             </div>
         </div>
 
-        <!-- 2. 공용 달력 모달 -->
+        <!-- 🚀 2. 숙소 검색 서브 화면 -->
+        <div id="hotel-screen" class="sub-screen">
+            <header class="sub-header">
+                <button class="icon-btn" id="btn-back-hotel"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                <h2>숙소 검색</h2>
+                <div style="width: 24px;"></div>
+            </header>
+            <div class="flight-content">
+                <!-- 목적지 입력 -->
+                <div class="location-card">
+                    <div class="input-row">
+                        <span class="material-symbols-rounded icon-blue">search</span>
+                        <input type="text" placeholder="여행지, 랜드마크, 호텔명" id="hotel-dest-input" autocomplete="off">
+                    </div>
+                </div>
+                <!-- 체크인/아웃 날짜 -->
+                <div class="date-card ripple-btn" id="btn-open-calendar-hotel">
+                    <div class="date-display">
+                        <span class="material-symbols-rounded icon-purple">event_available</span>
+                        <div class="date-text-group">
+                            <div class="date-label">체크인 - 체크아웃</div>
+                            <div class="date-value" id="hotel-date-text">날짜를 선택해주세요</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 인원 및 객실 선택 -->
+                <div class="date-card ripple-btn" id="btn-open-guest">
+                    <div class="date-display">
+                        <span class="material-symbols-rounded icon-red">person</span>
+                        <div class="date-text-group">
+                            <div class="date-label">인원 및 객실</div>
+                            <div class="date-value" id="hotel-guest-text">성인 2명, 객실 1개</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="search-btn ripple-btn" id="btn-search-hotel">숙소 검색하기</button>
+            </div>
+        </div>
+
+        <!-- 🚀 인원 및 객실 선택 바텀 시트 -->
+        <div id="guest-modal" class="bottom-sheet">
+            <div class="sheet-header">
+                <h3>인원 및 객실</h3>
+                <button class="icon-btn" id="btn-close-guest"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="sheet-content" style="padding-top: 10px;">
+                <div class="guest-row">
+                    <div class="guest-info">
+                        <h4>성인</h4>
+                        <p>18세 이상</p>
+                    </div>
+                    <div class="counter-controls">
+                        <button class="counter-btn" id="btn-minus-adult"><span class="material-symbols-rounded">remove</span></button>
+                        <span id="adult-count" class="count-text">2</span>
+                        <button class="counter-btn" id="btn-plus-adult"><span class="material-symbols-rounded">add</span></button>
+                    </div>
+                </div>
+                <div class="guest-row">
+                    <div class="guest-info">
+                        <h4>어린이</h4>
+                        <p>0세 ~ 17세</p>
+                    </div>
+                    <div class="counter-controls">
+                        <button class="counter-btn" id="btn-minus-child"><span class="material-symbols-rounded">remove</span></button>
+                        <span id="child-count" class="count-text">0</span>
+                        <button class="counter-btn" id="btn-plus-child"><span class="material-symbols-rounded">add</span></button>
+                    </div>
+                </div>
+                <div class="guest-row">
+                    <div class="guest-info">
+                        <h4>객실</h4>
+                        <p>필요한 객실 수</p>
+                    </div>
+                    <div class="counter-controls">
+                        <button class="counter-btn" id="btn-minus-room"><span class="material-symbols-rounded">remove</span></button>
+                        <span id="room-count" class="count-text">1</span>
+                        <button class="counter-btn" id="btn-plus-room"><span class="material-symbols-rounded">add</span></button>
+                    </div>
+                </div>
+            </div>
+            <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-guest">적용하기</button></div>
+        </div>
+
+        <!-- 공용 달력 모달 -->
         <div id="calendar-modal" class="bottom-sheet">
             <div class="sheet-header">
                 <h3>날짜 선택</h3>
@@ -130,142 +213,90 @@
         </div>
         <div id="calendar-overlay"></div>
 
-        <!-- 3. 항공권 로딩/결과 화면 -->
+        <!-- 로딩 애니메이션 오버레이 (구분) -->
         <div id="loading-overlay">
-            <div class="plane-loader"><span class="material-symbols-rounded">flight</span></div>
-            <h3 id="loading-text">최저가 항공권을 찾고 있어요</h3>
-            <p>수백 개의 항공사와 여행사를 비교 중입니다...</p>
+            <div class="plane-loader"><span class="material-symbols-rounded" id="loading-icon">flight</span></div>
+            <h3 id="loading-text">최저가를 찾고 있어요</h3>
+            <p id="loading-subtext">수백 개의 여행사를 비교 중입니다...</p>
         </div>
+
+        <!-- 결과 화면 공용 -->
         <div id="result-screen" class="sub-screen" style="z-index: 120;">
             <header class="sub-header" style="background: #2563EB; color: white;">
                 <button class="icon-btn" id="btn-back-result" style="color: white;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
                 <div class="result-header-info">
                     <h2 id="result-route-text">서울 ➔ 오사카</h2>
-                    <p id="result-date-text">8.20 ~ 8.24 · 성인 1명</p>
+                    <p id="result-date-text">8.20 ~ 8.24</p>
                 </div>
                 <button class="icon-btn" style="color: white;"><span class="material-symbols-rounded">notifications</span></button>
             </header>
             <div class="date-tabs" id="date-tabs-container"></div>
-            <div class="result-content" id="flight-list-container"></div>
+            <div class="result-content" id="result-list-container"></div>
             <button class="floating-filter-btn ripple-btn"><span class="material-symbols-rounded">tune</span> 필터 및 정렬</button>
         </div>
 
-        <!-- 🚀 4. AI 여행 일정 생성 서브 화면 (7단계) -->
+        <!-- AI 여행 일정 생성 서브 화면 -->
         <div id="ai-screen" class="sub-screen">
             <header class="sub-header">
                 <button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button>
-                <div class="progress-bar-container">
-                    <div class="progress-bar" id="ai-progress-bar"></div>
-                </div>
+                <div class="progress-bar-container"><div class="progress-bar" id="ai-progress-bar"></div></div>
                 <div style="width: 24px;"></div>
             </header>
-
             <div class="ai-content">
-                <!-- 스텝 1: 국가/도시 -->
                 <div class="ai-step active" id="ai-step-1">
                     <h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2>
                     <p class="ai-desc">국가나 도시 이름을 자유롭게 적어주세요.</p>
                     <input type="text" class="ai-text-input" id="ai-input-dest" placeholder="예: 오사카, 파리, 다낭">
                 </div>
-
-                <!-- 스텝 2: 여행 날짜 -->
                 <div class="ai-step" id="ai-step-2">
                     <h2 class="ai-question">여행 일정이<br>어떻게 되시나요?</h2>
                     <p class="ai-desc">일정에 맞춰 최적의 동선을 짜드려요.</p>
                     <div class="date-card ripple-btn" id="btn-open-calendar-ai" style="margin-top: 10px;">
                         <div class="date-display">
                             <span class="material-symbols-rounded icon-purple">calendar_month</span>
-                            <div class="date-text-group">
-                                <div class="date-label">전체 여행 기간</div>
-                                <div class="date-value" id="ai-date-text">날짜를 선택해주세요</div>
-                            </div>
+                            <div class="date-text-group"><div class="date-label">전체 여행 기간</div><div class="date-value" id="ai-date-text">날짜를 선택해주세요</div></div>
                         </div>
                     </div>
                 </div>
-
-                <!-- 스텝 3: 비행기 시간 (선택) -->
                 <div class="ai-step" id="ai-step-3">
                     <h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2>
                     <p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
-                    <div class="ai-time-group">
-                        <label>도착지 공항 <b>도착</b> 시간</label>
-                        <input type="time" class="ai-text-input" id="ai-input-arr-time">
-                    </div>
-                    <div class="ai-time-group" style="margin-top: 16px;">
-                        <label>귀국행 비행기 <b>출발</b> 시간</label>
-                        <input type="time" class="ai-text-input" id="ai-input-dep-time">
-                    </div>
+                    <div class="ai-time-group"><label>도착지 공항 <b>도착</b> 시간</label><input type="time" class="ai-text-input" id="ai-input-arr-time"></div>
+                    <div class="ai-time-group" style="margin-top: 16px;"><label>귀국행 비행기 <b>출발</b> 시간</label><input type="time" class="ai-text-input" id="ai-input-dep-time"></div>
                 </div>
-
-                <!-- 스텝 4: 숙소 위치 (선택) -->
                 <div class="ai-step" id="ai-step-4">
                     <h2 class="ai-question">머무르실 숙소가<br>정해져 있나요?</h2>
                     <p class="ai-desc">숙소를 중심으로 동선을 최적화합니다. (선택사항)</p>
                     <input type="text" class="ai-text-input" id="ai-input-accom" placeholder="예: 신주쿠 워싱턴 호텔, 미정">
                 </div>
-
-                <!-- 스텝 5: 누구와 (세련된 아이콘) -->
                 <div class="ai-step" id="ai-step-5">
                     <h2 class="ai-question">누구와 함께<br>여행하시나요?</h2>
                     <p class="ai-desc">동행자에 맞춰 식당과 스팟을 추천해 드려요.</p>
                     <div class="ai-options-grid">
-                        <div class="ai-option-card" data-val="혼자서">
-                            <div class="circle-icon" style="background: rgba(37, 99, 235, 0.1); color: #2563EB;"><span class="material-symbols-rounded">person</span></div>
-                            <span class="text">혼자서</span>
-                        </div>
-                        <div class="ai-option-card" data-val="연인과">
-                            <div class="circle-icon" style="background: rgba(220, 38, 38, 0.1); color: #DC2626;"><span class="material-symbols-rounded">favorite</span></div>
-                            <span class="text">연인과</span>
-                        </div>
-                        <div class="ai-option-card" data-val="친구들과">
-                            <div class="circle-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><span class="material-symbols-rounded">diversity_3</span></div>
-                            <span class="text">친구들과</span>
-                        </div>
-                        <div class="ai-option-card" data-val="가족과">
-                            <div class="circle-icon" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;"><span class="material-symbols-rounded">family_restroom</span></div>
-                            <span class="text">가족과</span>
-                        </div>
-                        <div class="ai-option-card" data-val="부모님과">
-                            <div class="circle-icon" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;"><span class="material-symbols-rounded">elderly</span></div>
-                            <span class="text">부모님과</span>
-                        </div>
-                        <div class="ai-option-card" data-val="아이와">
-                            <div class="circle-icon" style="background: rgba(236, 72, 153, 0.1); color: #EC4899;"><span class="material-symbols-rounded">child_care</span></div>
-                            <span class="text">아이와</span>
-                        </div>
+                        <div class="ai-option-card" data-val="혼자서"><div class="circle-icon" style="background: rgba(37, 99, 235, 0.1); color: #2563EB;"><span class="material-symbols-rounded">person</span></div><span class="text">혼자서</span></div>
+                        <div class="ai-option-card" data-val="연인과"><div class="circle-icon" style="background: rgba(220, 38, 38, 0.1); color: #DC2626;"><span class="material-symbols-rounded">favorite</span></div><span class="text">연인과</span></div>
+                        <div class="ai-option-card" data-val="친구들과"><div class="circle-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><span class="material-symbols-rounded">diversity_3</span></div><span class="text">친구들과</span></div>
+                        <div class="ai-option-card" data-val="가족과"><div class="circle-icon" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;"><span class="material-symbols-rounded">family_restroom</span></div><span class="text">가족과</span></div>
+                        <div class="ai-option-card" data-val="부모님과"><div class="circle-icon" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;"><span class="material-symbols-rounded">elderly</span></div><span class="text">부모님과</span></div>
+                        <div class="ai-option-card" data-val="아이와"><div class="circle-icon" style="background: rgba(236, 72, 153, 0.1); color: #EC4899;"><span class="material-symbols-rounded">child_care</span></div><span class="text">아이와</span></div>
                     </div>
                 </div>
-
-                <!-- 스텝 6: 여행자 상세 정보 -->
                 <div class="ai-step" id="ai-step-6">
                     <h2 class="ai-question">여행자 정보를<br>알려주세요</h2>
                     <p class="ai-desc">총 인원과 연령대를 모두 선택해 주세요.</p>
-                    
                     <div class="people-counter-box">
                         <span style="font-size: 16px; font-weight: 800; color: var(--text-main);">총 인원</span>
-                        <div class="counter-controls">
-                            <button id="btn-minus-people" class="counter-btn"><span class="material-symbols-rounded">remove</span></button>
-                            <span id="people-count">1명</span>
-                            <button id="btn-plus-people" class="counter-btn"><span class="material-symbols-rounded">add</span></button>
-                        </div>
+                        <div class="counter-controls"><button id="btn-minus-people" class="counter-btn"><span class="material-symbols-rounded">remove</span></button><span id="people-count">1명</span><button id="btn-plus-people" class="counter-btn"><span class="material-symbols-rounded">add</span></button></div>
                     </div>
-
                     <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; margin-top: 24px;">동행자 연령대 (다중 선택 가능)</p>
                     <div class="ai-chips-container" id="age-chips-container">
-                        <div class="ai-chip age-chip" data-val="10대">10대 이하</div>
-                        <div class="ai-chip age-chip" data-val="20대">20대</div>
-                        <div class="ai-chip age-chip" data-val="30대">30대</div>
-                        <div class="ai-chip age-chip" data-val="40대">40대</div>
-                        <div class="ai-chip age-chip" data-val="50대">50대</div>
-                        <div class="ai-chip age-chip" data-val="60대 이상">60대 이상</div>
+                        <div class="ai-chip age-chip" data-val="10대">10대 이하</div><div class="ai-chip age-chip" data-val="20대">20대</div><div class="ai-chip age-chip" data-val="30대">30대</div>
+                        <div class="ai-chip age-chip" data-val="40대">40대</div><div class="ai-chip age-chip" data-val="50대">50대</div><div class="ai-chip age-chip" data-val="60대 이상">60대 이상</div>
                     </div>
                 </div>
-
-                <!-- 스텝 7: 여행 스타일 (다중 선택, 세련된 아이콘) -->
                 <div class="ai-step" id="ai-step-7">
                     <h2 class="ai-question">어떤 스타일의<br>여행을 원하시나요?</h2>
                     <p class="ai-desc">최대 3개까지 선택할 수 있어요.</p>
-                    
                     <div class="ai-chips-container" id="style-chips-container">
                         <div class="ai-chip style-chip" data-val="힐링"><span class="material-symbols-rounded" style="font-size:18px;">spa</span> 여유로운 힐링</div>
                         <div class="ai-chip style-chip" data-val="먹방"><span class="material-symbols-rounded" style="font-size:18px;">restaurant</span> 맛집 탐방</div>
@@ -278,13 +309,10 @@
                     </div>
                 </div>
             </div>
-
-            <div class="ai-footer">
-                <button class="search-btn ripple-btn" id="btn-ai-next" disabled>다음으로</button>
-            </div>
+            <div class="ai-footer"><button class="search-btn ripple-btn" id="btn-ai-next" disabled>다음으로</button></div>
         </div>
 
-        <!-- 5. AI 매직 로딩 오버레이 -->
+        <!-- AI 매직 로딩 오버레이 -->
         <div id="ai-loading-overlay">
             <div class="magic-spinner"></div>
             <h3 class="magic-text">AI가 완벽한 일정을<br>그려내고 있어요✨</h3>
