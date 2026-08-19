@@ -8,14 +8,14 @@
     <title>Triplan</title>
     <!-- 구글 머티리얼 아이콘 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" />
-    <!-- 🚀 무료 지도(Leaflet) 라이브러리 추가 -->
+    <!-- 무료 지도(Leaflet) 라이브러리 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app-container">
-        <!-- 🚀 0. 스플래시 화면 -->
+        <!-- 스플래시 화면 -->
         <div id="splash-screen">
             <div class="splash-logo">Triplan.</div>
         </div>
@@ -69,8 +69,9 @@
         <!-- 1. 항공권 서브 화면 -->
         <div id="flight-screen" class="sub-screen">
             <header class="sub-header">
-                <button class="icon-btn" id="btn-back-flight"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
-                <h2>항공권 검색</h2><div style="width: 24px;"></div>
+                <div class="header-left"><button class="icon-btn" id="btn-back-flight"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
+                <h2>항공권 검색</h2>
+                <div class="header-right"></div>
             </header>
             <div class="flight-content">
                 <div class="trip-toggle">
@@ -103,8 +104,9 @@
         <!-- 2. 숙소 검색 서브 화면 -->
         <div id="hotel-screen" class="sub-screen">
             <header class="sub-header">
-                <button class="icon-btn" id="btn-back-hotel"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
-                <h2>숙소 검색</h2><div style="width: 24px;"></div>
+                <div class="header-left"><button class="icon-btn" id="btn-back-hotel"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
+                <h2>숙소 검색</h2>
+                <div class="header-right"></div>
             </header>
             <div class="flight-content">
                 <div class="location-card"><div class="input-row"><span class="material-symbols-rounded icon-blue">search</span><input type="text" placeholder="여행지, 랜드마크, 호텔명" id="hotel-dest-input" autocomplete="off"></div></div>
@@ -151,9 +153,9 @@
         </div>
         <div id="result-screen" class="sub-screen" style="z-index: 120;">
             <header class="sub-header" style="background: #2563EB; color: white;">
-                <button class="icon-btn" id="btn-back-result" style="color: white;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                <div class="header-left"><button class="icon-btn" id="btn-back-result" style="color: white;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
                 <div class="result-header-info"><h2 id="result-route-text">서울 ➔ 오사카</h2><p id="result-date-text">8.20 ~ 8.24</p></div>
-                <button class="icon-btn" style="color: white;"><span class="material-symbols-rounded">notifications</span></button>
+                <div class="header-right"><button class="icon-btn" style="color: white;"><span class="material-symbols-rounded">notifications</span></button></div>
             </header>
             <div class="date-tabs" id="date-tabs-container"></div>
             <div class="result-content" id="result-list-container"></div>
@@ -162,10 +164,11 @@
 
         <!-- 🚀 4. AI 여행 일정 생성 서브 화면 -->
         <div id="ai-screen" class="sub-screen">
+            <!-- 🌟 수정됨: header-left 와 header-right로 빈 공간을 밸런스 있게 맞춤 -->
             <header class="sub-header">
-                <button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button>
+                <div class="header-left"><button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button></div>
                 <div class="progress-bar-container"><div class="progress-bar" id="ai-progress-bar"></div></div>
-                <div style="width: 24px;"></div>
+                <div class="header-right"></div>
             </header>
             <div class="ai-content">
                 <div class="ai-step active" id="ai-step-1">
@@ -180,12 +183,12 @@
                 </div>
                 <div class="ai-step" id="ai-step-3">
                     <h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
-                    <div class="ai-time-group"><label>도착지 공항 <b>도착</b> 시간</label><input type="time" class="ai-text-input" id="ai-input-arr-time"></div>
-                    <div class="ai-time-group" style="margin-top: 16px;"><label>귀국행 비행기 <b>출발</b> 시간</label><input type="time" class="ai-text-input" id="ai-input-dep-time"></div>
+                    <!-- 🌟 수정됨: 날짜가 들어갈 span 태그 추가 -->
+                    <div class="ai-time-group"><label>도착지 공항 <b>도착</b> 시간 <span id="label-arr-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-arr-time"></div>
+                    <div class="ai-time-group" style="margin-top: 16px;"><label>귀국행 비행기 <b>출발</b> 시간 <span id="label-dep-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-dep-time"></div>
                 </div>
                 <div class="ai-step" id="ai-step-4">
                     <h2 class="ai-question">머무르실 숙소가<br>정해져 있나요?</h2><p class="ai-desc">숙소를 중심으로 동선을 최적화합니다. (선택사항)</p>
-                    <!-- 🚀 지도 검색 기능이 포함된 입력창 -->
                     <div class="map-input-group">
                         <input type="text" class="ai-text-input" id="ai-input-accom" placeholder="예: 신주쿠 워싱턴 호텔, 미정">
                         <button class="map-open-btn ripple-btn" id="btn-open-map"><span class="material-symbols-rounded">map</span></button>
@@ -231,7 +234,7 @@
             <div class="ai-footer"><button class="search-btn ripple-btn" id="btn-ai-next" disabled>다음으로</button></div>
         </div>
 
-        <!-- 🚀 무료 지도(OSM) 바텀 시트 모달 -->
+        <!-- 무료 지도 모달 -->
         <div id="map-modal" class="bottom-sheet">
             <div class="sheet-header">
                 <h3>지도에서 숙소 찾기</h3>
@@ -247,7 +250,7 @@
             <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-map">이 위치로 설정</button></div>
         </div>
 
-        <!-- AI 매직 로딩 오버레이 -->
+        <!-- AI 매직 로딩 -->
         <div id="ai-loading-overlay">
             <div class="magic-spinner"></div>
             <h3 class="magic-text">AI가 완벽한 일정을<br>그려내고 있어요✨</h3><p>1분 1초가 아깝지 않은 동선을 짜는 중...</p>

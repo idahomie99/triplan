@@ -19,7 +19,7 @@
 body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
 #app-container { width: 100%; max-width: 480px; height: 100vh; background-color: var(--bg-app); display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 20px 40px var(--shadow-color); padding-top: env(safe-area-inset-top); }
 
-/* 스플래시 로고 위치 중앙보다 살짝 위로 조정 */
+/* 스플래시 로고 (위치 중앙에서 살짝 위로 완벽 적용) */
 #splash-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-app); z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out, visibility 0.5s ease-out; }
 #splash-screen.hide { opacity: 0; visibility: hidden; }
 .splash-logo { font-size: 44px; font-weight: 900; letter-spacing: -1px; background: linear-gradient(135deg, #2563EB, #8B5CF6); -webkit-background-clip: text; background-clip: text; color: transparent; animation: pulse 1.5s infinite; transform: translateY(-10vh); }
@@ -67,12 +67,13 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 @keyframes ripple-anim-large { to { transform: scale(4); opacity: 0; } }
 @keyframes ripple-anim-small { to { transform: scale(1.5); opacity: 0; } }
 
-/* 서브 화면 공통 */
+/* 🌟 서브 화면 공통 (헤더 좌우 밸런스 완벽 맞춤) */
 .sub-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-app); z-index: 100; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding-top: env(safe-area-inset-top); }
 .sub-screen.active { transform: translateX(0); }
 .sub-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; background: var(--card-bg); box-shadow: 0 2px 10px var(--shadow-color); z-index: 10; }
-.sub-header h2 { font-size: 18px; color: var(--text-main); font-weight: 800; }
-.icon-btn { background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; display: flex; align-items: center; }
+.header-left, .header-right { width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.sub-header h2 { font-size: 18px; color: var(--text-main); font-weight: 800; text-align: center; margin: 0; }
+.icon-btn { background: none; border: none; color: var(--text-main); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0; }
 
 /* 폼 컨텐츠 UI */
 .flight-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
@@ -184,10 +185,9 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .hotel-price-row { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--card-border); padding-top: 16px; }
 .h-price-label { font-size: 12px; color: var(--text-sub); font-weight: 600; }
 .h-price-val { font-size: 22px; font-weight: 900; color: #2563EB; }
-.floating-filter-btn { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1E293B; color: white; border: none; padding: 14px 24px; border-radius: 30px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 25px rgba(30, 41, 59, 0.4); z-index: 10; cursor: pointer; }
 
-/* 🚀 AI 전용 로직 (프로그레스 바 수정 완료) */
-.progress-bar-container { width: 60%; max-width: 200px; height: 6px; background: var(--card-border); border-radius: 4px; margin: 0 auto; overflow: hidden; }
+/* 🌟 AI 로직 - 프로그레스 바 중앙 정렬 및 여백 해결 */
+.progress-bar-container { flex: 1; max-width: 180px; height: 6px; background: var(--card-border); border-radius: 4px; margin: 0 16px; overflow: hidden; }
 .progress-bar { width: 14%; height: 100%; background: linear-gradient(90deg, #8B5CF6, #D946EF); border-radius: 4px; transition: width 0.4s ease-out; }
 
 .ai-content { flex: 1; padding: 24px; position: relative; overflow-x: hidden; }
@@ -199,7 +199,8 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .ai-text-input { width: 100%; padding: 16px 20px; font-size: 18px; font-weight: 700; color: var(--text-main); background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 16px; outline: none; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); }
 .ai-text-input:focus { border-color: #8B5CF6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
 .ai-text-input::placeholder { color: #CBD5E1; font-weight: 600; }
-.ai-time-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
+.ai-time-group label { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--text-sub); margin-bottom: 8px; }
+.highlight-date { color: #8B5CF6; font-weight: 800; font-size: 13px; }
 
 .map-input-group { display: flex; gap: 10px; align-items: center; }
 .map-input-group .ai-text-input { flex: 1; }

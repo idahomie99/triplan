@@ -93,6 +93,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!aiStartDate) aiText.innerText = '날짜를 선택해주세요';
             else aiText.innerText = aiEndDate ? `${fm(aiStartDate)} ~ ${fm(aiEndDate)}` : `${fm(aiStartDate)} ~ 선택 중`;
         }
+        
+        // 🌟 피드백 반영: AI 스텝 3의 시간 라벨 옆에 (9/27) 형태로 날짜 자동 표시
+        const labelArrDate = document.getElementById('label-arr-date');
+        const labelDepDate = document.getElementById('label-dep-date');
+        if(labelArrDate) { labelArrDate.innerText = aiStartDate ? `(${aiStartDate.getMonth()+1}/${aiStartDate.getDate()})` : ''; }
+        if(labelDepDate) { labelDepDate.innerText = aiEndDate ? `(${aiEndDate.getMonth()+1}/${aiEndDate.getDate()})` : ''; }
+
         if(typeof validateAiStep === 'function') validateAiStep();
     };
 
@@ -183,11 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. 공항 자동완성
     const popularAirports = [
         { cityKo: '서울', cityAlias: '', cityEn: 'Seoul', code: 'ICN', airportKo: '인천국제공항', airportEn: 'Incheon Intl' },
-        { cityKo: '서울', cityAlias: '', cityEn: 'Seoul', code: 'GMP', airportKo: '김포국제공항', airportEn: 'Gimpo Intl' },
         { cityKo: '오사카', cityAlias: '', cityEn: 'Osaka', code: 'KIX', airportKo: '간사이국제공항', airportEn: 'Kansai Intl' },
         { cityKo: '도쿄', cityAlias: '동경', cityEn: 'Tokyo', code: 'NRT', airportKo: '나리타국제공항', airportEn: 'Narita Intl' },
-        { cityKo: '도쿄', cityAlias: '동경', cityEn: 'Tokyo', code: 'HND', airportKo: '하네다국제공항', airportEn: 'Haneda Intl' },
-        { cityKo: '상하이', cityAlias: '상해', cityEn: 'Shanghai', code: 'PVG', airportKo: '푸둥국제공항', airportEn: 'Pudong Intl' },
         { cityKo: '방콕', cityAlias: '', cityEn: 'Bangkok', code: 'BKK', airportKo: '수완나품국제공항', airportEn: 'Suvarnabhumi' },
         { cityKo: '파리', cityAlias: '', cityEn: 'Paris', code: 'CDG', airportKo: '샤를드골국제공항', airportEn: 'Charles de Gaulle' }
     ];
@@ -301,10 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
     let aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [] };
 
-    // 🌟 덜컹거리는 scrollIntoView 코드를 완전히 제거했습니다!
-    // (이제 입력창을 눌러도 화면이 멋대로 움직이지 않습니다)
-
-    // 무료 지도(OpenStreetMap + Leaflet) 로직
+    // 🌟 무료 지도(OpenStreetMap + 구글 한국어 타일 꼼수) 로직
     let map = null; let marker = null;
     const btnOpenMap = document.getElementById('btn-open-map');
     const mapModal = document.getElementById('map-modal');
@@ -314,7 +315,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const initMap = () => {
         if(!map) {
             map = L.map('map-container').setView([35.6895, 139.6917], 13); 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            // 🌟 피드백 반영: 전 세계 어디든 100% 한국어로 강제 출력되는 구글 지도 래스터 타일 사용! (비용 완전 무료)
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', { 
+                attribution: 'Map data © Google' 
+            }).addTo(map);
 
             map.on('click', function(e) {
                 if(marker) map.removeLayer(marker);
