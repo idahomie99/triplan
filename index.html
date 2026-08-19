@@ -6,16 +6,13 @@
     <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
     
-    <!-- 브라우저 탭 이름 -->
     <title>Triplan</title>
     
-    <!-- 🚀 PWA 및 홈 화면 추가 시 앱 이름 설정 (이 부분이 핵심입니다!) -->
     <meta name="apple-mobile-web-app-title" content="Triplan">
     <meta name="application-name" content="Triplan">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     
-    <!-- 앱 아이콘(파비콘 및 스마트폰 홈 화면 아이콘) 적용 -->
     <link rel="icon" type="image/png" href="image/triplanappimg.png">
     <link rel="apple-touch-icon" href="image/triplanappimg.png">
     
@@ -39,6 +36,7 @@
                 <p class="sub-greeting">단 1분 만에 완성되는 완벽한 여행 플랜</p>
             </section>
 
+            <!-- 🚀 B안 적용: AI 동행 믹스매치 -->
             <section class="main-action-group">
                 <button class="pill-btn ripple-btn" id="btn-ai-standard">
                     <div class="pill-icon" style="color: #8B5CF6; background: rgba(139, 92, 246, 0.1);"><span class="material-symbols-rounded">auto_awesome</span></div>
@@ -47,7 +45,7 @@
                 </button>
                 <button class="pill-btn ripple-btn" id="btn-ai-tension">
                     <div class="pill-icon" style="color: #3B82F6; background: rgba(59, 130, 246, 0.1);"><span class="material-symbols-rounded">handshake</span></div>
-                    <div class="pill-text"><h3>동행 텐션 조율기</h3><p>싸우지 않는 평화협정</p></div>
+                    <div class="pill-text"><h3>AI 동행 믹스매치</h3><p>네 취향 반, 내 취향 반. 평화로운 일정</p></div>
                     <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
                 </button>
             </section>
@@ -82,7 +80,6 @@
         </div>
         <div id="calendar-overlay"></div>
 
-        <!-- AI 여행 일정 생성 서브 화면 -->
         <div id="ai-screen" class="sub-screen">
             <header class="sub-header">
                 <div class="header-left"><button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button></div>
@@ -167,14 +164,17 @@
             
             <div class="day-tabs-container" id="ai-result-tabs"></div>
             
+            <!-- 🚀 촌스러운 이모지 제거, 세련된 머티리얼 아이콘 적용 -->
             <div class="explore-chips-container">
-                <div class="explore-chip active" data-type="timeline">일정표 보기</div>
-                <div class="explore-chip" data-type="food">🍽️ 식사/맛집</div>
-                <div class="explore-chip" data-type="tour">📸 관광/명소</div>
-                <div class="explore-chip" data-type="cafe">☕ 카페/휴식</div>
+                <div class="explore-chip active" data-type="timeline"><span class="material-symbols-rounded chip-icon">format_list_bulleted</span>일정표 보기</div>
+                <div class="explore-chip" data-type="food"><span class="material-symbols-rounded chip-icon">restaurant</span>식사/맛집</div>
+                <div class="explore-chip" data-type="tour"><span class="material-symbols-rounded chip-icon">photo_camera</span>관광/명소</div>
+                <div class="explore-chip" data-type="cafe"><span class="material-symbols-rounded chip-icon">local_cafe</span>카페/휴식</div>
             </div>
             
             <div class="timeline-bg" id="ai-timeline-container"></div>
+            
+            <!-- 🚀 짤림 방지를 위해 CSS에서 스크롤 여백 조절 -->
             <div class="explore-bg" id="ai-explore-container" style="display: none;"></div>
 
             <div id="ai-result-map" style="display: none; flex: 1; width: 100%; z-index: 1; position: relative;">

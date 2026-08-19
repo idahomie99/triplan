@@ -146,29 +146,46 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 #ai-loading-overlay p { font-size: 14px; color: var(--text-sub); font-weight: 600; }
 .leaflet-control-attribution { display: none !important; }
 
-/* 🚀 1. 토스 스타일 Day 탭 컨테이너 */
+/* 마이페이지 */
+.account-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; }
+.profile-header { display: flex; align-items: center; gap: 20px; background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--card-border); }
+.profile-pic-large { width: 64px; height: 64px; border-radius: 50%; background-color: var(--icon-bg); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2394A3B8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'); background-size: cover; background-position: center; border: 2px solid var(--card-border); }
+.profile-info { flex: 1; overflow: hidden; }
+.profile-info h3 { font-size: 20px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-info p { font-size: 13px; font-weight: 600; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.account-menu-section { display: flex; flex-direction: column; gap: 12px; }
+.menu-title { font-size: 15px; font-weight: 800; color: var(--text-main); margin-left: 8px; }
+.menu-list { background: var(--card-bg); border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--card-border); overflow: hidden; }
+.menu-item { padding: 18px 20px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--card-border); cursor: pointer; position: relative; overflow: hidden; }
+.menu-item:last-child { border-bottom: none; }
+.menu-item > span:nth-child(2) { flex: 1; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.menu-item .arrow { color: #CBD5E1; font-size: 20px; }
+
+/* 🚀 타임라인 결과 화면 (Day 탭 + 탐색 칩 최적화) */
 .day-tabs-container { display: flex; gap: 8px; padding: 16px 24px; overflow-x: auto; background: var(--bg-app); border-bottom: 1px solid var(--card-border); scrollbar-width: none; z-index: 10; }
 .day-tabs-container::-webkit-scrollbar { display: none; }
 .day-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 16px; background: var(--icon-bg); color: var(--text-sub); min-width: 72px; cursor: pointer; transition: 0.2s; }
-.day-tab.active { background: #0F172A; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+.day-tab.active { background: #0F172A; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transform: translateY(-2px); }
 .day-tab .d-day { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
 .day-tab .d-date { font-size: 12px; font-weight: 600; opacity: 0.8; }
 
 .explore-chips-container { display: flex; gap: 8px; overflow-x: auto; padding: 12px 24px; background: var(--bg-app); border-bottom: 1px solid var(--card-border); scrollbar-width: none; z-index: 10;}
 .explore-chips-container::-webkit-scrollbar { display: none; }
-.explore-chip { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; color: var(--text-sub); background: var(--card-bg); border: 1px solid var(--card-border); cursor: pointer; white-space: nowrap; transition: 0.2s; box-shadow: 0 2px 5px var(--shadow-color); }
+.explore-chip { padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; color: var(--text-sub); background: var(--card-bg); border: 1px solid var(--card-border); cursor: pointer; white-space: nowrap; transition: 0.2s; box-shadow: 0 2px 5px var(--shadow-color); display: flex; align-items: center; gap: 4px; }
 .explore-chip.active { background: #8B5CF6; color: white; border-color: #8B5CF6; }
+.chip-icon { font-size: 18px; margin-top: 1px; }
 
-/* 🚀 잘림(Cutoff) 해결을 위해 여유로운 내부 여백(Padding) 적용 */
-.explore-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 180px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+/* 🚀 리스트 하단 잘림 방지를 위해 패딩 대폭 증가 */
+.explore-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 250px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
 .explore-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--card-border); display: flex; padding: 12px; gap: 12px; }
-.explore-card-img { width: 80px; height: 80px; border-radius: 12px; background: #CBD5E1; background-size: cover; background-position: center; flex-shrink: 0; }
-.explore-card-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.explore-card-title { font-size: 15px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; line-height: 1.3;}
-.explore-card-sub { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 10px; }
-.explore-add-btn { align-self: flex-start; padding: 8px 14px; background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; }
+.explore-card-img { width: 90px; height: 90px; border-radius: 12px; background: #CBD5E1; background-size: cover; background-position: center; flex-shrink: 0; }
+.explore-card-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;}
+.explore-card-title { font-size: 15px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.explore-card-sub { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.explore-add-btn { align-self: flex-start; padding: 8px 14px; background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;}
+.explore-add-btn:active { background: #8B5CF6; color: white; }
 
-.timeline-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 180px 24px; display: flex; flex-direction: column; overflow-y: auto; }
+.timeline-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 250px 24px; display: flex; flex-direction: column; overflow-y: auto; }
 .plan-b-toggle { display: flex; background: var(--card-border); border-radius: 12px; padding: 4px; margin-bottom: 24px; position: relative; }
 .plan-b-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 800; color: var(--text-sub); cursor: pointer; z-index: 2; transition: color 0.3s; }
 .plan-b-btn.active { color: #2563EB; }
@@ -196,31 +213,22 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .tc-desc { font-size: 13px; color: var(--text-sub); font-weight: 600; line-height: 1.4; word-break: keep-all; }
 .tc-img { width: 100%; height: 120px; border-radius: 10px; background: #CBD5E1; margin-top: 12px; background-size: cover; background-position: center; }
 
+.survival-tip { margin-top: 12px; padding: 10px 14px; background: #F1F5F9; border-radius: 12px; border-left: 3px solid #2563EB; display: flex; gap: 8px; align-items: flex-start; }
+.survival-tip .tip-icon { font-size: 16px; color: #2563EB; margin-top: 2px; }
+.survival-tip .tip-text { font-size: 12px; font-weight: 700; color: var(--text-main); line-height: 1.4; word-break: keep-all; }
+
 .custom-route-marker { background: #8B5CF6; color: white; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; transition: transform 0.2s; }
 .custom-route-marker:active { transform: scale(0.9); }
 
-/* 🚀 2. 지도 이동 애니메이션용 이모지 마커 */
 .moving-transport { font-size: 28px; text-shadow: 0 4px 10px rgba(0,0,0,0.3); filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.2)); z-index: 1000 !important; }
 
-/* 🚀 3. 지도 하단 팝업 정보 카드 (토스/에어비앤비 스타일) */
 .map-info-card { position: absolute; bottom: 100px; left: 24px; right: 24px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 16px; display: flex; gap: 16px; align-items: center; transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; border: 1px solid var(--card-border); }
 .map-info-card.active { transform: translateY(0); }
 .map-info-img { width: 70px; height: 70px; border-radius: 12px; background: #CBD5E1; background-size: cover; background-position: center; flex-shrink: 0; }
 .map-info-texts { flex: 1; overflow: hidden; }
 .map-info-badge { display: inline-block; font-size: 10px; font-weight: 800; color: #8B5CF6; background: rgba(139, 92, 246, 0.1); padding: 3px 6px; border-radius: 6px; margin-bottom: 6px; }
 .map-info-texts h4 { font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.map-info-texts p { 
-    font-size: 12px; 
-    font-weight: 600; 
-    color: var(--text-sub); 
-    display: -webkit-box; 
-    -webkit-line-clamp: 2; 
-    line-clamp: 2; /* 💡 노란줄 해결: 웹 표준 속성 추가 */
-    -webkit-box-orient: vertical; 
-    overflow: hidden; 
-    text-overflow: ellipsis; /* 💡 말줄임표 확실하게 추가 */
-    line-height: 1.4; 
-}
+.map-info-texts p { font-size: 12px; font-weight: 600; color: var(--text-sub); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
 .close-info-card { width: 32px; height: 32px; flex-shrink: 0; background: var(--icon-bg); border-radius: 50%; color: var(--text-sub); }
 
 .result-action-area { position: absolute; bottom: 0; left: 0; width: 100%; padding: 0 24px 40px 24px; padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 20px)); display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
