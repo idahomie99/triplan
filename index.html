@@ -9,6 +9,11 @@
 </head>
 <body>
     <div id="app-container">
+        <!-- 🚀 0. 스플래시(인트로) 화면 -->
+        <div id="splash-screen">
+            <div class="splash-logo">Triplan.</div>
+        </div>
+
         <!-- 탑 헤더 -->
         <header class="top-header" id="top-header">
             <div class="logo">Triplan.</div>
@@ -163,23 +168,15 @@
                 </button>
             </header>
 
-            <!-- 날짜별 최저가 탭 (토스/스카이스캐너 스타일) -->
-            <div class="date-tabs" id="date-tabs-container">
-                <!-- JS에서 동적 생성됨 -->
-            </div>
+            <div class="date-tabs" id="date-tabs-container"></div>
+            <div class="result-content" id="flight-list-container"></div>
 
-            <div class="result-content" id="flight-list-container">
-                <!-- JS에서 항공권 카드 동적 생성됨 -->
-            </div>
-
-            <!-- 하단 필터 플로팅 버튼 -->
             <button class="floating-filter-btn ripple-btn">
                 <span class="material-symbols-rounded">tune</span> 필터 및 정렬
             </button>
         </div>
 
-    </div>
-    <script type="module" src="firebase-config.js"></script>
+        <script type="module" src="firebase-config.js"></script>
         <script type="module" src="script.js"></script>
     </div>
 </body>

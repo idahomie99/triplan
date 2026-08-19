@@ -3,6 +3,16 @@ import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // 🚀 0. 스플래시 화면 제어 (1.5초 후 페이드아웃)
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+        setTimeout(() => {
+            splashScreen.classList.add('hide');
+            // 애니메이션이 끝난 후 완전히 HTML에서 제거해서 앱이 가벼워지게 함
+            setTimeout(() => splashScreen.remove(), 500); 
+        }, 1500); 
+    }
+    
     // 1. 동적 월 세팅
     const currentMonth = new Date().getMonth() + 1;
     const monthTitle = document.getElementById('month-title');
