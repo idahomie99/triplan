@@ -30,23 +30,69 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     bindRipple();
 
-    // 2. 구글 로그인
+    // 🚀 2. 구글 로그인 및 마이페이지 연동 로직
     const btnAccount = document.getElementById('nav-account');
+    const btnTopProfile = document.getElementById('btn-top-profile'); // 우측 상단 프로필
     const profilePic = document.querySelector('.profile-pic');
     const greeting = document.querySelector('.greeting');
+    
+    // 마이페이지 요소들
+    const accountScreen = document.getElementById('account-screen');
+    const btnBackAccount = document.getElementById('btn-back-account');
+    const accountName = document.getElementById('account-name');
+    const accountEmail = document.getElementById('account-email');
+    const accountProfilePic = document.getElementById('account-profile-pic');
+    const btnLogout = document.getElementById('btn-logout');
+
     const defaultProfileSvg = `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2394A3B8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>')`;
 
+    // 실시간 로그인 상태 감지
     onAuthStateChanged(auth, (user) => {
-        if (user) { greeting.innerText = `${user.displayName}님,\n어디로 떠나시나요?`; profilePic.style.backgroundImage = `url('${user.photoURL}')`; } 
-        else { greeting.innerText = `어디로 떠나시나요?`; profilePic.style.backgroundImage = defaultProfileSvg; }
+        if (user) { 
+            greeting.innerText = `${user.displayName}님,\n어디로 떠나시나요?`; 
+            profilePic.style.backgroundImage = `url('${user.photoURL}')`; 
+            
+            // 마이페이지 정보 업데이트
+            accountName.innerText = user.displayName;
+            accountEmail.innerText = user.email;
+            accountProfilePic.style.backgroundImage = `url('${user.photoURL}')`;
+        } else { 
+            greeting.innerText = `어디로 떠나시나요?`; 
+            profilePic.style.backgroundImage = defaultProfileSvg; 
+            
+            // 마이페이지 정보 초기화
+            accountName.innerText = '로그인이 필요합니다';
+            accountEmail.innerText = '이메일 정보 없음';
+            accountProfilePic.style.backgroundImage = defaultProfileSvg;
+            
+            // 로그아웃 상태면 화면 닫기
+            accountScreen.classList.remove('active');
+        }
     });
 
-    const handleLoginClick = () => {
-        if (auth.currentUser) { if(confirm("로그아웃 하시겠습니까?")) signOut(auth); } 
-        else { signInWithPopup(auth, provider).catch(err => alert("로그인 에러 발생")); }
+    // 로그인 안 되어 있으면 구글 팝업 띄우고, 되어 있으면 마이페이지 엶
+    const handleLoginOrMyPage = () => {
+        if (auth.currentUser) { 
+            accountScreen.classList.add('active'); // 마이페이지 열기
+        } else { 
+            signInWithPopup(auth, provider).catch(err => alert("로그인 에러 발생")); 
+        }
     };
-    if(profilePic) profilePic.addEventListener('click', handleLoginClick);
-    if(btnAccount) btnAccount.addEventListener('click', handleLoginClick);
+    
+    if(btnTopProfile) btnTopProfile.addEventListener('click', handleLoginOrMyPage);
+    if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
+    if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
+
+    // 로그아웃 버튼 (마이페이지 안)
+    if(btnLogout) {
+        btnLogout.addEventListener('click', () => {
+            if(confirm("정말 로그아웃 하시겠습니까?")) {
+                signOut(auth).then(() => {
+                    alert("성공적으로 로그아웃 되었습니다.");
+                });
+            }
+        });
+    }
 
     // 3. 서브 화면 토글 (항공권, 숙소)
     const btnFlight = document.getElementById('btn-flight');
@@ -61,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnHotel) btnHotel.addEventListener('click', () => hotelScreen.classList.add('active'));
     if (btnBackHotel) btnBackHotel.addEventListener('click', () => hotelScreen.classList.remove('active'));
 
-    // 4. 달력 공용 로직 (항공권/숙소/AI)
+    // 4. 달력 공용 로직
     const radioRound = document.getElementById('round-trip');
     const radioOneWay = document.getElementById('one-way');
     const tripTypeLabel = document.getElementById('trip-type-label');
@@ -94,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
             else aiText.innerText = aiEndDate ? `${fm(aiStartDate)} ~ ${fm(aiEndDate)}` : `${fm(aiStartDate)} ~ 선택 중`;
         }
         
-        // 🌟 시간 탭에 날짜 실시간 연동
         const labelArrDate = document.getElementById('label-arr-date');
         const labelDepDate = document.getElementById('label-dep-date');
         if(labelArrDate) { labelArrDate.innerText = aiStartDate ? `(${aiStartDate.getMonth()+1}/${aiStartDate.getDate()})` : ''; }
@@ -187,11 +232,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 5. 공항 자동완성
+    // 5. 공항 및 숙소 자동완성 (무료 데이터)
     const popularAirports = [
         { cityKo: '서울', cityAlias: '', cityEn: 'Seoul', code: 'ICN', airportKo: '인천국제공항', airportEn: 'Incheon Intl' },
+        { cityKo: '서울', cityAlias: '', cityEn: 'Seoul', code: 'GMP', airportKo: '김포국제공항', airportEn: 'Gimpo Intl' },
         { cityKo: '오사카', cityAlias: '', cityEn: 'Osaka', code: 'KIX', airportKo: '간사이국제공항', airportEn: 'Kansai Intl' },
         { cityKo: '도쿄', cityAlias: '동경', cityEn: 'Tokyo', code: 'NRT', airportKo: '나리타국제공항', airportEn: 'Narita Intl' },
+        { cityKo: '도쿄', cityAlias: '동경', cityEn: 'Tokyo', code: 'HND', airportKo: '하네다국제공항', airportEn: 'Haneda Intl' },
+        { cityKo: '상하이', cityAlias: '상해', cityEn: 'Shanghai', code: 'PVG', airportKo: '푸둥국제공항', airportEn: 'Pudong Intl' },
         { cityKo: '방콕', cityAlias: '', cityEn: 'Bangkok', code: 'BKK', airportKo: '수완나품국제공항', airportEn: 'Suvarnabhumi' },
         { cityKo: '파리', cityAlias: '', cityEn: 'Paris', code: 'CDG', airportKo: '샤를드골국제공항', airportEn: 'Charles de Gaulle' }
     ];
@@ -232,6 +280,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     setupAutocomplete(depInput, depAuto); setupAutocomplete(destInput, destAuto);
     if(btnSwap) btnSwap.addEventListener('click', () => { const temp = depInput.value; depInput.value = destInput.value; destInput.value = temp; });
+
+    // 숙소 자동완성
+    const mockHotelDB = [
+        { type: '도시', name: '도쿄', sub: '일본', icon: 'location_on' }, { type: '도시', name: '오사카', sub: '일본', icon: 'location_on' },
+        { type: '도시', name: '파리', sub: '프랑스', icon: 'location_on' }, { type: '도시', name: '방콕', sub: '태국', icon: 'location_on' },
+        { type: '호텔', name: '신주쿠 워싱턴 호텔', sub: '도쿄, 일본', icon: 'bed' }, { type: '호텔', name: '호텔 그레이서리 신주쿠', sub: '도쿄, 일본', icon: 'bed' },
+        { type: '호텔', name: '게이오 플라자 호텔', sub: '도쿄, 일본', icon: 'bed' }, { type: '랜드마크', name: '에펠탑', sub: '파리, 프랑스', icon: 'attractions' },
+        { type: '랜드마크', name: '도톤보리', sub: '오사카, 일본', icon: 'attractions' }
+    ];
+    const hotelInput = document.getElementById('hotel-dest-input'); const hotelAuto = document.getElementById('hotel-autocomplete');
+    if(hotelInput && hotelAuto) {
+        hotelInput.addEventListener('input', () => {
+            const val = hotelInput.value.trim().toLowerCase(); hotelAuto.innerHTML = '';
+            if (!val) { hotelAuto.classList.remove('active'); return; }
+            const filtered = mockHotelDB.filter(item => item.name.toLowerCase().includes(val) || item.sub.toLowerCase().includes(val)).slice(0, 8);
+            if (filtered.length > 0) {
+                filtered.forEach(item => {
+                    const div = document.createElement('div'); div.className = 'autocomplete-item';
+                    let iconColor = item.type === '호텔' ? '#DC2626' : (item.type === '랜드마크' ? '#F59E0B' : '#2563EB');
+                    div.innerHTML = `<span class="material-symbols-rounded auto-icon" style="color: ${iconColor}">${item.icon}</span><div class="auto-text"><span class="auto-city">${item.name} <span style="font-size:11px; font-weight:700; color:#8B5CF6; background:rgba(139,92,246,0.1); padding:2px 6px; border-radius:4px; margin-left:4px;">${item.type}</span></span><span class="auto-airport">${item.sub}</span></div>`;
+                    div.addEventListener('click', () => { hotelInput.value = item.name; hotelAuto.classList.remove('active'); });
+                    hotelAuto.appendChild(div);
+                }); hotelAuto.classList.add('active'); 
+            } else { hotelAuto.classList.remove('active'); }
+        });
+        hotelInput.addEventListener('blur', () => { setTimeout(() => hotelAuto.classList.remove('active'), 200); });
+    }
 
     // 6. 숙소 인원/객실 모달
     let guestData = { adult: 2, child: 0, room: 1 };
@@ -296,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dateTabsContainer.style.display = 'none'; resultListContainer.innerHTML = html; showLoadingThenResult('hotel');
     });
 
-    // 🚀 8. AI 일정 생성기 
+    // 8. AI 일정 생성기 
     const btnItineraryQuick = document.getElementById('btn-itinerary'); const aiScreen = document.getElementById('ai-screen'); const btnBackAi = document.getElementById('btn-back-ai');
     if(btnItineraryQuick) btnItineraryQuick.addEventListener('click', () => { aiScreen.classList.add('active'); resetAiFlow(); });
     if(btnBackAi) btnBackAi.addEventListener('click', () => aiScreen.classList.remove('active'));
@@ -305,31 +380,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
     let aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [] };
 
-    // 🌟 무료 지도(OpenStreetMap + 한국어 타일 + 도시 검색 + GPS)
+    // 무료 지도 연동
     let map = null; let marker = null;
     const btnOpenMap = document.getElementById('btn-open-map');
     const mapModal = document.getElementById('map-modal');
     const btnCloseMap = document.getElementById('btn-close-map');
     const btnConfirmMap = document.getElementById('btn-confirm-map');
     
-    // GPS 현위치 가져오기 함수
     const tryGeolocation = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => { map.setView([position.coords.latitude, position.coords.longitude], 13); },
-                (error) => { console.log("GPS 허용 거부됨 - 기본 서울로 유지"); }
+                () => { console.log("GPS 허용 거부됨 - 기본 좌표 유지"); }
             );
         }
     };
 
     const initMap = () => {
         if(!map) {
-            // 기본은 서울 시청 좌표
             map = L.map('map-container').setView([37.5665, 126.9780], 13); 
-            // 전 세계 지도를 100% 한국어로 강제 출력 (구글맵 타일 꼼수)
-            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', { 
-                attribution: 'Map data © Google' 
-            }).addTo(map);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko', { attribution: 'Map data © Google' }).addTo(map);
 
             map.on('click', function(e) {
                 if(marker) map.removeLayer(marker);
@@ -341,13 +411,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const placeName = data.name || data.address.suburb || data.address.city || data.display_name.split(',')[0];
                         document.getElementById('map-selected-address').innerText = placeName;
                         document.getElementById('ai-input-accom').value = placeName; 
-                    }).catch(() => {
-                        document.getElementById('map-selected-address').innerText = "선택된 위치";
-                    });
+                    }).catch(() => { document.getElementById('map-selected-address').innerText = "선택된 위치"; });
             });
         }
         
-        // 🌟 스텝 1에서 입력한 도시 이름을 기반으로 지도 이동
         setTimeout(() => {
             map.invalidateSize(); 
             const destCity = document.getElementById('ai-input-dest').value.trim();
@@ -355,23 +422,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destCity)}`)
                     .then(res => res.json())
                     .then(data => {
-                        if (data && data.length > 0) {
-                            map.setView([data[0].lat, data[0].lon], 12);
-                        } else {
-                            tryGeolocation(); // 검색 실패 시 GPS
-                        }
+                        if (data && data.length > 0) map.setView([data[0].lat, data[0].lon], 12);
+                        else tryGeolocation(); 
                     }).catch(() => tryGeolocation());
             } else {
-                tryGeolocation(); // 빈칸이면 GPS
+                tryGeolocation(); 
             }
         }, 100);
     };
 
     if(btnOpenMap) {
-        btnOpenMap.addEventListener('click', () => {
-            calendarOverlay.style.display = 'block'; mapModal.classList.add('active');
-            setTimeout(() => initMap(), 300);
-        });
+        btnOpenMap.addEventListener('click', () => { calendarOverlay.style.display = 'block'; mapModal.classList.add('active'); setTimeout(() => initMap(), 300); });
     }
 
     const closeMap = () => { mapModal.classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); };
