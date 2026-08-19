@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const bindRipple = () => {
-        const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn, .main-action-card');
+        const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn, .main-action-card, .rec-list-item');
         rippleBtns.forEach(btn => {
             btn.addEventListener('click', function(e) {
                 const rect = this.getBoundingClientRect();
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnTopProfile) btnTopProfile.addEventListener('click', handleLoginOrMyPage);
     if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
-    document.getElementById('btn-logout')?.addEventListener('click', () => { if(confirm("로그아웃 하시겠습니까?")) signOut(auth).then(() => alert("로그아웃 되었습니다.")); });
+    document.getElementById('btn-logout')?.addEventListener('click', () => { if(confirm("정말 로그아웃 하시겠습니까?")) signOut(auth).then(() => alert("성공적으로 로그아웃 되었습니다.")); });
 
     // 2. 서브 화면 (항공권, 숙소) 닫기 전용
     const btnBackFlight = document.getElementById('btn-back-flight');
@@ -129,11 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 4. AI 일정 생성기 (토스 감성 적용된 버튼으로 구동)
+    // 🚀 4. AI 일정 생성기 
     let aiMode = 'standard'; 
     const aiScreen = document.getElementById('ai-screen'); 
     
-    // 개편된 버튼 아이디 연동
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-back-ai')?.addEventListener('click', () => aiScreen.classList.remove('active'));
@@ -173,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); 
         document.querySelectorAll('.ai-chip').forEach(c => c.classList.remove('selected')); 
         
-        // 모드에 따라 스텝 7 폼 전환
         if(aiMode === 'standard') { document.getElementById('step-7-standard').style.display = 'block'; document.getElementById('step-7-tension').style.display = 'none'; } 
         else { document.getElementById('step-7-standard').style.display = 'none'; document.getElementById('step-7-tension').style.display = 'block'; }
     };
