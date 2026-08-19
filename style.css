@@ -98,13 +98,31 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .ai-question { font-size: 24px; font-weight: 900; line-height: 1.4; color: var(--text-main); margin-bottom: 8px; }
 .ai-desc { font-size: 14px; font-weight: 600; color: var(--text-sub); margin-bottom: 32px; }
 
-.ai-date-select-card { margin-top: 10px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); }
+.ai-date-select-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); margin-bottom: 24px; }
 .ai-date-select-card:active { transform: scale(0.98); border-color: #8B5CF6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
 .ai-date-select-card .icon-purple { font-size: 28px; color: #8B5CF6; }
 .ai-date-texts { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .ai-date-texts .label { font-size: 13px; font-weight: 700; color: var(--text-sub); }
 .ai-date-texts .value { font-size: 16px; font-weight: 800; color: var(--text-main); }
 .ai-date-select-card .arrow { color: #CBD5E1; }
+
+/* 🚀 목적지 다중 입력 폼 전용 CSS */
+#dest-form-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.dest-item { display: flex; gap: 12px; align-items: stretch; }
+.dest-num { width: 24px; height: 24px; border-radius: 50%; background: #8B5CF6; color: white; font-size: 12px; font-weight: 800; display: flex; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 16px; }
+.dest-inputs { flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--icon-bg); padding: 12px; border-radius: 16px; }
+.dest-row { display: flex; gap: 8px; align-items: center; }
+.country-select-btn { flex: 1; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.city-input { flex: 1; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); outline: none; }
+.stay-days-box { width: 80px; display: flex; align-items: center; gap: 4px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 0 10px; }
+.stay-days-input { width: 100%; padding: 12px 0; text-align: center; border: none; background: transparent; font-size: 15px; font-weight: 700; outline: none; }
+.stay-days-box span { font-size: 14px; font-weight: 700; color: var(--text-sub); }
+.add-dest-btn { width: 100%; padding: 16px; border: 2px dashed #CBD5E1; background: transparent; border-radius: 16px; color: var(--text-sub); font-size: 15px; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 40px; }
+.auto-sort-btn { background: rgba(37,99,235,0.1); color: #2563EB; border: none; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; margin-bottom: 12px; }
+
+/* 대륙-국가 모달 리스트 */
+.country-list-item { padding: 16px; border-bottom: 1px solid var(--card-border); font-size: 16px; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.country-list-item:active { background: var(--icon-bg); }
 
 .ai-text-input { width: 100%; padding: 16px 20px; font-size: 18px; font-weight: 700; color: var(--text-main); background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 16px; outline: none; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); -webkit-appearance: none; appearance: none; }
 .ai-text-input:focus { border-color: #8B5CF6; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2); }
@@ -146,7 +164,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 #ai-loading-overlay p { font-size: 14px; color: var(--text-sub); font-weight: 600; }
 .leaflet-control-attribution { display: none !important; }
 
-/* 마이페이지 */
 .account-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; }
 .profile-header { display: flex; align-items: center; gap: 20px; background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--card-border); }
 .profile-pic-large { width: 64px; height: 64px; border-radius: 50%; background-color: var(--icon-bg); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2394A3B8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'); background-size: cover; background-position: center; border: 2px solid var(--card-border); }
@@ -161,7 +178,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .menu-item > span:nth-child(2) { flex: 1; font-size: 15px; font-weight: 700; color: var(--text-main); }
 .menu-item .arrow { color: #CBD5E1; font-size: 20px; }
 
-/* 🚀 타임라인 결과 화면 (Day 탭 + 탐색 칩 최적화) */
 .day-tabs-container { display: flex; gap: 8px; padding: 16px 24px; overflow-x: auto; background: var(--bg-app); border-bottom: 1px solid var(--card-border); scrollbar-width: none; z-index: 10; }
 .day-tabs-container::-webkit-scrollbar { display: none; }
 .day-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 16px; background: var(--icon-bg); color: var(--text-sub); min-width: 72px; cursor: pointer; transition: 0.2s; }
@@ -175,9 +191,8 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .explore-chip.active { background: #8B5CF6; color: white; border-color: #8B5CF6; }
 .chip-icon { font-size: 18px; margin-top: 1px; }
 
-/* 🚀 리스트 하단 잘림 방지를 위해 ::after 가상 요소로 확실한 여백 확보 */
-.explore-bg { flex: 1; background: var(--bg-body); padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.explore-bg::after { content: ''; display: block; min-height: 120px; flex-shrink: 0; }
+.explore-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 250px 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.explore-bg::after { content: ''; display: block; min-height: 200px; flex-shrink: 0; }
 .explore-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px var(--shadow-color); border: 1px solid var(--card-border); display: flex; padding: 12px; gap: 12px; }
 .explore-card-img { width: 90px; height: 90px; border-radius: 12px; background: #CBD5E1; background-size: cover; background-position: center; flex-shrink: 0; }
 .explore-card-info { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;}
@@ -186,8 +201,8 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .explore-add-btn { align-self: flex-start; padding: 8px 14px; background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border: none; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;}
 .explore-add-btn:active { background: #8B5CF6; color: white; }
 
-.timeline-bg { flex: 1; background: var(--bg-body); padding: 24px; display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.timeline-bg::after { content: ''; display: block; min-height: 120px; flex-shrink: 0; }
+.timeline-bg { flex: 1; background: var(--bg-body); padding: 24px 24px 250px 24px; display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.timeline-bg::after { content: ''; display: block; min-height: 200px; flex-shrink: 0; }
 .plan-b-toggle { display: flex; background: var(--card-border); border-radius: 12px; padding: 4px; margin-bottom: 24px; position: relative; }
 .plan-b-btn { flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 800; color: var(--text-sub); cursor: pointer; z-index: 2; transition: color 0.3s; display: flex; justify-content: center; align-items: center; gap: 6px; }
 .plan-b-btn span { font-size: 18px; }
@@ -223,7 +238,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .custom-route-marker { background: #8B5CF6; color: white; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; font-weight: 900; font-size: 14px; transition: transform 0.2s; }
 .custom-route-marker:active { transform: scale(0.9); }
 
-/* 🚀 지도 애니메이션 자동차/사람 아이콘을 둥근 화이트 뱃지 형태로 예쁘게 변경 */
 .moving-transport { display: flex; justify-content: center; align-items: center; background: white; border-radius: 50%; width: 36px !important; height: 36px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000 !important; }
 
 .map-info-card { position: absolute; bottom: 100px; left: 24px; right: 24px; background: var(--card-bg); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 16px; display: flex; gap: 16px; align-items: center; transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 999; border: 1px solid var(--card-border); }
