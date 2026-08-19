@@ -2,7 +2,7 @@ import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 0. 스플래시 화면
+    // 0. 스플래시 & 로비
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
         setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1500);
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 3. AI 일정 생성기 
+    // 3. AI 일정 생성기 
     let aiMode = 'standard'; 
     const aiScreen = document.getElementById('ai-screen'); 
     
@@ -240,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🚀 수정됨: 뻗지 않도록 Try-Catch 문 적용 및 버그 수정
     if(btnAiNext) {
         btnAiNext.addEventListener('click', () => {
             if (currentAiStep < totalAiSteps) {
@@ -276,11 +275,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ===================================================================
-    // 🚀 4. 대망의 타임라인 알고리즘 로직 (진짜 맞춤형 데이터 생성)
+    // 🚀 4. 알고리즘 로직 & 애니메이션 지도 뷰
     // ===================================================================
-    let routeMap = null; let routeLayerGroup = null;
+    let routeMap = null; 
+    let routeLayerGroup = null;
+    let movingMarker = null;
+    let currentMarkerIndex = -1;
+    let generatedDailySpots = []; // 지도 마커 클릭 시 정보 표시용
 
-    // AI가 참조할 가짜 데이터베이스 (도시별 추천 스팟)
     const spotDB = {
         '오사카': {
             tour: ['유니버셜 스튜디오 재팬', '오사카 성', '우메다 공중정원', '츠텐카쿠 전망대'],
@@ -306,7 +308,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dbCity = Object.keys(spotDB).find(k => city.includes(k));
         if(dbCity) return spotDB[dbCity][type];
         
-        // 만약 DB에 없는 도시라면, 유저가 입력한 도시 이름에 맞춰 즉석으로 지어냄
         if(type === 'tour') return [`${city} 핵심 랜드마크`, `${city} 인생샷 명소`, `${city} 전통 시장`, `${city} 야경 뷰포인트`];
         if(type === 'food') return [`${city} 평점 4.8 로컬 맛집`, `${city} 현지인 추천 식당`, `${city} 야시장 먹거리`];
         if(type === 'cafe') return [`${city} 감성 충만 카페`, `${city} 뷰 좋은 테라스 카페`];
@@ -323,69 +324,43 @@ document.addEventListener('DOMContentLoaded', () => {
         else subText += `우당탕탕 타협 플랜`;
         document.getElementById('ai-result-subtitle').innerText = subText;
 
-        // 상단 날짜 탭
+        // 🚀 1. 토스 느낌의 세련된 Pill 형태 Day 탭 
         let tabsHtml = '';
         for(let i=1; i<=3; i++) {
             const activeCls = i === 1 ? 'active' : '';
-            tabsHtml += `<div class="date-tab ${activeCls}"><span class="d-date">Day ${i}</span><span class="d-price" style="font-weight:800;">8.${20+i}</span></div>`;
+            tabsHtml += `<div class="day-tab ${activeCls}"><div class="d-day">Day ${i}</div><div class="d-date">8.${20+i}</div></div>`;
         }
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
-        // 🚀 체력(HP) 게이지 기반 템플릿 설정
         let hpPercent = 50; let scheduleTemplate = [];
         if(aiData.stamina == 1 || aiData.stamina == 2) {
-            hpPercent = 90; // 저질체력 소모도 높음 (일정을 널널하게)
-            scheduleTemplate = [ 
-                {time: '11:00', type: 'food', text: '여유로운 아점'}, 
-                {time: '13:00', type: 'tour', text: '가벼운 메인 관광'}, 
-                {time: '15:30', type: 'cafe', text: '체력 방전, 카페 휴식'}, 
-                {time: '18:00', type: 'food', text: '저녁 식사'} 
-            ];
+            hpPercent = 90;
+            scheduleTemplate = [ {time: '11:00', type: 'food', text: '여유로운 아점'}, {time: '13:00', type: 'tour', text: '가벼운 메인 관광'}, {time: '15:30', type: 'cafe', text: '체력 방전, 카페 휴식'}, {time: '18:00', type: 'food', text: '저녁 식사'} ];
         } else if(aiData.stamina == 3) {
-            hpPercent = 65; // 보통 체력
-            scheduleTemplate = [ 
-                {time: '10:00', type: 'tour', text: '오전 관광'}, 
-                {time: '12:30', type: 'food', text: '점심 식사'}, 
-                {time: '14:00', type: 'tour', text: '오후 관광'}, 
-                {time: '16:30', type: 'cafe', text: '잠시 휴식'}, 
-                {time: '18:30', type: 'food', text: '저녁 식사'} 
-            ];
+            hpPercent = 65;
+            scheduleTemplate = [ {time: '10:00', type: 'tour', text: '오전 관광'}, {time: '12:30', type: 'food', text: '점심 식사'}, {time: '14:00', type: 'tour', text: '오후 관광'}, {time: '16:30', type: 'cafe', text: '잠시 휴식'}, {time: '18:30', type: 'food', text: '저녁 식사'} ];
         } else {
-            hpPercent = 30; // 강철체력 (일정을 빡세게)
-            scheduleTemplate = [ 
-                {time: '09:00', type: 'tour', text: '아침 투어 시작'}, 
-                {time: '11:30', type: 'tour', text: '랜드마크 도장 깨기'}, 
-                {time: '13:30', type: 'food', text: '늦은 점심'}, 
-                {time: '15:00', type: 'tour', text: '폭풍 쇼핑/관광'}, 
-                {time: '18:00', type: 'food', text: '저녁 식사'}, 
-                {time: '20:00', type: 'tour', text: '야경 코스 추가'} 
-            ];
+            hpPercent = 30; 
+            scheduleTemplate = [ {time: '09:00', type: 'tour', text: '아침 투어 시작'}, {time: '11:30', type: 'tour', text: '랜드마크 도장 깨기'}, {time: '13:30', type: 'food', text: '늦은 점심'}, {time: '15:00', type: 'tour', text: '폭풍 쇼핑/관광'}, {time: '18:00', type: 'food', text: '저녁 식사'}, {time: '20:00', type: 'tour', text: '야경 코스 추가'} ];
         }
 
         const renderDayPlan = (isPlanB) => {
+            generatedDailySpots = []; // 초기화
             let timelineHtml = `
                 <div class="plan-b-toggle">
                     <div class="plan-b-btn ${!isPlanB ? 'active' : ''}" id="btn-plan-a">☀️ 기본 일정</div>
                     <div class="plan-b-btn ${isPlanB ? 'active' : ''}" id="btn-plan-b">☔ 비 올 때 (플랜 B)</div>
                     <div class="plan-b-bg" style="transform: translateX(${isPlanB ? '100%' : '0'});"></div>
                 </div>
-
-                <div class="hp-bar-container">
-                    <div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${hpPercent}%</span></div>
-                    <div class="hp-track"><div class="hp-fill" style="width: ${hpPercent}%;"></div></div>
-                    <p style="font-size:11px; color:var(--text-sub); margin-top:8px; font-weight:600;">
-                        ${hpPercent > 80 ? '⚠️ 체력 소모가 매우 큽니다. 편한 신발을 신고 휴식을 챙기세요!' : '✨ 컨디션 안배에 딱 좋은 완벽한 플랜입니다.'}
-                    </p>
-                </div>
+                <div class="hp-bar-container"><div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${hpPercent}%</span></div><div class="hp-track"><div class="hp-fill" style="width: ${hpPercent}%;"></div></div><p style="font-size:11px; color:var(--text-sub); margin-top:8px; font-weight:600;">${hpPercent > 80 ? '⚠️ 체력 소모가 매우 큽니다. 편한 신발을 신고 휴식을 챙기세요!' : '✨ 컨디션 안배에 딱 좋은 완벽한 플랜입니다.'}</p></div>
             `;
 
-            // 알고리즘 동선 조립
             scheduleTemplate.forEach(slot => {
                 let actualType = slot.type;
-                if(isPlanB && slot.type === 'tour') actualType = 'indoor'; // 비오면 야외관광 -> 실내로 교체
+                if(isPlanB && slot.type === 'tour') actualType = 'indoor'; 
                 
                 const spots = getSpots(dest, actualType);
-                const randomSpot = spots[Math.floor(Math.random() * spots.length)]; // 해당 카테고리에서 랜덤 뽑기
+                const randomSpot = spots[Math.floor(Math.random() * spots.length)];
                 
                 let iconColor = '#8B5CF6'; let iconBg = '#F1F5F9'; let catName = '이동';
                 if(actualType === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; catName = '식사'; }
@@ -396,6 +371,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 let survivalTip = '';
                 if(actualType === 'food' && Math.random() > 0.5) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">현지어 꿀팁: 고수를 못 드신다면 파파고에 '고수 빼주세요(不要香菜)'를 켜두세요!</span></div>`;
                 if(actualType === 'tour' && Math.random() > 0.5 && !isPlanB) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">사진 꿀팁: 이곳은 해 질 녘(일몰) 시간에 맞춰 가면 인생샷이 나옵니다.</span></div>`;
+
+                // 지도 클릭용 데이터 저장
+                generatedDailySpots.push({ name: randomSpot, desc: slot.text + ' 코스입니다.', category: catName });
 
                 timelineHtml += `
                 <div class="timeline-item">
@@ -409,16 +387,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
             });
             document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
-
-            // 이벤트 재바인딩
             document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(false); });
             document.getElementById('btn-plan-b')?.addEventListener('click', () => { if(!isPlanB) { alert('☔ 비 오는 날 맞춤 실내 일정으로 전면 수정됩니다!'); renderDayPlan(true); }});
         };
 
-        // 기본은 Plan A (맑은 날) 렌더링
         renderDayPlan(false);
 
-        // 🚀 지도 초기화 및 마커 찍기
+        // 지도 렌더링
         if(!routeMap) {
             routeMap = L.map('ai-result-map', { zoomControl: false }).setView([37.5665, 126.9780], 13);
             L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko').addTo(routeMap);
@@ -434,11 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else drawRoute(37.5665, 126.9780);
 
         // 탭 상태 초기화
-        isMapView = false;
+        isMapView = false; currentMarkerIndex = -1;
         document.getElementById('ai-timeline-container').style.display = 'flex';
         document.getElementById('ai-explore-container').style.display = 'none';
         document.getElementById('ai-result-map').style.display = 'none';
         document.getElementById('top-map-icon').innerText = 'map';
+        document.getElementById('map-info-card').classList.remove('active');
         
         document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
         document.querySelector('.explore-chip[data-type="timeline"]').classList.add('active');
@@ -446,19 +422,85 @@ document.addEventListener('DOMContentLoaded', () => {
         resultScreen.classList.add('active');
     };
 
+    // 🚀 2. 지도 이동 애니메이션 로직
+    const animateMovement = (startLatLng, endLatLng, iconHtml, duration, callback) => {
+        if(movingMarker) routeMap.removeLayer(movingMarker);
+        const icon = L.divIcon({ className: 'moving-transport', html: iconHtml, iconSize: [32, 32], iconAnchor: [16, 16] });
+        movingMarker = L.marker(startLatLng, {icon, zIndexOffset: 1000}).addTo(routeMap);
+
+        const startTime = performance.now();
+        const animate = (time) => {
+            const elapsed = time - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // 부드러운 가감속 효과 (EaseOut)
+            const ease = 1 - Math.pow(1 - progress, 3);
+            
+            const lat = startLatLng[0] + (endLatLng[0] - startLatLng[0]) * ease;
+            const lng = startLatLng[1] + (endLatLng[1] - startLatLng[1]) * ease;
+            movingMarker.setLatLng([lat, lng]);
+
+            if(progress < 1) requestAnimationFrame(animate);
+            else {
+                routeMap.removeLayer(movingMarker);
+                movingMarker = null;
+                if(callback) callback();
+            }
+        };
+        requestAnimationFrame(animate);
+    };
+
     const drawRoute = (lat, lng) => {
         routeLayerGroup.clearLayers();
-        const points = [ [lat + 0.005, lng - 0.005], [lat + 0.015, lng + 0.002], [lat - 0.002, lng + 0.015], [lat - 0.010, lng - 0.008] ];
+        currentMarkerIndex = -1;
+        document.getElementById('map-info-card').classList.remove('active');
+
+        // 스팟 갯수에 맞춰 가짜 좌표 생성 (마커가 리스트와 1:1 매칭됨)
+        const pointOffsets = [ [0.005, -0.005], [0.015, 0.002], [-0.002, 0.015], [-0.010, -0.008], [-0.015, 0.005], [0.01, -0.015] ];
+        const points = generatedDailySpots.map((_, i) => [lat + pointOffsets[i%6][0], lng + pointOffsets[i%6][1]]);
+        
         const polyline = L.polyline(points, {color: '#8B5CF6', weight: 4, dashArray: '8, 8'}).addTo(routeLayerGroup);
+        
         points.forEach((p, index) => {
             const icon = L.divIcon({ className: 'custom-route-marker', html: `<div>${index + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
-            L.marker(p, {icon}).addTo(routeLayerGroup);
+            const marker = L.marker(p, {icon}).addTo(routeLayerGroup);
+
+            // 🚀 마커 클릭 시 애니메이션 및 팝업 이벤트
+            marker.on('click', () => {
+                const infoCard = document.getElementById('map-info-card');
+                infoCard.classList.remove('active'); // 카드 내리기
+
+                const showCard = () => {
+                    const spot = generatedDailySpots[index];
+                    document.getElementById('map-info-title').innerText = spot.name;
+                    document.getElementById('map-info-desc').innerText = spot.desc;
+                    document.getElementById('map-info-badge').innerText = spot.category;
+                    document.getElementById('map-info-img').style.backgroundImage = `url('https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=200&auto=format&fit=crop')`;
+                    
+                    // 지도를 살짝 위로 패닝하여 카드가 마커를 가리지 않게 함
+                    routeMap.flyTo([p[0] - 0.005, p[1]], 14, {duration: 0.5});
+                    setTimeout(() => infoCard.classList.add('active'), 300);
+                };
+
+                // 순차적으로 이동 중일 때 애니메이션 실행
+                if (index > 0 && currentMarkerIndex < index) {
+                    const transportIcon = Math.random() > 0.5 ? '🚗' : '🚶‍♂️';
+                    // 이전 지점부터 현재 지점까지 이동
+                    animateMovement(points[index-1], p, transportIcon, 1200, showCard);
+                } else {
+                    showCard();
+                }
+                currentMarkerIndex = index;
+            });
         });
         routeMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
     };
 
+    // 팝업 닫기 버튼
+    document.getElementById('btn-close-map-info')?.addEventListener('click', () => {
+        document.getElementById('map-info-card').classList.remove('active');
+    });
+
     // 우측 상단 지도 토글
-    let isMapView = false;
     document.getElementById('btn-toggle-map-top')?.addEventListener('click', () => {
         isMapView = !isMapView;
         const timelineContainer = document.getElementById('ai-timeline-container');
@@ -474,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeTab = document.querySelector('.explore-chip.active').getAttribute('data-type');
             if(activeTab === 'timeline') timelineContainer.style.display = 'flex'; else exploreContainer.style.display = 'flex';
             resultMap.style.display = 'none'; mapIcon.innerText = 'map'; 
+            document.getElementById('map-info-card').classList.remove('active');
         }
     });
 
@@ -487,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const exploreContainer = document.getElementById('ai-explore-container');
             const resultMap = document.getElementById('ai-result-map');
             
-            if(isMapView) { isMapView = false; document.getElementById('top-map-icon').innerText = 'map'; }
+            if(isMapView) { isMapView = false; document.getElementById('top-map-icon').innerText = 'map'; document.getElementById('map-info-card').classList.remove('active'); }
 
             if(type === 'timeline') {
                 timelineContainer.style.display = 'flex'; exploreContainer.style.display = 'none'; resultMap.style.display = 'none';
