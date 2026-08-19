@@ -65,7 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. 달력 로직 
     let aiStartDate = null; let aiEndDate = null;
-    const fm = (d) => `${d.getMonth()+1}.${d.getDate()}`;
+    const fm = (d) => {
+        if(!d) return '';
+        if(typeof d === 'string') return d;
+        return `${d.getMonth()+1}.${d.getDate()}`;
+    };
+
     const updateDateTexts = () => {
         const aiText = document.getElementById('ai-date-text');
         if(aiText) aiText.innerText = (!aiStartDate) ? '날짜를 선택해주세요' : (aiEndDate ? `${fm(aiStartDate)} ~ ${fm(aiEndDate)}` : `${fm(aiStartDate)} ~ 선택 중`);
@@ -161,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
         aiStartDate = null; aiEndDate = null; updateDateTexts(); 
         document.getElementById('ai-input-dest').value = ''; document.getElementById('ai-input-arr-time').value = ''; document.getElementById('ai-input-dep-time').value = ''; document.getElementById('ai-input-accom').value = ''; document.getElementById('people-count').innerText = '1명'; 
         
-        // 🚀 스텝 8 초기화 (머티리얼 아이콘)
         document.getElementById('ai-input-stamina').value = 3; 
         document.getElementById('stamina-emoji').innerHTML = '<span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: color 0.3s ease;">battery_5_bar</span>';
         
@@ -221,21 +225,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
     });
 
-    // 🚀 스텝 8: 세련된 머티리얼 아이콘 폰트로 변경 (배터리/번개)
     const staminaSlider = document.getElementById('ai-input-stamina');
     const staminaEmoji = document.getElementById('stamina-emoji');
     if(staminaSlider) {
         staminaSlider.addEventListener('input', (e) => {
             aiData.stamina = e.target.value;
-            let iconName = 'battery_5_bar';
-            let iconColor = '#10B981'; // 기본 보통(초록)
-            
+            let iconName = 'battery_5_bar'; let iconColor = '#10B981';
             if(aiData.stamina == 1) { iconName = 'battery_1_bar'; iconColor = '#DC2626'; }
             else if(aiData.stamina == 2) { iconName = 'battery_3_bar'; iconColor = '#F59E0B'; }
             else if(aiData.stamina == 3) { iconName = 'battery_5_bar'; iconColor = '#10B981'; }
             else if(aiData.stamina == 4) { iconName = 'battery_full'; iconColor = '#3B82F6'; }
             else if(aiData.stamina == 5) { iconName = 'bolt'; iconColor = '#8B5CF6'; }
-            
             staminaEmoji.innerHTML = `<span class="material-symbols-rounded" style="font-size: 48px; color: ${iconColor}; transition: color 0.3s ease;">${iconName}</span>`;
         });
     }
@@ -257,26 +257,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 validateAiStep();
             } 
             else if (currentAiStep === totalAiSteps) {
-                aiData.startDate = fm(aiStartDate); aiData.endDate = fm(aiEndDate);
-                document.getElementById('ai-loading-overlay').classList.add('active');
-                
-                setTimeout(() => {
-                    document.getElementById('ai-loading-overlay').classList.remove('active');
-                    generateAiTimeline(); 
-                    aiScreen.classList.remove('active');
-                }, 2500);
+                try {
+                    aiData.startDate = fm(aiStartDate); aiData.endDate = fm(aiEndDate);
+                    document.getElementById('ai-loading-overlay').classList.add('active');
+                    
+                    setTimeout(() => {
+                        document.getElementById('ai-loading-overlay').classList.remove('active');
+                        generateAiTimeline(); 
+                        aiScreen.classList.remove('active');
+                    }, 2500);
+                } catch(e) {
+                    console.error("일정 생성 중 에러 발생:", e);
+                    alert("데이터 처리 중 오류가 발생했습니다.");
+                }
             }
         });
     }
 
-    // 5. 타임라인 생성 및 카테고리 탭 로직
+    // ===================================================================
+    // 🚀 5. 대망의 타임라인 알고리즘 로직 (진짜 맞춤형 데이터 생성)
+    // ===================================================================
     let routeMap = null; let routeLayerGroup = null;
+    let generatedDailyPlans = []; // 요일별 생성된 일정 저장
+
+    // 임시 AI 스팟 DB
+    const spotDB = {
+        '오사카': {
+            tour: ['유니버셜 스튜디오 재팬', '오사카 성', '우메다 공중정원', '츠텐카쿠 전망대'],
+            food: ['도톤보리 타코야키', '쿠시카츠 다루마', '이치란 라멘 본점', '키지 오코노미야키'],
+            cafe: ['나카자키초 카페거리', '우메다 뷰 카페', '도톤보리 리버뷰 테라스'],
+            indoor: ['가이유칸 수족관', '파르코 백화점 지하', '우메다 한큐 백화점']
+        },
+        '파리': {
+            tour: ['에펠탑 피크닉', '몽마르뜨 언덕', '센 강 유람선', '베르사유 궁전'],
+            food: ['테라스 미슐랭 레스토랑', '현지 바게트 맛집', '오리지널 에스카르고'],
+            cafe: ['마레지구 테라스 카페', '센강 뷰 노천 카페', '유명 파티세리 앙젤리나'],
+            indoor: ['루브르 박물관', '오르세 미술관', '라파예트 백화점', '오페라 가르니에']
+        },
+        '방콕': {
+            tour: ['왓 아룬 새벽사원', '왕궁 왓 프라깨우', '카오산 로드', '짜뚜짝 시장'],
+            food: ['팟타이 로컬 노점', '푸팟퐁커리 맛집 팁싸마이', '루프탑 바 야경 디너'],
+            cafe: ['통로 힙스터 카페', '짜오프라야 강변 카페', '마사지 샵 연계 찻집'],
+            indoor: ['아이콘시암', '시암 파라곤', '방콕 아트 앤 컬처 센터']
+        }
+    };
+
+    const getSpots = (city, type) => {
+        const dbCity = Object.keys(spotDB).find(k => city.includes(k));
+        if(dbCity) return spotDB[dbCity][type];
+        
+        // DB에 없으면 입력한 도시 이름으로 그럴싸하게 즉석 생성
+        if(type === 'tour') return [`${city} 핵심 랜드마크`, `${city} 인생샷 명소`, `${city} 전통 시장`, `${city} 뷰포인트`];
+        if(type === 'food') return [`${city} 평점 4.8 로컬 맛집`, `${city} 현지인 추천 식당`, `${city} 야시장 먹거리`];
+        if(type === 'cafe') return [`${city} 감성 충만 카페`, `${city} 뷰 좋은 테라스 카페`];
+        if(type === 'indoor') return [`${city} 대형 쇼핑몰`, `${city} 국립 박물관`, `${city} 실내 테마파크`];
+    };
 
     const generateAiTimeline = () => {
         const resultScreen = document.getElementById('ai-result-screen');
-        document.getElementById('ai-result-title').innerText = `${aiData.dest} 일정`;
-        document.getElementById('ai-result-subtitle').innerText = `${aiData.startDate} ~ ${aiData.endDate} · AI 맞춤 동선`;
+        const dest = aiData.dest || '미지의 여행지';
+        
+        document.getElementById('ai-result-title').innerText = `${dest} 일정`;
+        let subText = `${aiData.startDate} ~ ${aiData.endDate} · `;
+        if(aiMode === 'standard') subText += `${aiData.styles[0]||'자유'} 위주`;
+        else subText += `우당탕탕 타협 플랜`;
+        document.getElementById('ai-result-subtitle').innerText = subText;
 
+        // 상단 탭
         let tabsHtml = '';
         for(let i=1; i<=3; i++) {
             const activeCls = i === 1 ? 'active' : '';
@@ -284,74 +331,84 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
-        let hpPercent = 60;
-        if(aiData.stamina == 1) hpPercent = 95; 
-        if(aiData.stamina == 5) hpPercent = 30; 
+        // 🚀 체력(HP) 게이지 기반 템플릿 설정
+        let hpPercent = 50; let scheduleTemplate = [];
+        if(aiData.stamina == 1 || aiData.stamina == 2) {
+            hpPercent = 90; // 저질체력 소모도 높음
+            scheduleTemplate = [ {time: '11:00', type: 'food', text: '여유로운 아점'}, {time: '13:00', type: 'tour', text: '메인 관광'}, {time: '15:30', type: 'cafe', text: '체력 방전, 카페 휴식'}, {time: '18:00', type: 'food', text: '저녁 식사'} ];
+        } else if(aiData.stamina == 3) {
+            hpPercent = 65; 
+            scheduleTemplate = [ {time: '10:00', type: 'tour', text: '오전 관광'}, {time: '12:30', type: 'food', text: '점심 식사'}, {time: '14:00', type: 'tour', text: '오후 관광'}, {time: '16:30', type: 'cafe', text: '잠시 휴식'}, {time: '18:30', type: 'food', text: '저녁 식사'} ];
+        } else {
+            hpPercent = 30; // 강철체력
+            scheduleTemplate = [ {time: '09:00', type: 'tour', text: '아침 투어 시작'}, {time: '11:30', type: 'tour', text: '랜드마크 도장 깨기'}, {time: '13:30', type: 'food', text: '늦은 점심'}, {time: '15:00', type: 'tour', text: '폭풍 쇼핑/관광'}, {time: '18:00', type: 'food', text: '저녁 식사'}, {time: '20:00', type: 'tour', text: '야경 코스 추가'} ];
+        }
 
-        const timelineHtml = `
-            <div class="plan-b-toggle">
-                <div class="plan-b-btn active">☀️ 기본 일정</div>
-                <div class="plan-b-btn">☔ 비 올 때 (플랜 B)</div>
-                <div class="plan-b-bg"></div>
-            </div>
+        const renderDayPlan = (isPlanB) => {
+            let timelineHtml = `
+                <div class="plan-b-toggle">
+                    <div class="plan-b-btn ${!isPlanB ? 'active' : ''}" id="btn-plan-a">☀️ 기본 일정</div>
+                    <div class="plan-b-btn ${isPlanB ? 'active' : ''}" id="btn-plan-b">☔ 비 올 때 (플랜 B)</div>
+                    <div class="plan-b-bg" style="transform: translateX(${isPlanB ? '100%' : '0'});"></div>
+                </div>
 
-            <div class="hp-bar-container">
-                <div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${hpPercent}%</span></div>
-                <div class="hp-track"><div class="hp-fill" style="width: ${hpPercent}%;"></div></div>
-                <p style="font-size:11px; color:var(--text-sub); margin-top:8px; font-weight:600;">
-                    ${hpPercent > 80 ? '⚠️ 빡센 일정입니다. 무리하지 말고 휴식을 챙기세요!' : '✨ 여유로운 산책 페이스입니다.'}
-                </p>
-            </div>
+                <div class="hp-bar-container">
+                    <div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${hpPercent}%</span></div>
+                    <div class="hp-track"><div class="hp-fill" style="width: ${hpPercent}%;"></div></div>
+                    <p style="font-size:11px; color:var(--text-sub); margin-top:8px; font-weight:600;">
+                        ${hpPercent > 80 ? '⚠️ 체력 소모가 매우 큽니다. 편한 신발을 신고 휴식을 챙기세요!' : '✨ 컨디션 안배에 딱 좋은 완벽한 플랜입니다.'}
+                    </p>
+                </div>
+            `;
 
-            <div class="timeline-item">
-                <div class="timeline-time">10:00</div>
-                <div class="timeline-line-container"><div class="timeline-dot"></div><div class="timeline-line"></div></div>
-                <div class="timeline-card">
-                    <div class="timeline-card-header"><h3 class="tc-title">여유로운 출발</h3><span class="tc-category" style="color:#64748B; background:#F1F5F9;">이동</span></div>
-                    <p class="tc-desc">${aiData.accom || '숙소'}에서 나갈 채비를 하고, 근처에서 가볍게 커피를 마십니다.</p>
-                </div>
-            </div>
-            
-            <div class="timeline-item">
-                <div class="timeline-time">11:30</div>
-                <div class="timeline-line-container"><div class="timeline-dot"></div><div class="timeline-line"></div></div>
-                <div class="timeline-card">
-                    <div class="timeline-card-header"><h3 class="tc-title">로컬 감성 식당</h3><span class="tc-category" style="color:#DC2626; background:rgba(220,38,38,0.1);">식사</span></div>
-                    <p class="tc-desc">현지인들이 줄 서서 먹는 평점 4.5 찐 맛집에서 점심을 해결합니다.</p>
-                    <div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">현지어 꿀팁: 고수를 못 드신다면 주문할 때 꼭 "부야오 샹차이(不要香菜)"라고 말해보세요!</span></div>
-                </div>
-            </div>
-            
-            <div class="timeline-item">
-                <div class="timeline-time">13:30</div>
-                <div class="timeline-line-container"><div class="timeline-dot"></div><div class="timeline-line"></div></div>
-                <div class="timeline-card">
-                    <div class="timeline-card-header"><h3 class="tc-title">${aiData.dest} 핵심 랜드마크</h3><span class="tc-category">관광</span></div>
-                    <p class="tc-desc">${aiData.dest}에서 무조건 가야 하는 핫플레이스! 인생샷을 남겨보세요.</p>
-                    <div class="tc-img" style="background-image: url('https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=400&auto=format&fit=crop');"></div>
-                </div>
-            </div>
-        `;
-        document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
-        
-        const planBtns = document.querySelectorAll('.plan-b-btn');
-        const planBg = document.querySelector('.plan-b-bg');
-        planBtns.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                planBtns.forEach(b => b.classList.remove('active')); btn.classList.add('active');
-                if(index === 0) planBg.style.transform = 'translateX(0)'; else planBg.style.transform = 'translateX(100%)';
-                if(index === 1) setTimeout(() => alert('☔ 비 오는 날 맞춤 실내 일정으로 전면 수정됩니다!'), 300);
+            // 알고리즘 동선 조립
+            scheduleTemplate.forEach(slot => {
+                let actualType = slot.type;
+                if(isPlanB && slot.type === 'tour') actualType = 'indoor'; // 비오면 관광->실내
+                
+                const spots = getSpots(dest, actualType);
+                const randomSpot = spots[Math.floor(Math.random() * spots.length)];
+                
+                let iconColor = '#8B5CF6'; let iconBg = '#F1F5F9'; let catName = '이동';
+                if(actualType === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; catName = '식사'; }
+                if(actualType === 'tour') { iconColor = '#2563EB'; iconBg = 'rgba(37,99,235,0.1)'; catName = '관광'; }
+                if(actualType === 'cafe') { iconColor = '#F59E0B'; iconBg = 'rgba(245,158,11,0.1)'; catName = '휴식'; }
+                if(actualType === 'indoor') { iconColor = '#10B981'; iconBg = 'rgba(16,185,129,0.1)'; catName = '실내'; }
+
+                let survivalTip = '';
+                if(actualType === 'food' && Math.random() > 0.5) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">현지어 꿀팁: 영어가 안 통할 수 있으니 파파고 번역기를 켜두세요!</span></div>`;
+                if(actualType === 'tour' && Math.random() > 0.5 && !isPlanB) survivalTip = `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">사진 꿀팁: 이곳은 해 질 녘(일몰) 시간에 맞춰 가면 인생샷이 나옵니다.</span></div>`;
+
+                timelineHtml += `
+                <div class="timeline-item">
+                    <div class="timeline-time">${slot.time}</div>
+                    <div class="timeline-line-container"><div class="timeline-dot"></div><div class="timeline-line"></div></div>
+                    <div class="timeline-card">
+                        <div class="timeline-card-header"><h3 class="tc-title">${randomSpot}</h3><span class="tc-category" style="color:${iconColor}; background:${iconBg};">${catName}</span></div>
+                        <p class="tc-desc">${slot.text} 코스입니다. ${randomSpot}에서 즐거운 시간을 보내세요.</p>
+                        ${survivalTip}
+                    </div>
+                </div>`;
             });
-        });
+            document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
 
+            // 이벤트 재바인딩
+            document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(false); });
+            document.getElementById('btn-plan-b')?.addEventListener('click', () => { if(!isPlanB) { alert('☔ 비 오는 날 맞춤 실내 일정으로 전면 수정됩니다!'); renderDayPlan(true); }});
+        };
+
+        // 최초 렌더링 (Plan A)
+        renderDayPlan(false);
+
+        // 🚀 지도 로직
         if(!routeMap) {
             routeMap = L.map('ai-result-map', { zoomControl: false }).setView([37.5665, 126.9780], 13);
             L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko').addTo(routeMap);
             routeLayerGroup = L.layerGroup().addTo(routeMap);
         }
 
-        if(aiData.dest) {
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(aiData.dest)}`)
+        if(dest) {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dest)}`)
             .then(res => res.json()).then(data => {
                 if(data && data.length > 0) drawRoute(parseFloat(data[0].lat), parseFloat(data[0].lon));
                 else drawRoute(37.5665, 126.9780);
@@ -381,6 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
         routeMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
     };
 
+    // 우측 상단 지도 토글
+    let isMapView = false;
     document.getElementById('btn-toggle-map-top')?.addEventListener('click', () => {
         isMapView = !isMapView;
         const timelineContainer = document.getElementById('ai-timeline-container');
@@ -398,12 +457,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeTab = document.querySelector('.explore-chip.active').getAttribute('data-type');
             if(activeTab === 'timeline') timelineContainer.style.display = 'flex';
             else exploreContainer.style.display = 'flex';
-            
             resultMap.style.display = 'none';
             mapIcon.innerText = 'map'; 
         }
     });
 
+    // 탐색 카테고리 칩
     document.querySelectorAll('.explore-chip').forEach(chip => {
         chip.addEventListener('click', () => {
             document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
