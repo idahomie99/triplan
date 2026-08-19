@@ -2,7 +2,7 @@ import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 0. 스플래시 & 로비
+    // 0. 스플래시 화면
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
         setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1500);
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const bindRipple = () => {
-        const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn');
+        const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn, .main-action-card');
         rippleBtns.forEach(btn => {
             btn.addEventListener('click', function(e) {
                 const rect = this.getBoundingClientRect();
@@ -64,7 +64,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
     document.getElementById('btn-logout')?.addEventListener('click', () => { if(confirm("로그아웃 하시겠습니까?")) signOut(auth).then(() => alert("로그아웃 되었습니다.")); });
 
-    // 2. 공용 달력 로직 
+    // 2. 서브 화면 (항공권, 숙소) 닫기 전용
+    const btnBackFlight = document.getElementById('btn-back-flight');
+    if (btnBackFlight) btnBackFlight.addEventListener('click', () => document.getElementById('flight-screen').classList.remove('active'));
+    const btnBackHotel = document.getElementById('btn-back-hotel');
+    if (btnBackHotel) btnBackHotel.addEventListener('click', () => document.getElementById('hotel-screen').classList.remove('active'));
+
+    // 3. 달력 공용 로직 
     let aiStartDate = null; let aiEndDate = null;
     const fm = (d) => `${d.getMonth()+1}.${d.getDate()}`;
     const updateDateTexts = () => {
@@ -123,20 +129,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 3. AI 일정 생성기 
-    let aiMode = 'standard'; // 'standard' or 'tension'
+    // 🚀 4. AI 일정 생성기 (토스 감성 적용된 버튼으로 구동)
+    let aiMode = 'standard'; 
     const aiScreen = document.getElementById('ai-screen'); 
     
-    // 버튼 두 개 분기
+    // 개편된 버튼 아이디 연동
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-back-ai')?.addEventListener('click', () => aiScreen.classList.remove('active'));
 
-    let currentAiStep = 1; const totalAiSteps = 8; // 체력 단계 추가로 8단계
+    let currentAiStep = 1; const totalAiSteps = 8;
     const aiProgressBar = document.getElementById('ai-progress-bar'); const btnAiNext = document.getElementById('btn-ai-next');
     let aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 };
 
-    // 무료 지도 (이전과 동일)
+    // 무료 지도 (GPS 연동)
     let map = null; let marker = null; 
     const tryGeolocation = () => { if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { map.setView([pos.coords.latitude, pos.coords.longitude], 13); }, () => { }); } };
     const initMap = () => {
@@ -178,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(currentAiStep === 2) btnAiNext.disabled = !(aiStartDate && aiEndDate); 
         else if(currentAiStep === 3 || currentAiStep === 4) btnAiNext.disabled = false; 
         else if(currentAiStep === 5) btnAiNext.disabled = aiData.companion === ''; 
-        else if(currentAiStep === 6) btnAiNext.disabled = false; // 연령대 제한 없앰
+        else if(currentAiStep === 6) btnAiNext.disabled = false; 
         else if(currentAiStep === 7) {
             if(aiMode === 'standard') btnAiNext.disabled = aiData.styles.length === 0;
             else btnAiNext.disabled = (aiData.myStyles.length === 0 || aiData.ptStyles.length === 0);
@@ -197,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-minus-people')?.addEventListener('click', () => { if(aiData.people > 1) { aiData.people--; document.getElementById('people-count').innerText = `${aiData.people}명`; }}); 
     document.getElementById('btn-plus-people')?.addEventListener('click', () => { if(aiData.people < 20) { aiData.people++; document.getElementById('people-count').innerText = `${aiData.people}명`; }});
 
-    // 스텝 7 취향 선택 칩 
     document.querySelectorAll('.ai-chip').forEach(chip => { 
         chip.addEventListener('click', () => { 
             if(chip.classList.contains('age-chip')) {
@@ -222,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
     });
 
-    // 스텝 8 체력 슬라이더
     const staminaSlider = document.getElementById('ai-input-stamina');
     const staminaEmoji = document.getElementById('stamina-emoji');
     if(staminaSlider) {
@@ -256,14 +260,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 setTimeout(() => {
                     document.getElementById('ai-loading-overlay').classList.remove('active');
-                    generateAiTimeline(); // 🚀 타임라인 생성
+                    generateAiTimeline(); 
                     aiScreen.classList.remove('active');
                 }, 2500);
             }
         });
     }
 
-    // 🚀 4. 대망의 타임라인 생성 (플랜 B, 체력바, 생존팁 반영)
+    // 🚀 5. 대망의 타임라인 생성
     const generateAiTimeline = () => {
         const resultScreen = document.getElementById('ai-result-screen');
         document.getElementById('ai-result-title').innerText = `${aiData.dest} 일정`;
@@ -280,20 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
-        // 체력바 (스태미너 입력값 기반으로 퍼센트 계산 시뮬레이션)
         let hpPercent = 60;
-        if(aiData.stamina == 1) hpPercent = 95; // 저질체력은 95% 소모
-        if(aiData.stamina == 5) hpPercent = 30; // 강철체력은 30% 소모
+        if(aiData.stamina == 1) hpPercent = 95; 
+        if(aiData.stamina == 5) hpPercent = 30; 
 
         const timelineHtml = `
-            <!-- 🚀 플랜 B 토글스위치 -->
             <div class="plan-b-toggle">
                 <div class="plan-b-btn active">☀️ 기본 일정</div>
                 <div class="plan-b-btn">☔ 비 올 때 (플랜 B)</div>
                 <div class="plan-b-bg"></div>
             </div>
 
-            <!-- 🚀 체력(HP) 소모 예상 바 -->
             <div class="hp-bar-container">
                 <div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${hpPercent}%</span></div>
                 <div class="hp-track"><div class="hp-fill" style="width: ${hpPercent}%;"></div></div>
@@ -318,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="timeline-card-header"><h3 class="tc-title">로컬 감성 식당</h3><span class="tc-category" style="color:#DC2626; background:rgba(220,38,38,0.1);">식사</span></div>
                     <p class="tc-desc">현지인들이 줄 서서 먹는 평점 4.5 찐 맛집에서 점심을 해결합니다.</p>
                     
-                    <!-- 🚀 생존 팁 (언어) -->
                     <div class="survival-tip">
                         <span class="material-symbols-rounded tip-icon">lightbulb</span>
                         <span class="tip-text">현지어 꿀팁: 고수를 못 드신다면 주문할 때 꼭 "부야오 샹차이(不要香菜)"라고 말해보세요!</span>
@@ -334,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="tc-desc">${aiData.dest}에서 무조건 가야 하는 핫플레이스! 인생샷을 남겨보세요.</p>
                     <div class="tc-img" style="background-image: url('https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=400&auto=format&fit=crop');"></div>
                     
-                    <!-- 🚀 생존 팁 (꿀팁) -->
                     <div class="survival-tip">
                         <span class="material-symbols-rounded tip-icon">lightbulb</span>
                         <span class="tip-text">사진 꿀팁: 오후 2시쯤엔 역광이니 입구 반대편 조각상 앞에서 찍는 게 훨씬 예쁩니다.</span>
@@ -354,7 +353,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
         resultScreen.classList.add('active');
 
-        // 플랜 B 버튼 애니메이션 작동
         const planBtns = document.querySelectorAll('.plan-b-btn');
         const planBg = document.querySelector('.plan-b-bg');
         planBtns.forEach((btn, index) => {
@@ -363,13 +361,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.classList.add('active');
                 if(index === 0) planBg.style.transform = 'translateX(0)';
                 else planBg.style.transform = 'translateX(100%)';
-                
-                // 임시로 얼럿 띄우기
                 if(index === 1) setTimeout(() => alert('비가 오네요! 미술관과 쇼핑몰 중심의 실내 일정으로 동선을 전면 수정합니다 ☔'), 300);
             });
         });
     };
 
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { document.getElementById('ai-result-screen').classList.remove('active'); });
-    const navHome = document.getElementById('nav-home'); if(navHome) navHome.addEventListener('click', () => { navHome.classList.add('active'); if(btnAccount) btnAccount.classList.remove('active'); });
+    const navHome = document.getElementById('nav-home'); 
+    if(navHome) navHome.addEventListener('click', () => { navHome.classList.add('active'); if(btnAccount) btnAccount.classList.remove('active'); });
 });
