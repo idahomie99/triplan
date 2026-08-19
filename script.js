@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
 
-    // 2. 공용 달력 로직 
+    // 2. 달력 로직 
     let aiStartDate = null; let aiEndDate = null;
     const fm = (d) => `${d.getMonth()+1}.${d.getDate()}`;
     const updateDateTexts = () => {
@@ -160,7 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
         aiData = { dest: '', startDate: null, endDate: null, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 }; 
         aiStartDate = null; aiEndDate = null; updateDateTexts(); 
         document.getElementById('ai-input-dest').value = ''; document.getElementById('ai-input-arr-time').value = ''; document.getElementById('ai-input-dep-time').value = ''; document.getElementById('ai-input-accom').value = ''; document.getElementById('people-count').innerText = '1명'; 
-        document.getElementById('ai-input-stamina').value = 3; document.getElementById('stamina-emoji').innerText = '🔋';
+        
+        // 🚀 스텝 8 초기화 (머티리얼 아이콘)
+        document.getElementById('ai-input-stamina').value = 3; 
+        document.getElementById('stamina-emoji').innerHTML = '<span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: color 0.3s ease;">battery_5_bar</span>';
+        
         document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); 
         document.querySelectorAll('.ai-chip').forEach(c => c.classList.remove('selected')); 
         
@@ -217,14 +221,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
     });
 
+    // 🚀 스텝 8: 세련된 머티리얼 아이콘 폰트로 변경 (배터리/번개)
     const staminaSlider = document.getElementById('ai-input-stamina');
     const staminaEmoji = document.getElementById('stamina-emoji');
     if(staminaSlider) {
         staminaSlider.addEventListener('input', (e) => {
             aiData.stamina = e.target.value;
-            if(aiData.stamina == 1) staminaEmoji.innerText = '🪫';
-            else if(aiData.stamina == 5) staminaEmoji.innerText = '🏃‍♂️';
-            else staminaEmoji.innerText = '🔋';
+            let iconName = 'battery_5_bar';
+            let iconColor = '#10B981'; // 기본 보통(초록)
+            
+            if(aiData.stamina == 1) { iconName = 'battery_1_bar'; iconColor = '#DC2626'; }
+            else if(aiData.stamina == 2) { iconName = 'battery_3_bar'; iconColor = '#F59E0B'; }
+            else if(aiData.stamina == 3) { iconName = 'battery_5_bar'; iconColor = '#10B981'; }
+            else if(aiData.stamina == 4) { iconName = 'battery_full'; iconColor = '#3B82F6'; }
+            else if(aiData.stamina == 5) { iconName = 'bolt'; iconColor = '#8B5CF6'; }
+            
+            staminaEmoji.innerHTML = `<span class="material-symbols-rounded" style="font-size: 48px; color: ${iconColor}; transition: color 0.3s ease;">${iconName}</span>`;
         });
     }
 
@@ -257,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🚀 5. 타임라인 생성 및 [카테고리 탐색/커스텀] 로직
+    // 5. 타임라인 생성 및 카테고리 탭 로직
     let routeMap = null; let routeLayerGroup = null;
 
     const generateAiTimeline = () => {
@@ -265,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ai-result-title').innerText = `${aiData.dest} 일정`;
         document.getElementById('ai-result-subtitle').innerText = `${aiData.startDate} ~ ${aiData.endDate} · AI 맞춤 동선`;
 
-        // 상단 날짜 탭
         let tabsHtml = '';
         for(let i=1; i<=3; i++) {
             const activeCls = i === 1 ? 'active' : '';
@@ -273,7 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
-        // 체력바
         let hpPercent = 60;
         if(aiData.stamina == 1) hpPercent = 95; 
         if(aiData.stamina == 5) hpPercent = 30; 
@@ -324,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
         
-        // 플랜 B 버튼 이벤트
         const planBtns = document.querySelectorAll('.plan-b-btn');
         const planBg = document.querySelector('.plan-b-bg');
         planBtns.forEach((btn, index) => {
@@ -335,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // 🚀 우측 상단 지도 아이콘 생성
         if(!routeMap) {
             routeMap = L.map('ai-result-map', { zoomControl: false }).setView([37.5665, 126.9780], 13);
             L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko').addTo(routeMap);
@@ -350,14 +358,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }).catch(() => drawRoute(37.5665, 126.9780));
         } else drawRoute(37.5665, 126.9780);
 
-        // 기본 상태: 일정표(타임라인) 보이기
         isMapView = false;
         document.getElementById('ai-timeline-container').style.display = 'flex';
         document.getElementById('ai-explore-container').style.display = 'none';
         document.getElementById('ai-result-map').style.display = 'none';
         document.getElementById('top-map-icon').innerText = 'map';
         
-        // 탐색 탭 초기화
         document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
         document.querySelector('.explore-chip[data-type="timeline"]').classList.add('active');
 
@@ -375,8 +381,6 @@ document.addEventListener('DOMContentLoaded', () => {
         routeMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
     };
 
-    // 🚀 상단 우측 [지도 보기] 토글 기능
-    let isMapView = false;
     document.getElementById('btn-toggle-map-top')?.addEventListener('click', () => {
         isMapView = !isMapView;
         const timelineContainer = document.getElementById('ai-timeline-container');
@@ -388,20 +392,18 @@ document.addEventListener('DOMContentLoaded', () => {
             timelineContainer.style.display = 'none';
             exploreContainer.style.display = 'none';
             resultMap.style.display = 'block';
-            mapIcon.innerText = 'list'; // 아이콘을 리스트 모양으로 변경
+            mapIcon.innerText = 'list'; 
             if(routeMap) setTimeout(() => routeMap.invalidateSize(), 100);
         } else {
-            // 현재 어떤 탭이 눌려있는지 확인해서 되돌림
             const activeTab = document.querySelector('.explore-chip.active').getAttribute('data-type');
             if(activeTab === 'timeline') timelineContainer.style.display = 'flex';
             else exploreContainer.style.display = 'flex';
             
             resultMap.style.display = 'none';
-            mapIcon.innerText = 'map'; // 다시 지도 모양으로
+            mapIcon.innerText = 'map'; 
         }
     });
 
-    // 🚀 탐색/커스텀(카테고리 칩) 전환 기능
     document.querySelectorAll('.explore-chip').forEach(chip => {
         chip.addEventListener('click', () => {
             document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
@@ -412,7 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const exploreContainer = document.getElementById('ai-explore-container');
             const resultMap = document.getElementById('ai-result-map');
             
-            // 만약 지도를 보고 있었다면 지도를 끔
             if(isMapView) {
                 isMapView = false;
                 document.getElementById('top-map-icon').innerText = 'map';
@@ -427,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultMap.style.display = 'none';
                 exploreContainer.style.display = 'flex';
                 
-                // 선택한 카테고리에 맞는 가짜(Mock) 데이터 생성
                 let titlePrefix = type === 'food' ? '현지인 추천 맛집' : (type === 'tour' ? '인생샷 핫플레이스' : '여유로운 감성 카페');
                 let html = '';
                 for(let i=0; i<5; i++) {
