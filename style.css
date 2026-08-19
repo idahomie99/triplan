@@ -2,7 +2,7 @@
 
 :root {
     --bg-body: #E2E8F0; --bg-app: #F8FAFC; --text-main: #0F172A; --text-sub: #64748B;
-    --card-bg: #FFFFFF; --card-border: #E2E8F0; --icon-bg: #F1F5F9; --nav-bg: rgba(255, 255, 255, 0.85);
+    --card-bg: #FFFFFF; --card-border: #F1F5F9; --icon-bg: #F1F5F9; --nav-bg: rgba(255, 255, 255, 0.85);
     --shadow-color: rgba(15, 23, 42, 0.05); --ripple-color: rgba(0, 0, 0, 0.08);
 }
 
@@ -33,12 +33,18 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .greeting { font-size: 26px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.5px; white-space: pre-line;}
 .sub-greeting { font-size: 15px; color: var(--text-sub); font-weight: 600; }
 
-/* 🚀 토스 감성 - 박스 없이 캡슐형으로 탁 트인 버튼 디자인 */
-.main-action-group { display: flex; flex-direction: column; gap: 14px; margin-bottom: 40px; padding: 0; }
-.primary-pill-btn { width: 100%; padding: 20px 24px; border-radius: 100px; border: none; background: linear-gradient(135deg, #2563EB, #8B5CF6); color: white; font-size: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3); cursor: pointer; position: relative; overflow: hidden; }
-.secondary-pill-btn { width: 100%; padding: 18px 24px; border-radius: 100px; border: 2px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 10px var(--shadow-color); cursor: pointer; position: relative; overflow: hidden; }
+/* 🚀 화이트 베이스의 캡슐(Pill)형 메인 버튼 디자인 */
+.main-action-group { display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px; padding: 0; }
+.pill-btn { width: 100%; padding: 14px 20px; border-radius: 100px; border: 1px solid var(--card-border); background: var(--card-bg); display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 15px var(--shadow-color); cursor: pointer; position: relative; overflow: hidden; text-align: left; transition: transform 0.2s, box-shadow 0.2s; }
+.pill-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px var(--shadow-color); }
+.pill-icon { width: 46px; height: 46px; border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.pill-icon span { font-size: 24px; }
+.pill-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pill-text h3 { font-size: 16px; font-weight: 800; color: var(--text-main); margin: 0; }
+.pill-text p { font-size: 12px; font-weight: 600; color: var(--text-sub); margin: 0; }
+.pill-arrow { color: #CBD5E1; display: flex; align-items: center; font-size: 20px; }
 
-/* 🚀 테두리 없는 세련된 보더리스 리스트 스타일 */
+/* 테두리 없는 보더리스 리스트 스타일 */
 .recommend-section { display: flex; flex-direction: column; gap: 0; }
 .section-title { font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; }
 .rec-list-item { background: transparent; border: none; border-bottom: 1px solid var(--card-border); padding: 18px 0; display: flex; align-items: center; gap: 16px; cursor: pointer; position: relative; overflow: hidden; }
@@ -96,8 +102,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 /* AI 폼 입력 */
 .progress-bar-container { flex: 1; max-width: 180px; height: 6px; background: var(--card-border); border-radius: 4px; margin: 0 auto; overflow: hidden; }
 .progress-bar { width: 14%; height: 100%; background: linear-gradient(90deg, #8B5CF6, #D946EF); border-radius: 4px; transition: width 0.4s ease-out; }
-
-/* 🚀 버튼 간격 띄우기 위해 하단 패딩 확보 */
 .ai-content { flex: 1; position: relative; overflow-x: hidden; }
 .ai-step { position: absolute; top: 24px; left: 0; width: 100%; padding: 0 24px 150px 24px; display: none; flex-direction: column; opacity: 0; transform: translateX(30px); transition: opacity 0.4s ease, transform 0.4s ease; }
 .ai-step.active { display: flex; opacity: 1; transform: translateX(0); z-index: 2; }
@@ -125,14 +129,14 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .ai-chip { padding: 14px 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 30px; font-size: 15px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); display: flex; align-items: center; gap: 6px; }
 .ai-chip.selected { background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; border-color: transparent; box-shadow: 0 8px 15px rgba(217, 70, 239, 0.3); }
 
-/* 체력 슬라이더 */
+/* 체력 슬라이더 (노란줄 해결 포함됨) */
 .stamina-box { background: var(--card-bg); padding: 30px 20px; border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--card-border); text-align: center; }
 .stamina-icon { font-size: 40px; margin-bottom: 20px; }
 .stamina-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; background: #E2E8F0; outline: none; margin-bottom: 20px; }
 .stamina-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #8B5CF6; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 .stamina-labels { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--text-sub); line-height: 1.4; }
 
-/* 🚀 다음으로 버튼 살짝 올리고 덜컹거림 방지 배경 추가 */
+/* 다음으로 버튼 상향 조정 및 그라데이션 */
 .ai-footer { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 24px 40px 24px; background: linear-gradient(to top, var(--bg-app) 80%, transparent); z-index: 10; padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 20px));}
 #btn-ai-next { background: linear-gradient(135deg, #8B5CF6, #D946EF); box-shadow: 0 10px 20px rgba(217, 70, 239, 0.3); transition: 0.3s; }
 #btn-ai-next:disabled { background: #CBD5E1; box-shadow: none; cursor: not-allowed; opacity: 0.6; }

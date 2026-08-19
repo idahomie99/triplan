@@ -26,19 +26,26 @@
                 <p class="sub-greeting">단 1분 만에 완성되는 완벽한 여행 플랜</p>
             </section>
 
-            <!-- 🚀 박스형을 버리고, 토스 감성의 캡슐형 버튼으로 리뉴얼 -->
+            <!-- 🚀 화이트 베이스 + 캡슐형(Pill) 디자인으로 세련되게 변경 -->
             <section class="main-action-group">
-                <button class="primary-pill-btn ripple-btn" id="btn-ai-standard">
-                    <span class="material-symbols-rounded">auto_awesome</span>
-                    <span>AI 맞춤 일정 짜기</span>
+                <button class="pill-btn ripple-btn" id="btn-ai-standard">
+                    <div class="pill-icon" style="color: #8B5CF6; background: rgba(139, 92, 246, 0.1);"><span class="material-symbols-rounded">auto_awesome</span></div>
+                    <div class="pill-text">
+                        <h3>AI 맞춤 일정 짜기</h3>
+                        <p>취향저격 완벽한 플랜</p>
+                    </div>
+                    <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
                 </button>
-                <button class="secondary-pill-btn ripple-btn" id="btn-ai-tension">
-                    <span class="material-symbols-rounded" style="color:#10B981;">handshake</span>
-                    <span>일행과 취향이 다르다면? 텐션 조율기</span>
+                <button class="pill-btn ripple-btn" id="btn-ai-tension">
+                    <div class="pill-icon" style="color: #3B82F6; background: rgba(59, 130, 246, 0.1);"><span class="material-symbols-rounded">handshake</span></div>
+                    <div class="pill-text">
+                        <h3>동행 텐션 조율기</h3>
+                        <p>싸우지 않는 평화협정</p>
+                    </div>
+                    <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
                 </button>
             </section>
 
-            <!-- 🚀 테두리를 없앤 깔끔한 보더리스(Borderless) 리스트 -->
             <section class="recommend-section">
                 <h2 class="section-title">여행 영감 찾기</h2>
                 <div class="rec-list-item ripple-btn" id="rec-month">
@@ -70,7 +77,7 @@
         </div>
         <div id="calendar-overlay"></div>
 
-        <!-- AI 여행 일정 생성 서브 화면 -->
+        <!-- 4. AI 여행 일정 생성 서브 화면 -->
         <div id="ai-screen" class="sub-screen">
             <header class="sub-header">
                 <div class="header-left"><button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button></div>

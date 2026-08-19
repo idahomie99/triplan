@@ -2,7 +2,7 @@ import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 0. 스플래시 화면
+    // 0. 스플래시 & 로비
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
         setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1500);
@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const bindRipple = () => {
-        const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn, .main-action-card, .rec-list-item');
+        // 🚀 pill-btn, rec-list-item 에 리플 효과 적용
+        const rippleBtns = document.querySelectorAll('.ripple-btn, .small-ripple-btn, .pill-btn, .rec-list-item');
         rippleBtns.forEach(btn => {
             btn.addEventListener('click', function(e) {
                 const rect = this.getBoundingClientRect();
@@ -64,13 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
     document.getElementById('btn-logout')?.addEventListener('click', () => { if(confirm("정말 로그아웃 하시겠습니까?")) signOut(auth).then(() => alert("성공적으로 로그아웃 되었습니다.")); });
 
-    // 2. 서브 화면 (항공권, 숙소) 닫기 전용
-    const btnBackFlight = document.getElementById('btn-back-flight');
-    if (btnBackFlight) btnBackFlight.addEventListener('click', () => document.getElementById('flight-screen').classList.remove('active'));
-    const btnBackHotel = document.getElementById('btn-back-hotel');
-    if (btnBackHotel) btnBackHotel.addEventListener('click', () => document.getElementById('hotel-screen').classList.remove('active'));
-
-    // 3. 달력 공용 로직 
+    // 2. 공용 달력 로직 
     let aiStartDate = null; let aiEndDate = null;
     const fm = (d) => `${d.getMonth()+1}.${d.getDate()}`;
     const updateDateTexts = () => {
@@ -129,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 4. AI 일정 생성기 
+    // 🚀 3. AI 일정 생성기 (개편된 Pill 버튼 연동)
     let aiMode = 'standard'; 
     const aiScreen = document.getElementById('ai-screen'); 
     
