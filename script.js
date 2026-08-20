@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     bindRipple();
 
-    // 🚀 업그레이드된 부드러운 내부 팝업 (취소 버튼 제어 포함)
+    // 🚀 업그레이드된 부드러운 내부 팝업 (취소/확인 버튼)
     const showCustomAlert = (options) => {
         const overlay = document.getElementById('custom-alert-overlay');
         const modal = document.getElementById('custom-alert-modal');
@@ -97,11 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
 
+    // 🚀 글로벌 상태 변수 및 히스토리 스택 (뒤로가기용)
     let aiMode = 'standard'; 
     let currentAiStep = 1; 
+    let aiStepHistory = [1]; 
     const totalAiSteps = 10; 
     const aiProgressBar = document.getElementById('ai-progress-bar'); 
     const btnAiNext = document.getElementById('btn-ai-next');
+    const btnPrevAiStep = document.getElementById('btn-prev-ai-step');
     const aiScreen = document.getElementById('ai-screen'); 
     
     let aiData = { 
@@ -235,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const countryModalTitle = document.getElementById('country-modal-title');
     let activeDestIndex = 0; 
 
-    // 🚀 목적지 폼 렌더링 (커스텀 드롭다운 구현)
+    // 🚀 목적지 폼 (커스텀 셀렉트 포함)
     const renderDestinations = () => {
         destContainer.innerHTML = '';
         const isMulti = aiData.destinations.length > 1;
@@ -252,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const countryStr = dest.country || '국가를 선택하세요';
             const countryColor = dest.country ? '#2563EB' : 'inherit';
             
-            // 🚀 커스텀 셀렉트 UI 셋팅
             const pinVal = dest.pin || 'auto';
             let pinIcon = 'auto_awesome'; let pinText = 'AI가 순서 자동 배치';
             if(pinVal === 'start') { pinIcon = 'flight_takeoff'; pinText = '출발지로 지정'; }
@@ -273,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="stay-date-val">${dateStr}</span>
                         </button>
                         
-                        <!-- 🚀 커스텀 셀렉트 드롭다운 -->
                         <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
                             <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
                             <div class="pin-options">
@@ -303,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDestinations(); 
     });
 
-    // 🚀 이벤트 델리게이션 (모달, 삭제, 일정, 커스텀 셀렉트)
+    // 🚀 이벤트 델리게이션
     destContainer?.addEventListener('click', (e) => {
         const item = e.target.closest('.dest-item');
         if(!item) return;
@@ -325,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(e.target.closest('.pin-selected')) {
             const selectContainer = e.target.closest('.custom-pin-select');
             const isOp = selectContainer.classList.contains('open');
-            document.querySelectorAll('.custom-pin-select').forEach(el => el.classList.remove('open')); // 다른거 닫기
+            document.querySelectorAll('.custom-pin-select').forEach(el => el.classList.remove('open')); 
             if(!isOp) selectContainer.classList.add('open');
         }
         else if(e.target.closest('.pin-option')) {
@@ -336,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 화면 아무곳이나 누르면 커스텀 셀렉트 닫기
     document.addEventListener('click', (e) => {
         if(!e.target.closest('.custom-pin-select')) {
             document.querySelectorAll('.custom-pin-select').forEach(el => el.classList.remove('open'));
@@ -391,15 +391,33 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
     
-    // 🚀 메인 스텝 뒤로가기 취소 얼럿
+    // 🚀 뒤로가기 버튼 로직 (스텝간 이전으로 이동)
+    btnPrevAiStep?.addEventListener('click', () => {
+        if(aiStepHistory.length > 1) {
+            const curStepNum = aiStepHistory.pop();
+            const prevStepNum = aiStepHistory[aiStepHistory.length - 1];
+            
+            const curEl = document.getElementById(`ai-step-${curStepNum}`);
+            const prevEl = document.getElementById(`ai-step-${prevStepNum}`);
+            
+            curEl.classList.remove('active'); // 우측으로 퇴장
+            prevEl.classList.remove('exit');
+            setTimeout(() => prevEl.classList.add('active'), 10); // 좌측에서 입장
+            
+            currentAiStep = prevStepNum;
+            aiProgressBar.style.width = `${(currentAiStep/totalAiSteps)*100}%`;
+            
+            if(aiStepHistory.length === 1) btnPrevAiStep.style.display = 'none';
+            btnAiNext.innerText = '다음으로'; 
+            validateAiStep();
+        }
+    });
+
+    // 앱 나가기 버튼 
     document.getElementById('btn-back-ai')?.addEventListener('click', () => { 
         showCustomAlert({
-            icon: 'warning',
-            title: '일정 생성 취소',
-            desc: '일정 짜기를 그만두시겠습니까?\n진행 중인 정보는 저장되지 않습니다.',
-            showCancel: true,
-            confirmText: '네, 그만둘래요',
-            isDanger: true,
+            icon: 'warning', title: '일정 생성 취소', desc: '일정 짜기를 그만두시겠습니까?\n진행 중인 정보는 저장되지 않습니다.',
+            showCancel: true, confirmText: '네, 그만둘래요', isDanger: true,
             onConfirm: () => { aiScreen.classList.remove('active'); }
         });
     });
@@ -422,10 +440,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-close-map')?.addEventListener('click', closeMap); document.getElementById('btn-confirm-map')?.addEventListener('click', closeMap);
 
     const resetAiFlow = () => { 
-        currentAiStep = 1; aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`; btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true; 
+        currentAiStep = 1; aiStepHistory = [1];
+        aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`; 
+        btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true; 
+        btnPrevAiStep.style.display = 'none';
+
         for(let i=1; i<=totalAiSteps; i++) {
             const stepEl = document.getElementById(`ai-step-${i}`);
-            if(stepEl) stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; 
+            if(stepEl) { stepEl.classList.remove('exit'); stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; }
         }
         
         aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
@@ -511,6 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 🚀 다음 단계로 진행 (스마트 라우팅)
     if(btnAiNext) {
         btnAiNext.addEventListener('click', () => {
             if (currentAiStep < totalAiSteps) {
@@ -536,6 +559,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     curEl.classList.remove('active'); curEl.classList.add('exit');
                     setTimeout(() => nextEl.classList.add('active'), 100);
                     
+                    aiStepHistory.push(nextStep); // 🚀 히스토리 저장
+                    btnPrevAiStep.style.display = 'flex'; // 뒤로가기 보이기
+                    
                     currentAiStep = nextStep; 
                     aiProgressBar.style.width = `${(currentAiStep/totalAiSteps)*100}%`;
                     if(currentAiStep === totalAiSteps) btnAiNext.innerText = 'AI 일정 생성하기';
@@ -560,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     aiScreen.classList.remove('active');
                 } catch(err) {
                     document.getElementById('ai-loading-overlay').classList.remove('active');
-                    console.error(err);
+                    console.error("타임라인 생성 중 에러:", err);
                     showCustomAlert({icon:'error', title:'오류 발생', desc:"일정 분석 중 오류가 났습니다. 다시 시도해주세요! (" + err.message + ")"});
                 }
             }, 2500);
@@ -583,7 +609,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const spotDB = {
         '오사카': {
-            tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'}, {n: '츠텐카쿠 전망대', d: '레트로한 분위기의 신세카이 중심', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'} ],
+            tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'} ],
             food: [ {n: '도톤보리 타코야키', d: '입천장 데여도 포기할 수 없는 겉바속촉', img: 'https://images.unsplash.com/photo-1574484284002-952d92456975'}, {n: '쿠시카츠 다루마', d: '원조 튀김 꼬치와 시원한 생맥주의 조합', img: 'https://images.unsplash.com/photo-1583339824000-60eaeb00f40d'}, {n: '이치란 라멘', d: '한국인 입맛에 가장 잘 맞는 독서실 라멘', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624'} ],
             cafe: [ {n: '나카자키초 카페거리', d: '골목골목 숨겨진 빈티지 감성 카페 탐방', img: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24'}, {n: '리버뷰 테라스 카페', d: '강가를 바라보며 마시는 여유로운 커피 한 잔', img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93'} ],
             indoor: [ {n: '가이유칸 수족관', d: '고래상어를 볼 수 있는 세계 최대 규모의 수족관', img: 'https://images.unsplash.com/photo-1582967788606-a171c1080cb0'}, {n: '파르코 백화점', d: '지브리 스토어와 짱구 샵이 있는 쇼핑 천국', img: 'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6'} ]
@@ -900,12 +926,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
         showCustomAlert({
-            icon: 'warning',
-            title: '저장하지 않고 나가기',
-            desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?',
-            showCancel: true,
-            confirmText: '네, 나갈래요',
-            isDanger: true,
+            icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?',
+            showCancel: true, confirmText: '네, 나갈래요', isDanger: true,
             onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); }
         });
     });

@@ -23,7 +23,7 @@
 </head>
 <body>
     <div id="app-container">
-        <!-- 🚀 얼럿 팝업에 취소 버튼 추가 -->
+        <!-- 내부 팝업 (Alert) -->
         <div id="custom-alert-overlay" class="alert-overlay"></div>
         <div id="custom-alert-modal" class="alert-modal">
             <div class="alert-icon" id="alert-icon"><span class="material-symbols-rounded">info</span></div>
@@ -104,9 +104,13 @@
 
         <div id="ai-screen" class="sub-screen">
             <header class="sub-header">
-                <div class="header-left"><button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button></div>
+                <!-- 🚀 스텝 뒤로가기 버튼 추가 -->
+                <div class="header-left" style="width: auto; justify-content: flex-start; gap: 8px;">
+                    <button class="icon-btn" id="btn-prev-ai-step" style="display: none;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
+                    <button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button>
+                </div>
                 <div class="progress-bar-container"><div class="progress-bar" id="ai-progress-bar"></div></div>
-                <div class="header-right"></div>
+                <div class="header-right" style="width: auto;"></div>
             </header>
             <div class="ai-content">
                 
@@ -182,7 +186,6 @@
                     </div>
                 </div>
 
-                <!-- 🚀 촌스러운 이모지를 모두 없애고 세련된 머티리얼 심볼 적용 -->
                 <div class="ai-step" id="ai-step-9">
                     <h2 class="ai-question">이번 여행의 테마를<br>골라주세요</h2><p class="ai-desc">최대 2개까지 선택할 수 있어요.</p>
                     <div class="ai-chips-container" id="theme-chips-container">
