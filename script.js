@@ -636,10 +636,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const randomImg = `https://images.unsplash.com/photo-${fallbackImages[slot.type] ? fallbackImages[slot.type][Math.floor(Math.random() * fallbackImages[slot.type].length)] : fallbackImages.tour[0]}`;
 
                 daySpots.push({ 
-    time: slot.time, type: slot.type, catName: slot.catName, mIcon: slot.mIcon, 
-    name: slot.name, lat: slot.lat, lng: slot.lng, // 👈 추가된 부분
-    desc: slot.desc, img: randomImg, color: iconColor, bg: iconBg, tip: survivalTip 
-});
+                    time: slot.time, type: slot.type, catName: slot.catName, mIcon: slot.mIcon, 
+                    name: slot.name, lat: slot.lat, lng: slot.lng,
+                    desc: slot.desc, img: randomImg, color: iconColor, bg: iconBg, tip: survivalTip 
+                });
+            }); // 👈 바로 이 부분! 안쪽 반복문을 닫는 괄호가 빠져 있었어!
+
             dailyPlans[dayPlan.day] = { hp: dayPlan.hp, spots: daySpots };
         });
 
