@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
 
     let aiMode = 'standard'; let currentAiStep = 1; let aiStepHistory = [1]; 
-    const totalAiSteps = 10; const aiProgressBar = document.getElementById('ai-progress-bar'); 
+    const totalAiSteps = 11; const aiProgressBar = document.getElementById('ai-progress-bar'); 
     const btnAiNext = document.getElementById('btn-ai-next'); const btnPrevAiStep = document.getElementById('btn-prev-ai-step');
     const aiScreen = document.getElementById('ai-screen'); 
     
@@ -355,12 +355,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetAiFlow = () => { 
         currentAiStep = 1; aiStepHistory = [1]; aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`; btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true; btnPrevAiStep.style.display = 'none';
         for(let i=1; i<=totalAiSteps; i++) { const stepEl = document.getElementById(`ai-step-${i}`); if(stepEl) { stepEl.classList.remove('exit'); stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; } }
-        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
+        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3, mustDo: '' }; 
         tempStartDate = null; tempEndDate = null; updateDateTexts(); renderDestinations(); 
         document.getElementById('ai-input-arr-time').value = ''; document.getElementById('ai-input-dep-time').value = ''; document.getElementById('ai-input-accom').value = ''; document.getElementById('people-count').innerText = '1명'; 
         document.getElementById('ai-input-stamina').value = 3; document.getElementById('stamina-emoji').innerHTML = '<span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: color 0.3s ease;">battery_5_bar</span>';
         document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); document.querySelectorAll('.ai-chip').forEach(c => c.classList.remove('selected')); 
         if(aiMode === 'standard') { document.getElementById('step-7-standard').style.display = 'block'; document.getElementById('step-7-tension').style.display = 'none'; } else { document.getElementById('step-7-standard').style.display = 'none'; document.getElementById('step-7-tension').style.display = 'block'; }
+
+        const mustDoInput = document.getElementById('ai-input-must-do');
+        if(mustDoInput) mustDoInput.value = '';
     };
     
     const validateAiStep = () => { 
@@ -374,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(currentAiStep === 8) { if(aiMode === 'standard') btnAiNext.disabled = aiData.styles.length === 0; else btnAiNext.disabled = (aiData.myStyles.length === 0 || aiData.ptStyles.length === 0); }
         else if(currentAiStep === 9) btnAiNext.disabled = aiData.themes.length === 0;
         else if(currentAiStep === 10) btnAiNext.disabled = false;
+        else if(currentAiStep === 11) btnAiNext.disabled = false;
     };
     
     document.querySelectorAll('.ai-option-card').forEach(card => { card.addEventListener('click', () => { document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected'); aiData.companion = card.getAttribute('data-val'); validateAiStep(); }); });
@@ -501,6 +505,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 2500);
         }
 
+        // 새로 추가한 특별 요청 데이터 가져오기
+        aiData.mustDo = document.getElementById('ai-input-must-do')?.value.trim();
+
         const destText = aiData.destinations.map(d => `${d.country} ${d.city} (${d.stayDays}일, 옵션: ${d.pin})`).join(', ');
         const themeText = aiData.themes.join(', ');
         const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
@@ -511,11 +518,14 @@ document.addEventListener('DOMContentLoaded', () => {
         [사용자 정보]
         - 여행지: ${destText}
         - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
+        - 항공편: 도착시간 ${aiData.arrTime || '미정'}, 출발시간 ${aiData.depTime || '미정'}
+        - 숙소: ${aiData.accom || '미정'}
         - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
         - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
         - 테마: ${themeText}
         - 스타일: ${styleText}
         - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
+        - 특별 요청(필수 반영): ${aiData.mustDo || '없음'}
         
         [응답 JSON 구조 - 반드시 이 구조를 지킬 것]
         {
@@ -531,9 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   "catName": "관광",
                   "mIcon": "photo_camera",
                   "name": "진짜 존재하는 명소/식당 이름",
-                  "lat": 35.6895, // 해당 장소의 실제 위도 (숫자)
-                  "lng": 139.6917, // 해당 장소의 실제 경도 (숫자)
-                  "desc": "공항 수속(1시간 소요) 후 숙소로 이동 (공항철도 40분 소요). 이후 도보 10분 거리의 식당으로 이동 등 이동 수단과 시간을 구체적으로 적은 상세 설명.",
+                  "lat": 35.6895, 
+                  "lng": 139.6917, 
+                  "desc": "장소 설명 및 이동 수단 구체적 서술",
                   "tip": "웨이팅, 포토존 등 꿀팁"
                 }
               ]
@@ -541,11 +551,14 @@ document.addEventListener('DOMContentLoaded', () => {
           ]
         }
         
-        조건:
+        조건 (절대 엄수):
         1. 반드시 JSON 형식으로만 응답해라.
-        2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라.
-        3. 각 장소의 실제 위도(lat)와 경도(lng)를 반드시 정확한 숫자로 기입해라 (지도 동선 표시에 필수).
-        4. desc 항목에 공항 도착/수속 시간, 장소 간 이동 수단(예: 도보 10분, 지하철 3정거장)을 매우 구체적으로 서술해라.
+        2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라. (해당 지역의 상징적인 랜드마크나 유명 쇼(예: 항저우의 송성가무쇼 등)를 적극적으로 포함할 것)
+        3. [특별 요청]에 적힌 내용이 있다면 최우선으로 해당 장소나 액티비티를 일정에 무조건 배치해라.
+        4. [항공편] 시간이 주어졌다면 반드시 지켜라! 첫날 일정은 공항 도착 시간 + 수속 시간 이후부터 시작하고, 마지막 날 일정은 공항 출발 시간 3시간 전까지만 짜라.
+        5. [숙소]가 정해져 있다면 아침 출발 및 저녁 복귀 동선을 숙소 기준으로 최적화해라.
+        6. 각 장소의 실제 위도(lat)와 경도(lng)를 정확한 숫자로 기입해라.
+        7. desc 항목에 '도보 10분', '지하철 40분' 등 명소 간 이동 수단과 소요 시간을 디테일하게 서술해라.
         `;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
