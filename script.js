@@ -236,11 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="dest-inputs">
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         
-                        <!-- 🎯 바로 이 부분! 도시 입력창과 둥근 지도 버튼을 가로로 예쁘게 배치했어 -->
+                        <!-- 🎯 숙소와 똑같이 트렌디한 둥근 사각형 map 아이콘으로 변경! -->
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
                             <input type="text" class="city-input" placeholder="${cityPlaceholder}" value="${dest.city}" ${isCityDisabled ? 'disabled' : ''} style="${cityStyle} width: 100%; padding-right: 48px;">
-                            <button class="open-city-map-btn ripple-btn" style="position: absolute; right: 4px; border: none; background: transparent; color: ${isCityDisabled ? 'var(--card-border)' : '#2563EB'}; cursor: ${isCityDisabled ? 'not-allowed' : 'pointer'}; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%;" ${isCityDisabled ? 'disabled' : ''}>
-                                <span class="material-symbols-rounded">location_on</span>
+                            <button class="open-city-map-btn ripple-btn" style="position: absolute; right: 6px; border: none; background: #F1F5F9; color: ${isCityDisabled ? 'var(--card-border)' : '#3B82F6'}; cursor: ${isCityDisabled ? 'not-allowed' : 'pointer'}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;" ${isCityDisabled ? 'disabled' : ''}>
+                                <span class="material-symbols-rounded" style="font-size: 18px;">map</span>
                             </button>
                         </div>
                         
@@ -301,8 +301,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = e.target.closest('.open-city-map-btn');
             if(btn.disabled) return;
             
-            // 타겟을 'city'로 설정하고 지도 모달 열기!
             currentMapTarget = { type: 'city', index: index };
+
+            // 💡 상황에 맞게 텍스트 갈아끼우기
+            const titleEl = document.getElementById('map-modal-title');
+            if(titleEl) titleEl.innerText = '지도에서 도시 찾기';
+            const searchInput = document.getElementById('map-search-input');
+            if(searchInput) searchInput.placeholder = '도시 이름 검색 (예: 도쿄, 오사카)';
+
             calendarOverlay.style.display = 'block'; 
             document.getElementById('map-modal').classList.add('active'); 
             setTimeout(() => initMap(), 300);
@@ -374,9 +380,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentMapTarget = { type: 'accom', index: -1 }; 
     let tempSelectedPlace = ''; 
 
-    // 숙소 지도 버튼 클릭 시 타겟을 'accom'으로 설정
+    // 숙소 지도 버튼 클릭 시
     document.getElementById('btn-open-map')?.addEventListener('click', () => { 
         currentMapTarget = { type: 'accom', index: -1 };
+        
+        // 💡 상황에 맞게 텍스트 갈아끼우기
+        const titleEl = document.getElementById('map-modal-title');
+        if(titleEl) titleEl.innerText = '지도에서 숙소 찾기';
+        const searchInput = document.getElementById('map-search-input');
+        if(searchInput) searchInput.placeholder = '호텔이나 랜드마크 이름 검색';
+
         calendarOverlay.style.display = 'block'; 
         document.getElementById('map-modal').classList.add('active'); 
         setTimeout(() => initMap(), 300); 
@@ -883,39 +896,44 @@ document.addEventListener('DOMContentLoaded', () => {
 let isMapView = false; let currentMarkerIndex = -1;
 
     function initMapForResult(mainDest) {
-    const resultMapEl = document.getElementById('ai-result-map');
-    if(!routeMap && resultMapEl) {
-        routeMap = new google.maps.Map(resultMapEl, {
-            center: {lat: 37.5665, lng: 126.9780},
-            zoom: 13,
-            disableDefaultUI: true
-        });
+        const resultMapEl = document.getElementById('ai-result-map');
+        if(!routeMap && resultMapEl) {
+            routeMap = new google.maps.Map(resultMapEl, {
+                center: {lat: 37.5665, lng: 126.9780},
+                zoom: 13,
+                disableDefaultUI: true
+            });
+        }
+
+        if(mainDest !== '미지의 여행지' && routeMap) {
+            const tempGeocoder = new google.maps.Geocoder();
+            tempGeocoder.geocode({address: mainDest}, (results, status) => {
+                if(status === 'OK' && routeMap) {
+                    routeMap.setCenter(results[0].geometry.location);
+                }
+            });
+        }
+
+        isMapView = false; currentMarkerIndex = -1;
+        const timelineEl = document.getElementById('ai-timeline-container');
+        const exploreEl = document.getElementById('ai-explore-container');
+        const topIconEl = document.getElementById('top-map-icon');
+        const mapCardEl = document.getElementById('map-info-card');
+        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); // 👈 추가
+
+        if (timelineEl) timelineEl.style.display = 'flex';
+        if (exploreEl) exploreEl.style.display = 'none';
+        
+        // 🎯 핵심! wrapper만 숨기고 도화지 자체는 숨기지 않아야 회색 에러가 안 나!
+        if (resultMapWrapper) resultMapWrapper.style.display = 'none'; 
+        if (resultMapEl) resultMapEl.style.display = 'block'; 
+        
+        if (topIconEl) topIconEl.innerText = 'map';
+        if (mapCardEl) mapCardEl.classList.remove('active');
+        
+        document.querySelectorAll('.explore-chip').forEach(c => c?.classList.remove('active'));
+        document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
-
-    if(mainDest !== '미지의 여행지' && routeMap) {
-        const tempGeocoder = new google.maps.Geocoder();
-        tempGeocoder.geocode({address: mainDest}, (results, status) => {
-            if(status === 'OK' && routeMap) {
-                routeMap.setCenter(results[0].geometry.location);
-            }
-        });
-    }
-
-    isMapView = false; currentMarkerIndex = -1;
-    const timelineEl = document.getElementById('ai-timeline-container');
-    const exploreEl = document.getElementById('ai-explore-container');
-    const topIconEl = document.getElementById('top-map-icon');
-    const mapCardEl = document.getElementById('map-info-card');
-
-    if (timelineEl) timelineEl.style.display = 'flex';
-    if (exploreEl) exploreEl.style.display = 'none';
-    if (resultMapEl) resultMapEl.style.display = 'none';
-    if (topIconEl) topIconEl.innerText = 'map';
-    if (mapCardEl) mapCardEl.classList.remove('active');
-    
-    document.querySelectorAll('.explore-chip').forEach(c => c?.classList.remove('active'));
-    document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
-}
 
     const animateMovement = (startPos, endPos, duration, callback) => {
         if(movingMarker) movingMarker.setMap(null);
