@@ -1,5 +1,6 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './firebase-config.js';
 
+// 🚀 Gemini AI API 키
 const GEMINI_API_KEY = 'AQ.Ab8RN6L9k9KRGgJsHQ42jihPubHy1XI-p6jEBx470-Tq5YZOfg';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -148,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const monthTitle = document.createElement('div'); monthTitle.className = 'month-title'; monthTitle.innerText = `${drawDate.getFullYear()}년 ${drawDate.getMonth() + 1}월`; calendarContainer.appendChild(monthTitle);
             const grid = document.createElement('div'); grid.className = 'calendar-grid';
             for(let j = 0; j < drawDate.getDay(); j++) { grid.innerHTML += `<div></div>`; }
-            
             const lastDate = new Date(year, month + 1, 0).getDate();
             for(let d = 1; d <= lastDate; d++) {
                 const currentDate = new Date(year, month, d); const cell = document.createElement('div'); cell.className = 'cal-day'; cell.innerText = d;
@@ -215,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let pinIcon = 'auto_awesome'; let pinText = 'AI가 순서 자동 배치';
             if(pinVal === 'start') { pinIcon = 'flight_takeoff'; pinText = '출발지로 지정'; }
             else if(pinVal === 'end') { pinIcon = 'flight_land'; pinText = '도착지로 지정'; }
-            // 🚀 4번째 핀 옵션 적용: 출발지 및 도착지로 지정 (sync_alt)
             else if(pinVal === 'start_end') { pinIcon = 'sync_alt'; pinText = '출발 및 도착지로 지정'; }
             
             const html = `
@@ -225,14 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         <input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력" value="${dest.city}">
                         <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span><span class="stay-date-val">${dateStr}</span></button>
-                        
                         <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
                             <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
                             <div class="pin-options">
                                 <div class="pin-option" data-val="auto"><span class="material-symbols-rounded">auto_awesome</span> AI가 순서 자동 배치</div>
                                 <div class="pin-option" data-val="start"><span class="material-symbols-rounded">flight_takeoff</span> 출발지로 지정</div>
                                 <div class="pin-option" data-val="end"><span class="material-symbols-rounded">flight_land</span> 도착지로 지정</div>
-                                <!-- 🚀 새로 추가된 4번째 옵션 -->
                                 <div class="pin-option" data-val="start_end"><span class="material-symbols-rounded">sync_alt</span> 출발 및 도착지로 지정</div>
                             </div>
                         </div>
@@ -319,6 +316,41 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-back-ai')?.addEventListener('click', () => { 
         showCustomAlert({ icon: 'warning', title: '일정 생성 취소', desc: '일정 짜기를 그만두시겠습니까?\n진행 중인 정보는 저장되지 않습니다.', showCancel: true, confirmText: '네, 그만둘래요', isDanger: true, onConfirm: () => { aiScreen.classList.remove('active'); }});
     });
+
+    // 🚀 구글 맵 (Google Maps API) 연동 전역 변수
+    let map = null; let marker = null; let geocoder = null;
+
+    const initMap = () => {
+        if(!map) { 
+            // Leaflet 대신 구글 맵 객체 생성
+            map = new google.maps.Map(document.getElementById('map-container'), {
+                center: {lat: 37.5665, lng: 126.9780},
+                zoom: 13,
+                disableDefaultUI: true // 모바일 친화적인 깔끔한 UI
+            });
+            geocoder = new google.maps.Geocoder();
+            
+            map.addListener('click', (e) => { 
+                if(marker) marker.setMap(null); 
+                marker = new google.maps.Marker({ position: e.latLng, map: map }); 
+                
+                // 구글 Geocoding API를 이용해 주소 변환
+                geocoder.geocode({ location: e.latLng }, (results, status) => {
+                    if (status === 'OK' && results[0]) {
+                        const placeName = results[0].formatted_address;
+                        document.getElementById('map-selected-address').innerText = placeName; 
+                        document.getElementById('ai-input-accom').value = placeName;
+                    }
+                }); 
+            }); 
+        }
+        // 구글 맵 모달에서 띄울 때 사이즈 깨짐 방지
+        setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
+    };
+
+    document.getElementById('btn-open-map')?.addEventListener('click', () => { calendarOverlay.style.display = 'block'; document.getElementById('map-modal').classList.add('active'); setTimeout(() => initMap(), 300); });
+    const closeMap = () => { document.getElementById('map-modal').classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); }; 
+    document.getElementById('btn-close-map')?.addEventListener('click', closeMap); document.getElementById('btn-confirm-map')?.addEventListener('click', closeMap);
 
     const resetAiFlow = () => { 
         currentAiStep = 1; aiStepHistory = [1]; aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`; btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true; btnPrevAiStep.style.display = 'none';
@@ -447,12 +479,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const themeText = aiData.themes.join(', ');
             const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
 
-            // 🚀 AI 프롬프트에 'start_end' 인아웃 도시 반영 요청
             const prompt = `
             너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
             
             [사용자 정보]
-            - 여행지: ${destText} (* 옵션이 start_end인 경우 여행의 맨 처음(1일차)과 맨 마지막 날짜 일정을 해당 도시로 배정해라)
+            - 여행지: ${destText}
             - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
             - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
             - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
@@ -657,20 +688,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if(isMapView && routeMap) { drawRoute(routeMap.getCenter().lat, routeMap.getCenter().lng, plan.spots); }
     };
 
-    let routeMap = null; let routeLayerGroup = null; let movingMarker = null;
+    // 🚀 구글 맵 (Google Maps) 라우팅 변수
+    let routeMap = null; let pathPolyline = null; let routeMarkers = []; let movingMarker = null;
 
     function initMapForResult(mainDest) {
         if(!routeMap) {
-            routeMap = L.map('ai-result-map', { zoomControl: false }).setView([37.5665, 126.9780], 13);
-            L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=ko').addTo(routeMap);
-            routeLayerGroup = L.layerGroup().addTo(routeMap);
+            routeMap = new google.maps.Map(document.getElementById('ai-result-map'), {
+                center: {lat: 37.5665, lng: 126.9780},
+                zoom: 13,
+                disableDefaultUI: true
+            });
         }
 
         if(mainDest !== '미지의 여행지') {
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(mainDest)}`)
-            .then(res => res.json()).then(data => {
-                if(data && data.length > 0) { routeMap.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 13); }
-            }).catch(()=>{});
+            const tempGeocoder = new google.maps.Geocoder();
+            tempGeocoder.geocode({address: mainDest}, (results, status) => {
+                if(status === 'OK') {
+                    routeMap.setCenter(results[0].geometry.location);
+                }
+            });
         }
 
         isMapView = false; currentMarkerIndex = -1;
@@ -684,28 +720,34 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
 
-    const animateMovement = (startLatLng, endLatLng, iconHtml, duration, callback) => {
-        if(movingMarker) routeMap.removeLayer(movingMarker);
-        const icon = L.divIcon({ className: 'moving-transport', html: iconHtml, iconSize: [36, 36], iconAnchor: [18, 18] });
-        movingMarker = L.marker(startLatLng, {icon, zIndexOffset: 1000}).addTo(routeMap);
-
+    const animateMovement = (startPos, endPos, duration, callback) => {
+        if(movingMarker) movingMarker.setMap(null);
+        
+        movingMarker = new google.maps.Marker({
+            position: startPos,
+            map: routeMap,
+            icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#10B981', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 10 }
+        });
+        
         const startTime = performance.now();
         const animate = (time) => {
             const elapsed = time - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const ease = 1 - Math.pow(1 - progress, 3);
-            const lat = startLatLng[0] + (endLatLng[0] - startLatLng[0]) * ease;
-            const lng = startLatLng[1] + (endLatLng[1] - startLatLng[1]) * ease;
-            movingMarker.setLatLng([lat, lng]);
-
-            if(progress < 1) requestAnimationFrame(animate);
-            else { routeMap.removeLayer(movingMarker); movingMarker = null; if(callback) callback(); }
+            
+            const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
+            const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
+            movingMarker.setPosition({lat, lng});
+            
+            if(progress < 1) { requestAnimationFrame(animate); } 
+            else { movingMarker.setMap(null); movingMarker = null; if(callback) callback(); }
         };
         requestAnimationFrame(animate);
     };
 
     const drawRoute = (lat, lng, daySpots) => {
-        routeLayerGroup.clearLayers();
+        if(pathPolyline) pathPolyline.setMap(null);
+        routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
         currentMarkerIndex = -1;
         document.getElementById('map-info-card').classList.remove('active');
 
@@ -713,16 +755,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if(dailyPlans && dailyPlans[currentSelectedDay]) daySpots = dailyPlans[currentSelectedDay].spots; else daySpots = [];
         }
 
+        // 임시 좌표 오프셋 (Gemini가 진짜 위경도 좌표를 안 주므로 현재 맵 센터 기준 흩뿌림)
         const pointOffsets = [ [0.005, -0.005], [0.015, 0.002], [-0.002, 0.015], [-0.010, -0.008], [-0.015, 0.005], [0.01, -0.015] ];
-        const points = daySpots.map((_, i) => [lat + pointOffsets[i%6][0], lng + pointOffsets[i%6][1]]);
         
-        const polyline = L.polyline(points, {color: '#8B5CF6', weight: 4, dashArray: '8, 8'}).addTo(routeLayerGroup);
+        let centerLatLng = routeMap.getCenter();
+        let clat = centerLatLng.lat(); let clng = centerLatLng.lng();
         
-        points.forEach((p, index) => {
-            const icon = L.divIcon({ className: 'custom-route-marker', html: `<div>${index + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
-            const marker = L.marker(p, {icon}).addTo(routeLayerGroup);
+        const pathCoordinates = daySpots.map((_, i) => ({
+            lat: clat + pointOffsets[i%6][0], lng: clng + pointOffsets[i%6][1]
+        }));
+        
+        pathPolyline = new google.maps.Polyline({
+            path: pathCoordinates, geodesic: true, strokeColor: '#8B5CF6', strokeOpacity: 1.0, strokeWeight: 4
+        });
+        pathPolyline.setMap(routeMap);
+        
+        const bounds = new google.maps.LatLngBounds();
+        
+        pathCoordinates.forEach((p, index) => {
+            bounds.extend(p);
+            const marker = new google.maps.Marker({
+                position: p, map: routeMap,
+                label: { text: String(index + 1), color: 'white', fontWeight: 'bold' },
+                icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#8B5CF6', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 14 }
+            });
+            
+            routeMarkers.push(marker);
 
-            marker.on('click', () => {
+            marker.addListener('click', () => {
                 const infoCard = document.getElementById('map-info-card');
                 infoCard.classList.remove('active');
 
@@ -733,19 +793,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('map-info-badge').innerText = spot.catName;
                     document.getElementById('map-info-img').style.backgroundImage = `url('${spot.img}?q=80&w=200&auto=format&fit=crop')`;
                     
-                    routeMap.flyTo([p[0] - 0.005, p[1]], 14, {duration: 0.5});
+                    routeMap.panTo({lat: p.lat - 0.005, lng: p.lng});
                     setTimeout(() => infoCard.classList.add('active'), 300);
                 };
 
                 if (index > 0 && currentMarkerIndex < index) {
-                    const transportIcon = Math.random() > 0.5 ? '<span class="material-symbols-rounded" style="color:#2563EB; font-size:24px;">directions_car</span>' : '<span class="material-symbols-rounded" style="color:#10B981; font-size:24px;">directions_walk</span>';
-                    animateMovement(points[index-1], p, transportIcon, 1200, showCard);
+                    animateMovement(pathCoordinates[index-1], p, 1200, showCard);
                 } else { showCard(); }
                 currentMarkerIndex = index;
             });
         });
         
-        if(points.length > 0) routeMap.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+        if(pathCoordinates.length > 0) routeMap.fitBounds(bounds);
     };
 
     document.getElementById('btn-toggle-map-top')?.addEventListener('click', () => {
@@ -759,8 +818,8 @@ document.addEventListener('DOMContentLoaded', () => {
             timelineContainer.style.display = 'none'; exploreContainer.style.display = 'none';
             resultMap.style.display = 'block'; mapIcon.innerText = 'format_list_bulleted'; 
             if(routeMap) {
-                setTimeout(() => routeMap.invalidateSize(), 100);
-                drawRoute(routeMap.getCenter().lat, routeMap.getCenter().lng, dailyPlans[currentSelectedDay].spots);
+                setTimeout(() => google.maps.event.trigger(routeMap, 'resize'), 100);
+                drawRoute(routeMap.getCenter().lat(), routeMap.getCenter().lng(), dailyPlans[currentSelectedDay].spots);
             }
         } else {
             const activeTab = document.querySelector('.explore-chip.active')?.getAttribute('data-type') || 'timeline';
