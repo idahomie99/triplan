@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
             2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라.
             `;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -689,6 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 🚀 구글 맵 (Google Maps) 라우팅 변수
     let routeMap = null; let pathPolyline = null; let routeMarkers = []; let movingMarker = null;
+let isMapView = false; let currentMarkerIndex = -1;
 
     function initMapForResult(mainDest) {
         if(!routeMap) {
