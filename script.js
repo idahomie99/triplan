@@ -480,22 +480,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 💬 2.2초마다 바뀌는 상태 메시지 목록
         const loadingMessages = [
-            "✈️ 항공편 시간 및 공항 이동 동선 계산 중...",
-            "📍 선택하신 테마에 맞는 핫플레이스 수집 중...",
-            "🚶 체력 소모도를 분석해 무리 없는 루트 구성 중...",
-            "🍽️ 실패 없는 현지 로컬 맛집 매칭 중...",
-            "🗺️ 지도 위 최적의 이동 동선 정렬 중...",
-            "✨ 완벽한 여행 일정을 정리하고 있어요!"
+            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">flight_takeoff</span> 항공편 시간 및 공항 이동 동선 계산 중...`,
+            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">location_on</span> 선택하신 테마에 맞는 핫플레이스 수집 중...`,
+            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">directions_walk</span> 체력 소모도를 분석해 무리 없는 루트 구성 중...`,
+            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">restaurant</span> 실패 없는 현지 로컬 맛집 매칭 중...`,
+            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">map</span> 지도 위 최적의 이동 동선 정렬 중...`,
+            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">auto_awesome</span> 완벽한 여행 일정을 정리하고 있어요!`
         ];
 
         let msgIdx = 0;
         if (statusText) {
-            statusText.innerText = loadingMessages[0];
+            statusText.innerHTML = loadingMessages[0]; // innerText를 innerHTML로 변경
             statusInterval = setInterval(() => {
                 msgIdx = (msgIdx + 1) % loadingMessages.length;
                 statusText.classList.add('fade');
                 setTimeout(() => {
-                    statusText.innerText = loadingMessages[msgIdx];
+                    statusText.innerHTML = loadingMessages[msgIdx]; // 여기도 innerHTML로 변경
                     statusText.classList.remove('fade');
                 }, 300);
             }, 2500);
@@ -531,7 +531,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   "catName": "관광",
                   "mIcon": "photo_camera",
                   "name": "진짜 존재하는 명소/식당 이름",
-                  "desc": "장소에 대한 설명과 추천 이유 (1~2문장)",
+                  "lat": 35.6895, // 해당 장소의 실제 위도 (숫자)
+                  "lng": 139.6917, // 해당 장소의 실제 경도 (숫자)
+                  "desc": "공항 수속(1시간 소요) 후 숙소로 이동 (공항철도 40분 소요). 이후 도보 10분 거리의 식당으로 이동 등 이동 수단과 시간을 구체적으로 적은 상세 설명.",
                   "tip": "웨이팅, 포토존 등 꿀팁"
                 }
               ]
@@ -542,6 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
         조건:
         1. 반드시 JSON 형식으로만 응답해라.
         2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라.
+        3. 각 장소의 실제 위도(lat)와 경도(lng)를 반드시 정확한 숫자로 기입해라 (지도 동선 표시에 필수).
+        4. desc 항목에 공항 도착/수속 시간, 장소 간 이동 수단(예: 도보 10분, 지하철 3정거장)을 매우 구체적으로 서술해라.
         `;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
@@ -631,8 +635,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 let survivalTip = slot.tip ? `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">${slot.tip}</span></div>` : '';
                 const randomImg = `https://images.unsplash.com/photo-${fallbackImages[slot.type] ? fallbackImages[slot.type][Math.floor(Math.random() * fallbackImages[slot.type].length)] : fallbackImages.tour[0]}`;
 
-                daySpots.push({ time: slot.time, type: slot.type, catName: slot.catName, mIcon: slot.mIcon, name: slot.name, desc: slot.desc, img: randomImg, color: iconColor, bg: iconBg, tip: survivalTip });
-            });
+                daySpots.push({ 
+    time: slot.time, type: slot.type, catName: slot.catName, mIcon: slot.mIcon, 
+    name: slot.name, lat: slot.lat, lng: slot.lng, // 👈 추가된 부분
+    desc: slot.desc, img: randomImg, color: iconColor, bg: iconBg, tip: survivalTip 
+});
             dailyPlans[dayPlan.day] = { hp: dayPlan.hp, spots: daySpots };
         });
 
@@ -789,15 +796,10 @@ let isMapView = false; let currentMarkerIndex = -1;
             if(dailyPlans && dailyPlans[currentSelectedDay]) daySpots = dailyPlans[currentSelectedDay].spots; else daySpots = [];
         }
 
-        // 임시 좌표 오프셋 (Gemini가 진짜 위경도 좌표를 안 주므로 현재 맵 센터 기준 흩뿌림)
-        const pointOffsets = [ [0.005, -0.005], [0.015, 0.002], [-0.002, 0.015], [-0.010, -0.008], [-0.015, 0.005], [0.01, -0.015] ];
-        
-        let centerLatLng = routeMap.getCenter();
-        let clat = centerLatLng.lat(); let clng = centerLatLng.lng();
-        
-        const pathCoordinates = daySpots.map((_, i) => ({
-            lat: clat + pointOffsets[i%6][0], lng: clng + pointOffsets[i%6][1]
-        }));
+        const pathCoordinates = daySpots.map(spot => ({
+            lat: parseFloat(spot.lat),
+            lng: parseFloat(spot.lng)
+        })).filter(coord => !isNaN(coord.lat) && !isNaN(coord.lng));
         
         pathPolyline = new google.maps.Polyline({
             path: pathCoordinates, geodesic: true, strokeColor: '#8B5CF6', strokeOpacity: 1.0, strokeWeight: 4
