@@ -2,7 +2,6 @@ import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 0. 스플래시 화면
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
         setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1500);
@@ -31,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     bindRipple();
 
-    // 🚀 부드러운 내부 팝업(Alert) 함수
+    // 🚀 커스텀 얼럿 함수
     const showCustomAlert = (icon, title, desc, callback) => {
         const overlay = document.getElementById('custom-alert-overlay');
         const modal = document.getElementById('custom-alert-modal');
@@ -51,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
-    // 1. 구글 로그인 및 마이페이지
     const btnAccount = document.getElementById('nav-account');
     const btnTopProfile = document.getElementById('btn-top-profile'); 
     const profilePic = document.querySelector('.profile-pic');
@@ -83,10 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
 
-    // 🚀 글로벌 상태 변수
+    // 🚀 글로벌 상태 변수 (스텝 9개로 확장)
     let aiMode = 'standard'; 
     let currentAiStep = 1; 
-    const totalAiSteps = 8;
+    const totalAiSteps = 9; 
     const aiProgressBar = document.getElementById('ai-progress-bar'); 
     const btnAiNext = document.getElementById('btn-ai-next');
     const aiScreen = document.getElementById('ai-screen'); 
@@ -95,12 +93,11 @@ document.addEventListener('DOMContentLoaded', () => {
         startDate: null, endDate: null, totalTripDays: 0,
         destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], 
         isOptimizeRoute: false, 
-        arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 
+        arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 
     };
 
-    // 🚀 2. 달력 로직 (+ 1년 확장 & 서브달력 제한 로직 적용)
     let tempStartDate = null; let tempEndDate = null;
-    let calendarTargetIndex = -1; // -1: 메인 전체일정, 0 이상: 서브 목적지 인덱스
+    let calendarTargetIndex = -1; 
     
     const calendarModal = document.getElementById('calendar-modal'); 
     const calendarOverlay = document.getElementById('calendar-overlay'); 
@@ -121,11 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('label-arr-date').innerText = aiData.startDate ? `(${aiData.startDate.getMonth()+1}/${aiData.startDate.getDate()})` : ''; 
         document.getElementById('label-dep-date').innerText = aiData.endDate ? `(${aiData.endDate.getMonth()+1}/${aiData.endDate.getDate()})` : ''; 
         
-        renderDestinations(); // 1번 스텝 완료되면 2번 폼이 갱신됨
+        renderDestinations(); 
         validateAiStep();
     };
 
-    // 메인 달력 열기
     document.getElementById('btn-open-calendar-ai')?.addEventListener('click', () => {
         calendarTargetIndex = -1;
         tempStartDate = aiData.startDate; tempEndDate = aiData.endDate;
@@ -136,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-close-calendar')?.addEventListener('click', closeCalendar); 
     calendarOverlay.addEventListener('click', closeCalendar);
     
-    // 달력 확인 버튼
     document.getElementById('btn-confirm-date')?.addEventListener('click', () => {
         if (!tempStartDate || !tempEndDate) { showCustomAlert('error', '알림', '시작일과 종료일을 모두 선택해주세요.'); return; }
         
@@ -149,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dest.startDate = tempStartDate; dest.endDate = tempEndDate;
             dest.stayDays = Math.round((tempEndDate - tempStartDate) / (1000 * 60 * 60 * 24)) + 1;
             
-            // 🚀 일정 선택 시 오름차순 자동 정렬 (Sorting)
             aiData.destinations.sort((a, b) => {
                 if (!a.startDate && !b.startDate) return 0;
                 if (!a.startDate) return 1;
@@ -162,14 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
         validateAiStep();
     });
 
-    // 2026년 공휴일
     const holidays2026 = ['1.1', '2.16', '2.17', '2.18', '3.1', '5.5', '5.24', '6.6', '8.15', '9.24', '9.25', '9.26', '10.3', '10.9', '12.25'];
 
     const renderCalendar = () => {
         if (!calendarContainer) return; calendarContainer.innerHTML = '';
         const today = new Date(); today.setHours(0,0,0,0);
-        
-        // 🚀 1년 치(12개월) 달력 렌더링
         for (let i = 0; i < 12; i++) {
             const year = today.getFullYear(); const month = today.getMonth() + i; const drawDate = new Date(year, month, 1);
             const monthTitle = document.createElement('div'); monthTitle.className = 'month-title'; monthTitle.innerText = `${drawDate.getFullYear()}년 ${drawDate.getMonth() + 1}월`; calendarContainer.appendChild(monthTitle);
@@ -185,7 +176,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(dayOfWeek === 0 || dayOfWeek === 6) cell.classList.add('weekend');
                 if(holidays2026.includes(dateStr)) cell.classList.add('holiday');
 
-                // 🚀 서브 달력일 경우 메인 일정 밖의 날짜는 disabled 처리
                 const tCur = currentDate.getTime();
                 let isDisabled = false;
                 
@@ -213,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 🚀 3. 여행지 동적 폼 렌더링 (핵심 UI 업데이트)
     const countryData = {
         '아시아': ['대한민국', '일본', '중국', '대만', '홍콩', '마카오', '태국', '베트남', '필리핀', '싱가포르', '말레이시아', '인도네시아', '인도', '몰디브', '몽골'],
         '유럽': ['영국', '프랑스', '이탈리아', '스페인', '스위스', '독일', '체코', '오스트리아', '헝가리', '크로아티아', '네덜란드', '포르투갈', '그리스', '노르웨이', '스웨덴', '핀란드', '튀르키예', '아이슬란드'],
@@ -228,11 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const countryModalTitle = document.getElementById('country-modal-title');
     let activeDestIndex = 0; 
 
+    // 🚀 목적지 폼 렌더링
     const renderDestinations = () => {
         destContainer.innerHTML = '';
         const isMulti = aiData.destinations.length > 1;
 
-        // 다중 여행지면 AI 스위치 노출
         if (isMulti) document.getElementById('ai-optimize-wrapper').style.display = 'flex';
         else {
             document.getElementById('ai-optimize-wrapper').style.display = 'none';
@@ -256,15 +245,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                         <input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력" value="${dest.city}">
                         
-                        <button class="stay-date-btn ripple-btn" style="${aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}">
+                        <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}">
                             <span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span>
                             <span class="stay-date-val">${dateStr}</span>
                         </button>
                         
                         <select class="pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
-                            <option value="auto" ${pinVal==='auto'?'selected':''}>AI가 순서 자동 배치</option>
-                            <option value="start" ${pinVal==='start'?'selected':''}>🚩 무조건 출발지로 지정</option>
-                            <option value="end" ${pinVal==='end'?'selected':''}>🏁 무조건 도착지로 지정</option>
+                            <option value="auto" ${pinVal==='auto'?'selected':''}>✨ AI가 순서 자동 배치</option>
+                            <option value="start" ${pinVal==='start'?'selected':''}>🛫 출발지로 지정</option>
+                            <option value="end" ${pinVal==='end'?'selected':''}>🛬 도착지로 지정</option>
                         </select>
                     </div>
                     <div class="remove-dest-btn" style="${isMulti ? 'display:flex;' : 'display:none;'}">
@@ -276,33 +265,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // 여행지 추가 버튼
     document.getElementById('btn-add-dest')?.addEventListener('click', () => {
         aiData.destinations.push({ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' });
         renderDestinations();
         validateAiStep();
     });
 
-    // AI 동선 최적화 스위치
     document.getElementById('chk-optimize-route')?.addEventListener('change', (e) => {
         aiData.isOptimizeRoute = e.target.checked;
-        renderDestinations(); // 렌더링을 다시 해서 일정 버튼을 숨기고 select 박스를 띄움
+        renderDestinations(); 
     });
 
-    // 이벤트 델리게이션 (국가 모달, 도시 입력, 일정 버튼, 삭제, 핀)
     destContainer?.addEventListener('click', (e) => {
         const item = e.target.closest('.dest-item');
         if(!item) return;
         const index = parseInt(item.getAttribute('data-index'));
 
-        if(e.target.closest('.country-select-btn')) {
-            openCountryModal(index);
-        }
+        if(e.target.closest('.country-select-btn')) { openCountryModal(index); }
         else if(e.target.closest('.remove-dest-btn')) {
             if(aiData.destinations.length > 1) {
                 aiData.destinations.splice(index, 1);
-                renderDestinations();
-                validateAiStep();
+                renderDestinations(); validateAiStep();
             }
         }
         else if(e.target.closest('.stay-date-btn')) {
@@ -327,16 +310,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.target.classList.contains('pin-select')) { aiData.destinations[index].pin = e.target.value; }
     });
 
-    // 국가 모달
     const openCountryModal = (index) => {
         activeDestIndex = index;
         countryModalTitle.innerText = '대륙 선택';
         btnCountryBack.style.display = 'none';
         
         let html = '';
-        Object.keys(countryData).forEach(continent => {
-            html += `<div class="country-list-item" data-continent="${continent}">${continent}<span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span></div>`;
-        });
+        Object.keys(countryData).forEach(continent => { html += `<div class="country-list-item" data-continent="${continent}">${continent}<span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span></div>`; });
         countryListContainer.innerHTML = html;
         
         calendarOverlay.style.display = 'block'; 
@@ -357,8 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cel.addEventListener('click', () => {
                         const selectedCountry = cel.getAttribute('data-country');
                         aiData.destinations[activeDestIndex].country = selectedCountry;
-                        renderDestinations();
-                        closeCountryModal(); validateAiStep();
+                        renderDestinations(); closeCountryModal(); validateAiStep();
                     });
                 });
             });
@@ -369,11 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-close-country')?.addEventListener('click', closeCountryModal);
     btnCountryBack?.addEventListener('click', () => openCountryModal(activeDestIndex));
 
-    // 4. 나머지 폼 로직
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
     
-    // 메인화면 뒤로가기 시 커스텀 얼럿
     document.getElementById('btn-back-ai')?.addEventListener('click', () => { 
         showCustomAlert('warning', '일정 생성 취소', '일정 짜기를 그만두시겠습니까? 진행 중인 정보는 저장되지 않습니다.', () => {
             aiScreen.classList.remove('active'); 
@@ -404,10 +381,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(stepEl) stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; 
         }
         
-        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], stamina: 3 }; 
+        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
         tempStartDate = null; tempEndDate = null; updateDateTexts(); 
         
-        renderDestinations(); // 폼 초기화 렌더링
+        renderDestinations(); 
         
         document.getElementById('ai-input-arr-time').value = ''; document.getElementById('ai-input-dep-time').value = ''; document.getElementById('ai-input-accom').value = ''; document.getElementById('people-count').innerText = '1명'; 
         document.getElementById('ai-input-stamina').value = 3; document.getElementById('stamina-emoji').innerHTML = '<span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: color 0.3s ease;">battery_5_bar</span>';
@@ -417,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else { document.getElementById('step-7-standard').style.display = 'none'; document.getElementById('step-7-tension').style.display = 'block'; }
     };
     
+    // 🚀 9개 스텝에 맞춘 검증 로직
     const validateAiStep = () => { 
         if(!btnAiNext) return; 
         if(currentAiStep === 1) btnAiNext.disabled = !(aiData.startDate && aiData.endDate);
@@ -428,7 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(aiMode === 'standard') btnAiNext.disabled = aiData.styles.length === 0;
             else btnAiNext.disabled = (aiData.myStyles.length === 0 || aiData.ptStyles.length === 0);
         }
-        else if(currentAiStep === 8) btnAiNext.disabled = false;
+        else if(currentAiStep === 8) btnAiNext.disabled = aiData.themes.length === 0; // 테마 선택 필수
+        else if(currentAiStep === 9) btnAiNext.disabled = false;
     };
     
     document.querySelectorAll('.ai-option-card').forEach(card => { 
@@ -443,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if(chip.classList.contains('std-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.styles = aiData.styles.filter(s => s !== val); } 
-                else { if(aiData.styles.length >= 3) { showCustomAlert('info', '알림', '최대 3개까지만 선택할 수 있어요!'); return; } chip.classList.add('selected'); aiData.styles.push(val); }
+                else { if(aiData.styles.length >= 3) { showCustomAlert('info', '알림', '스타일은 최대 3개까지만 선택할 수 있어요!'); return; } chip.classList.add('selected'); aiData.styles.push(val); }
             }
             else if(chip.classList.contains('my-chip')) {
                 const val = chip.getAttribute('data-val');
@@ -454,6 +433,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.ptStyles = aiData.ptStyles.filter(s => s !== val); } 
                 else { if(aiData.ptStyles.length >= 2) { showCustomAlert('info', '알림', '동행자 스타일은 2개까지만!'); return; } chip.classList.add('selected'); aiData.ptStyles.push(val); }
+            }
+            else if(chip.classList.contains('theme-chip')) {
+                const val = chip.getAttribute('data-val');
+                if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.themes = aiData.themes.filter(s => s !== val); } 
+                else { if(aiData.themes.length >= 2) { showCustomAlert('info', '알림', '테마는 최대 2개까지만 선택할 수 있어요!'); return; } chip.classList.add('selected'); aiData.themes.push(val); }
             }
             validateAiStep(); 
         }); 
@@ -522,7 +506,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let dailyPlans = {}; 
     let isMapView = false;
     
-    // 여행지 데이터베이스
     const spotDB = {
         '오사카': {
             tour: [ {n: '유니버셜 스튜디오 재팬', d: '해리포터와 닌텐도 월드는 필수 코스입니다.', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'}, {n: '오사카 성', d: '일본을 대표하는 웅장한 역사 건축물', img: 'https://images.unsplash.com/photo-1590252973167-27e1f4d90ce3'}, {n: '우메다 공중정원', d: '오사카 시내가 한눈에 들어오는 최고의 야경 뷰', img: 'https://images.unsplash.com/photo-1520668611843-7f212d26fdf2'}, {n: '츠텐카쿠 전망대', d: '레트로한 분위기의 신세카이 중심', img: 'https://images.unsplash.com/photo-1590559899731-a382839cecdf'} ],
@@ -565,6 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ai-result-title').innerText = titleText;
         
         let subText = `${fm(aiData.startDate)} ~ ${fm(aiData.endDate)} · `;
+        if(aiData.themes.length > 0) subText += `${aiData.themes[0]} · `;
         if(aiMode === 'standard' && aiData.styles.length > 0) subText += `${aiData.styles[0]} 위주`;
         else if (aiMode === 'tension') subText += `우당탕탕 타협 플랜`;
         else subText += `자유 여행`;
@@ -657,7 +641,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(day, false); });
             document.getElementById('btn-plan-b')?.addEventListener('click', () => { 
                 if(!isPlanB) { 
-                    // 🚀 커스텀 얼럿으로 변경
                     showCustomAlert('umbrella', '우천 시 동선 변경', '비가 오네요! 미술관과 쇼핑몰 등 실내 일정 위주로 동선을 안전하게 재구성했습니다.', () => {
                         renderDayPlan(day, true); 
                     });
@@ -840,7 +823,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 결과 화면 뒤로가기 클릭 시 경고
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
         showCustomAlert('warning', '저장하지 않고 나가기', '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', () => {
             document.getElementById('ai-result-screen').classList.remove('active'); 
