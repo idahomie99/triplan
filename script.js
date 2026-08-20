@@ -181,6 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // 👇 구글 검색을 위한 국가별 ISO 코드 매핑
+    const countryIsoMap = {
+        '대한민국': 'KR', '일본': 'JP', '중국': 'CN', '대만': 'TW', '홍콩': 'HK', '마카오': 'MO', '태국': 'TH', '베트남': 'VN', '필리핀': 'PH', '싱가포르': 'SG', '말레이시아': 'MY', '인도네시아': 'ID', '인도': 'IN', '몰디브': 'MV', '몽골': 'MN',
+        '영국': 'GB', '프랑스': 'FR', '이탈리아': 'IT', '스페인': 'ES', '스위스': 'CH', '독일': 'DE', '체코': 'CZ', '오스트리아': 'AT', '헝가리': 'HU', '크로아티아': 'HR', '네덜란드': 'NL', '포르투갈': 'PT', '그리스': 'GR', '노르웨이': 'NO', '스웨덴': 'SE', '핀란드': 'FI', '튀르키예': 'TR', '아이슬란드': 'IS',
+        '미국': 'US', '캐나다': 'CA', '멕시코': 'MX', '페루': 'PE', '브라질': 'BR', '아르헨티나': 'AR', '칠레': 'CL', '콜롬비아': 'CO', '쿠바': 'CU', '볼리비아': 'BO',
+        '호주': 'AU', '뉴질랜드': 'NZ', '괌': 'GU', '사이판': 'MP', '피지': 'FJ', '팔라우': 'PW', '이집트': 'EG', '모로코': 'MA'
+    };
+
     const countryData = {
         '아시아': ['대한민국', '일본', '중국', '대만', '홍콩', '마카오', '태국', '베트남', '필리핀', '싱가포르', '말레이시아', '인도네시아', '인도', '몰디브', '몽골'],
         '유럽': ['영국', '프랑스', '이탈리아', '스페인', '스위스', '독일', '체코', '오스트리아', '헝가리', '크로아티아', '네덜란드', '포르투갈', '그리스', '노르웨이', '스웨덴', '핀란드', '튀르키예', '아이슬란드'],
@@ -217,12 +225,20 @@ document.addEventListener('DOMContentLoaded', () => {
             else if(pinVal === 'end') { pinIcon = 'flight_land'; pinText = '도착지로 지정'; }
             else if(pinVal === 'start_end') { pinIcon = 'sync_alt'; pinText = '출발 및 도착지로 지정'; }
             
+            // 👇 국가 선택 여부에 따라 입력창 활성/비활성화 처리
+            const isCityDisabled = !dest.country;
+            const cityPlaceholder = isCityDisabled ? '국가를 먼저 선택해주세요' : '도시 이름 검색 (자동완성)';
+            const cityStyle = isCityDisabled ? 'opacity: 0.5; cursor: not-allowed; background: var(--card-border);' : '';
+
             const html = `
                 <div class="dest-item" data-index="${index}" style="animation: fadeIn 0.3s ease-out;">
                     <div class="dest-num" style="${isMulti ? 'display:flex;' : 'display:none;'}">${index + 1}</div>
                     <div class="dest-inputs">
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
-                        <input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력" value="${dest.city}">
+                        
+                        <!-- 👇 입력창에 비활성화(disabled) 옵션 동적 적용 -->
+                        <input type="text" class="city-input" placeholder="${cityPlaceholder}" value="${dest.city}" ${isCityDisabled ? 'disabled' : ''} style="${cityStyle}">
+                        
                         <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span><span class="stay-date-val">${dateStr}</span></button>
                         <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
                             <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
@@ -238,6 +254,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             destContainer.insertAdjacentHTML('beforeend', html);
+        });
+
+        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기
+        document.querySelectorAll('.city-input').forEach((inputEl, index) => {
+            const dest = aiData.destinations[index];
+            if (dest.country && window.google) {
+                const isoCode = countryIsoMap[dest.country];
+                
+                const autocomplete = new google.maps.places.Autocomplete(inputEl, {
+                    types: ['(cities)'], // 지역을 '도시'로만 엄격하게 제한
+                    componentRestrictions: isoCode ? { country: isoCode } : undefined // 선택한 국가 안에서만 찾도록 제한
+                });
+
+                // 유저가 자동완성 목록에서 도시를 딱 눌렀을 때
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    if (place && place.name) {
+                        aiData.destinations[index].city = place.name;
+                        validateAiStep(); // 유효성 검사 통과시키기
+                    }
+                });
+            }
         });
     };
 
