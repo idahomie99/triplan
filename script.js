@@ -684,6 +684,8 @@ document.addEventListener('DOMContentLoaded', () => {
         indoor: ['1582967788606-a171c1080cb0', '1519567241046-7f570eee3ce6', '1499856871958-5b9627545d1a']
     };
 
+    let placesService = null; // 구글 장소 사진 가져올 서비스 변수
+
     function renderAiTimeline(aiResponse) {
         const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
         const mainDest = dests[0] || '여행지';
@@ -709,9 +711,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
 
         dailyPlans = {};
-        aiResponse.dailyPlans.forEach(dayPlan => {
+        aiResponse.dailyPlans.forEach((dayPlan, pIndex) => {
             let daySpots = [];
-            dayPlan.spots.forEach(slot => {
+            dayPlan.spots.forEach((slot, sIndex) => {
                 let iconColor = '#8B5CF6'; let iconBg = '#F1F5F9';
                 if(slot.type === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; }
                 if(slot.type === 'tour') { iconColor = '#2563EB'; iconBg = 'rgba(37,99,235,0.1)'; }
@@ -719,15 +721,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(slot.type === 'indoor') { iconColor = '#10B981'; iconBg = 'rgba(16,185,129,0.1)'; }
 
                 let survivalTip = slot.tip ? `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">${slot.tip}</span></div>` : '';
-                const randomImg = `https://images.unsplash.com/photo-${fallbackImages[slot.type] ? fallbackImages[slot.type][Math.floor(Math.random() * fallbackImages[slot.type].length)] : fallbackImages.tour[0]}`;
+                
+                // 1. 초기엔 Unsplash 임시 사진을 깔아둠
+                let initialImg = `https://images.unsplash.com/photo-${fallbackImages[slot.type] ? fallbackImages[slot.type][Math.floor(Math.random() * fallbackImages[slot.type].length)] : fallbackImages.tour[0]}?q=80&w=400&auto=format&fit=crop`;
+                let uniqueImgId = `spot-img-${dayPlan.day}-${sIndex}`; // 고유 ID 부여
 
                 daySpots.push({ 
                     time: slot.time, type: slot.type, catName: slot.catName, mIcon: slot.mIcon, 
                     name: slot.name, lat: slot.lat, lng: slot.lng,
-                    desc: slot.desc, img: randomImg, color: iconColor, bg: iconBg, tip: survivalTip 
+                    desc: slot.desc, img: initialImg, imgId: uniqueImgId, color: iconColor, bg: iconBg, tip: survivalTip 
                 });
-            }); // 👈 바로 이 부분! 안쪽 반복문을 닫는 괄호가 빠져 있었어!
+                
+                // 🚀 2. 구글 Places API로 진짜 사진 백그라운드 탐색! (서버 과부하 방지를 위해 시간차 호출)
+                setTimeout(() => {
+                    if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
+                    const request = { query: `${mainDest} ${slot.name}`, fields: ['photos'] };
+                    
+                    placesService.findPlaceFromQuery(request, (results, status) => {
+                        if (status === google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos) {
+                            const realPhotoUrl = results[0].photos[0].getUrl({ maxWidth: 400 });
+                            
+                            // 3. 사진을 성공적으로 찾으면 데이터를 업데이트하고 화면 요소도 즉시 교체
+                            const targetSpot = dailyPlans[dayPlan.day].spots[sIndex];
+                            if(targetSpot) targetSpot.img = realPhotoUrl;
+                            
+                            const imgEl = document.getElementById(uniqueImgId);
+                            if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`;
+                        }
+                    });
+                }, (pIndex * 5 + sIndex) * 300); // 일정 하나당 0.3초 텀을 두고 순차적으로 불러옴
 
+            }); 
             dailyPlans[dayPlan.day] = { hp: dayPlan.hp, spots: daySpots };
         });
 
@@ -744,25 +768,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         initMapForResult(mainDest);
         document.getElementById('ai-result-screen').classList.add('active');
-    }
-
-    function generateMockTimeline() {
-        const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
-        const mainDest = dests[0] || '미지의 여행지';
-        const totalDays = aiData.totalTripDays > 0 ? aiData.totalTripDays : 1; 
-        
-        let dummyResponse = { dailyPlans: [] };
-        for(let d=1; d<=totalDays; d++) {
-            dummyResponse.dailyPlans.push({
-                day: d, city: mainDest, hp: 65,
-                spots: [
-                    { time: '10:00', type: 'tour', catName: '관광', mIcon: 'photo_camera', name: `${mainDest} 최고의 명소`, desc: '현지인도 추천하는 완벽한 장소입니다.', tip: '아침 일찍 가야 사진 찍기 좋습니다.' },
-                    { time: '13:00', type: 'food', catName: '식사', mIcon: 'restaurant', name: `줄 서서 먹는 로컬 식당`, desc: '맛있고 든든한 한 끼를 즐기세요.', tip: '' },
-                    { time: '15:30', type: 'cafe', catName: '휴식', mIcon: 'local_cafe', name: `분위기 좋은 감성 카페`, desc: '잠시 다리를 쉬어가며 힐링하세요.', tip: '' }
-                ]
-            });
-        }
-        renderAiTimeline(dummyResponse);
     }
 
     const renderDayPlan = (day, isPlanB) => {
@@ -782,7 +787,9 @@ document.addEventListener('DOMContentLoaded', () => {
         plan.spots.forEach(spot => {
             let currentCat = spot.catName;
             if(isPlanB && spot.type === 'tour') currentCat = '실내 대체'; 
-            let imgHtml = spot.img ? `<div class="tc-img" style="background-image: url('${spot.img}?q=80&w=400&auto=format&fit=crop');"></div>` : '';
+            
+            // 👇 고유 ID(imgId)를 적용해서 구글 사진이 도착하면 쇽! 하고 바뀌게 설정
+            let imgHtml = spot.img ? `<div class="tc-img" id="${spot.imgId}" style="background-image: url('${spot.img}');"></div>` : '';
 
             timelineHtml += `
             <div class="timeline-item">
@@ -807,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        if(isMapView && routeMap) { drawRoute(routeMap.getCenter().lat, routeMap.getCenter().lng, plan.spots); }
+        if(isMapView && routeMap) { drawRoute(routeMap.getCenter().lat(), routeMap.getCenter().lng(), plan.spots); }
     };
 
     // 🚀 구글 맵 (Google Maps) 라우팅 변수
@@ -935,25 +942,34 @@ let isMapView = false; let currentMarkerIndex = -1;
         isMapView = !isMapView;
         const timelineContainer = document.getElementById('ai-timeline-container');
         const exploreContainer = document.getElementById('ai-explore-container');
-        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); // 👈 wrapper로 변경
+        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); 
         const mapIcon = document.getElementById('top-map-icon');
 
         if(isMapView) {
             if(timelineContainer) timelineContainer.style.display = 'none'; 
             if(exploreContainer) exploreContainer.style.display = 'none';
-            if(resultMapWrapper) resultMapWrapper.style.display = 'block'; // 👈 wrapper 띄우기
+            
+            // 👇 block 대신 flex를 써서 영역을 꽉 채우게 수정!
+            if(resultMapWrapper) {
+                resultMapWrapper.style.display = 'flex';
+                resultMapWrapper.style.flexDirection = 'column';
+            }
             if(mapIcon) mapIcon.innerText = 'format_list_bulleted'; 
             
             if(routeMap) {
-                setTimeout(() => google.maps.event.trigger(routeMap, 'resize'), 100);
-                drawRoute(routeMap.getCenter().lat(), routeMap.getCenter().lng(), dailyPlans[currentSelectedDay]?.spots);
+                // 👇 150ms 뒤에 사이즈를 재계산하고 강제로 센터를 맞춰서 회색 지도 방지!
+                setTimeout(() => {
+                    google.maps.event.trigger(routeMap, 'resize');
+                    routeMap.panTo(routeMap.getCenter()); 
+                    drawRoute(routeMap.getCenter().lat(), routeMap.getCenter().lng(), dailyPlans[currentSelectedDay]?.spots);
+                }, 150);
             }
         } else {
             const activeTab = document.querySelector('.explore-chip.active')?.getAttribute('data-type') || 'timeline';
             if(activeTab === 'timeline' && timelineContainer) timelineContainer.style.display = 'flex'; 
             else if(exploreContainer) exploreContainer.style.display = 'flex';
             
-            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; // 👈 wrapper 숨기기
+            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; 
             if(mapIcon) mapIcon.innerText = 'map'; 
             const mapCardEl = document.getElementById('map-info-card');
             if(mapCardEl) mapCardEl.classList.remove('active');
