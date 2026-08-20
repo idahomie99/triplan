@@ -692,33 +692,39 @@ document.addEventListener('DOMContentLoaded', () => {
 let isMapView = false; let currentMarkerIndex = -1;
 
     function initMapForResult(mainDest) {
-        if(!routeMap) {
-            routeMap = new google.maps.Map(document.getElementById('ai-result-map'), {
-                center: {lat: 37.5665, lng: 126.9780},
-                zoom: 13,
-                disableDefaultUI: true
-            });
-        }
-
-        if(mainDest !== '미지의 여행지') {
-            const tempGeocoder = new google.maps.Geocoder();
-            tempGeocoder.geocode({address: mainDest}, (results, status) => {
-                if(status === 'OK') {
-                    routeMap.setCenter(results[0].geometry.location);
-                }
-            });
-        }
-
-        isMapView = false; currentMarkerIndex = -1;
-        document.getElementById('ai-timeline-container').style.display = 'flex';
-        document.getElementById('ai-explore-container').style.display = 'none';
-        document.getElementById('ai-result-map').style.display = 'none';
-        document.getElementById('top-map-icon').innerText = 'map';
-        document.getElementById('map-info-card').classList.remove('active');
-        
-        document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
+    const resultMapEl = document.getElementById('ai-result-map');
+    if(!routeMap && resultMapEl) {
+        routeMap = new google.maps.Map(resultMapEl, {
+            center: {lat: 37.5665, lng: 126.9780},
+            zoom: 13,
+            disableDefaultUI: true
+        });
     }
+
+    if(mainDest !== '미지의 여행지' && routeMap) {
+        const tempGeocoder = new google.maps.Geocoder();
+        tempGeocoder.geocode({address: mainDest}, (results, status) => {
+            if(status === 'OK' && routeMap) {
+                routeMap.setCenter(results[0].geometry.location);
+            }
+        });
+    }
+
+    isMapView = false; currentMarkerIndex = -1;
+    const timelineEl = document.getElementById('ai-timeline-container');
+    const exploreEl = document.getElementById('ai-explore-container');
+    const topIconEl = document.getElementById('top-map-icon');
+    const mapCardEl = document.getElementById('map-info-card');
+
+    if (timelineEl) timelineEl.style.display = 'flex';
+    if (exploreEl) exploreEl.style.display = 'none';
+    if (resultMapEl) resultMapEl.style.display = 'none';
+    if (topIconEl) topIconEl.innerText = 'map';
+    if (mapCardEl) mapCardEl.classList.remove('active');
+    
+    document.querySelectorAll('.explore-chip').forEach(c => c?.classList.remove('active'));
+    document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
+}
 
     const animateMovement = (startPos, endPos, duration, callback) => {
         if(movingMarker) movingMarker.setMap(null);
