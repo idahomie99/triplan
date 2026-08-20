@@ -23,13 +23,16 @@
 </head>
 <body>
     <div id="app-container">
-        <!-- 내부 팝업 (Alert) -->
+        <!-- 🚀 얼럿 팝업에 취소 버튼 추가 -->
         <div id="custom-alert-overlay" class="alert-overlay"></div>
         <div id="custom-alert-modal" class="alert-modal">
             <div class="alert-icon" id="alert-icon"><span class="material-symbols-rounded">info</span></div>
             <h3 id="alert-title">안내</h3>
             <p id="alert-desc">여기에 상세 설명이 들어갑니다.</p>
-            <button class="alert-confirm-btn ripple-btn" id="btn-alert-confirm">확인했어요</button>
+            <div class="alert-btn-group">
+                <button class="alert-cancel-btn ripple-btn" id="btn-alert-cancel" style="display: none;">취소</button>
+                <button class="alert-confirm-btn ripple-btn" id="btn-alert-confirm">확인했어요</button>
+            </div>
         </div>
 
         <div id="splash-screen"><div class="splash-logo">Triplan.</div></div>
@@ -135,7 +138,6 @@
                     </label>
                 </div>
 
-                <!-- 🚀 스텝 3: 국내 여행용 교통수단 확인 (새로 추가) -->
                 <div class="ai-step" id="ai-step-3">
                     <h2 class="ai-question">주로 이용하실<br>교통수단은 무엇인가요?</h2><p class="ai-desc">다중 선택이 가능합니다. 동선 계산에 활용돼요.</p>
                     <div class="ai-chips-container" id="transport-chips-container">
@@ -147,7 +149,6 @@
                     </div>
                 </div>
 
-                <!-- 이후 스텝 번호 하나씩 밀림 -->
                 <div class="ai-step" id="ai-step-4"><h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
                     <div class="ai-time-group"><label>도착지 공항 <b>도착</b> 시간 <span id="label-arr-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-arr-time"></div>
                     <div class="ai-time-group" style="margin-top: 16px;"><label>귀국행 비행기 <b>출발</b> 시간 <span id="label-dep-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-dep-time"></div>
@@ -181,16 +182,17 @@
                     </div>
                 </div>
 
+                <!-- 🚀 촌스러운 이모지를 모두 없애고 세련된 머티리얼 심볼 적용 -->
                 <div class="ai-step" id="ai-step-9">
                     <h2 class="ai-question">이번 여행의 테마를<br>골라주세요</h2><p class="ai-desc">최대 2개까지 선택할 수 있어요.</p>
                     <div class="ai-chips-container" id="theme-chips-container">
-                        <div class="ai-chip theme-chip" data-val="우정여행">👯‍♀️ 우정여행</div>
-                        <div class="ai-chip theme-chip" data-val="신혼여행">💍 신혼여행</div>
-                        <div class="ai-chip theme-chip" data-val="가족여행">👨‍👩‍👧‍👦 가족여행</div>
-                        <div class="ai-chip theme-chip" data-val="자유여행">🎒 자유여행</div>
-                        <div class="ai-chip theme-chip" data-val="배낭여행">⛺ 배낭여행</div>
-                        <div class="ai-chip theme-chip" data-val="효도여행">🎁 효도여행</div>
-                        <div class="ai-chip theme-chip" data-val="식도락여행">🍽️ 식도락여행</div>
+                        <div class="ai-chip theme-chip" data-val="우정여행"><span class="material-symbols-rounded" style="font-size:18px;">diversity_1</span> 우정여행</div>
+                        <div class="ai-chip theme-chip" data-val="신혼여행"><span class="material-symbols-rounded" style="font-size:18px;">favorite</span> 신혼여행</div>
+                        <div class="ai-chip theme-chip" data-val="가족여행"><span class="material-symbols-rounded" style="font-size:18px;">family_restroom</span> 가족여행</div>
+                        <div class="ai-chip theme-chip" data-val="자유여행"><span class="material-symbols-rounded" style="font-size:18px;">flight_takeoff</span> 자유여행</div>
+                        <div class="ai-chip theme-chip" data-val="배낭여행"><span class="material-symbols-rounded" style="font-size:18px;">backpack</span> 배낭여행</div>
+                        <div class="ai-chip theme-chip" data-val="효도여행"><span class="material-symbols-rounded" style="font-size:18px;">elderly</span> 효도여행</div>
+                        <div class="ai-chip theme-chip" data-val="식도락여행"><span class="material-symbols-rounded" style="font-size:18px;">restaurant</span> 식도락여행</div>
                     </div>
                 </div>
 

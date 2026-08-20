@@ -19,7 +19,7 @@
 body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; min-height: 100dvh; }
 #app-container { width: 100%; max-width: 480px; height: 100vh; height: 100dvh; background-color: var(--bg-app); display: flex; flex-direction: column; position: relative; overflow: hidden; box-shadow: 0 20px 40px var(--shadow-color); padding-top: env(safe-area-inset-top); }
 
-/* 부드러운 내부 팝업(Alert) CSS */
+/* 🚀 얼럿 취소 버튼 추가 적용 */
 .alert-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; opacity: 0; transition: opacity 0.3s; }
 .alert-overlay.active { display: block; opacity: 1; }
 .alert-modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%); width: 80%; max-width: 320px; background: var(--card-bg); border-radius: 24px; padding: 24px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 9001; opacity: 0; visibility: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid var(--card-border); }
@@ -28,8 +28,12 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .alert-icon span { font-size: 40px; }
 .alert-modal h3 { font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
 .alert-modal p { font-size: 14px; font-weight: 600; color: var(--text-sub); line-height: 1.5; margin-bottom: 24px; word-break: keep-all; }
-.alert-confirm-btn { width: 100%; padding: 14px; background: #2563EB; color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(37,99,235,0.2); transition: 0.2s; }
+.alert-btn-group { display: flex; gap: 8px; width: 100%; }
+.alert-cancel-btn { flex: 1; padding: 14px; background: var(--icon-bg); color: var(--text-sub); border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+.alert-cancel-btn:active { background: var(--card-border); }
+.alert-confirm-btn { flex: 1; padding: 14px; background: #2563EB; color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(37,99,235,0.2); transition: 0.2s; }
 .alert-confirm-btn:active { transform: scale(0.96); }
+.alert-confirm-btn.danger { background: #EF4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2); }
 
 #splash-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-app); z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease-out, visibility 0.5s ease-out; }
 #splash-screen.hide { opacity: 0; visibility: hidden; }
@@ -91,7 +95,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .sheet-content { flex: 1; overflow-y: auto; padding: 0 24px 20px 24px; background: var(--card-bg); }
 .sheet-footer { padding: 15px 24px 30px 24px; background: var(--card-bg); box-shadow: 0 -4px 15px var(--shadow-color); }
 
-/* 달력 요일 및 공휴일 지정 */
 .week-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 13px; font-weight: 800; color: var(--text-main); padding: 15px 0; border-bottom: 1px solid var(--card-border); position: sticky; top: 0; background: var(--card-bg); z-index: 5;}
 .week-days span:nth-child(1), .week-days span:nth-child(7) { color: #94A3B8; } 
 .month-title { font-size: 16px; font-weight: 800; color: var(--text-main); margin: 20px 0 10px 0; text-align: center; }
@@ -123,7 +126,6 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .ai-date-texts .value { font-size: 16px; font-weight: 800; color: var(--text-main); }
 .ai-date-select-card .arrow { color: #CBD5E1; }
 
-/* 목적지 다중 입력 폼 전용 CSS */
 #dest-form-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 12px; }
 .dest-item { display: flex; gap: 12px; align-items: flex-start; position: relative; margin-bottom: 12px; transition: 0.3s; }
 .dest-num { width: 24px; height: 24px; border-radius: 50%; background: var(--text-main); color: white; font-size: 12px; font-weight: 800; display: flex; justify-content: center; align-items: center; flex-shrink: 0; margin-top: 14px; }
@@ -131,12 +133,22 @@ body { font-family: 'NanumSquare', sans-serif; background-color: var(--bg-app); 
 .country-select-btn { width: 100%; padding: 12px 16px; background: var(--icon-bg); border: none; border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
 .city-input { flex: 1; padding: 12px 16px; background: var(--icon-bg); border: none; border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--text-main); outline: none; }
 .stay-date-btn { display: flex; align-items: center; justify-content: flex-start; gap: 8px; padding: 12px 16px; background: var(--icon-bg); border: none; border-radius: 10px; font-size: 14px; font-weight: 700; color: var(--text-main); cursor: pointer; width: 100%;}
-.pin-select { padding: 12px 16px; background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.2); border-radius: 10px; font-size: 14px; font-weight: 700; color: #2563EB; outline: none; width: 100%; cursor: pointer; }
 .remove-dest-btn { position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background: white; color: #EF4444; border: 1px solid #E2E8F0; border-radius: 50%; font-size: 16px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
 .add-dest-text-btn { background: none; border: none; color: #2563EB; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 8px 4px; transition: 0.2s; }
 .add-dest-text-btn:active { opacity: 0.7; }
 
-/* AI 위임 토글 스위치 */
+/* 🚀 커스텀 셀렉트 (이모지 대신 머티리얼 아이콘) */
+.custom-pin-select { position: relative; width: 100%; user-select: none; }
+.pin-selected { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.2); border-radius: 10px; font-size: 14px; font-weight: 700; color: #2563EB; cursor: pointer; }
+.pin-selected .icon { font-size: 18px; }
+.pin-selected .text { flex: 1; }
+.pin-selected .arrow { font-size: 18px; color: #2563EB; }
+.pin-options { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; box-shadow: 0 4px 15px var(--shadow-color); z-index: 10; overflow: hidden; }
+.custom-pin-select.open .pin-options { display: block; }
+.pin-option { display: flex; align-items: center; gap: 8px; padding: 12px 16px; font-size: 14px; font-weight: 700; color: var(--text-main); cursor: pointer; transition: 0.2s; }
+.pin-option:hover, .pin-option:active { background: var(--icon-bg); }
+.pin-option .material-symbols-rounded { font-size: 18px; color: var(--text-sub); }
+
 .ai-optimize-toggle { display: flex; align-items: center; gap: 12px; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); padding: 16px; border-radius: 16px; cursor: pointer; margin-bottom: 20px;}
 .ai-optimize-toggle .toggle-icon { color: #8B5CF6; display:flex; align-items:center;}
 .ai-optimize-toggle .toggle-text { flex: 1; font-size: 14px; font-weight: 700; color: var(--text-main); }
@@ -161,8 +173,6 @@ input[type="checkbox"] { display: none; }
 .ai-option-card { background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 20px; padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--shadow-color); }
 .ai-option-card .text { font-size: 15px; font-weight: 800; color: var(--text-main); }
 .ai-option-card.selected { border-color: #8B5CF6; background: rgba(139, 92, 246, 0.05); transform: translateY(-4px); box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2); }
-
-/* 🚀 이모지 배경 짤림(네모칸) 완벽 해결 */
 .circle-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-bottom: 4px; overflow: hidden; }
 .circle-icon span { font-size: 28px; }
 
@@ -194,7 +204,6 @@ input[type="checkbox"] { display: none; }
 #ai-loading-overlay p { font-size: 14px; color: var(--text-sub); font-weight: 600; }
 .leaflet-control-attribution { display: none !important; }
 
-/* 마이페이지 */
 .account-content { flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 32px; overflow-y: auto; }
 .profile-header { display: flex; align-items: center; gap: 20px; background: var(--card-bg); padding: 24px; border-radius: 20px; box-shadow: 0 4px 15px var(--shadow-color); border: 1px solid var(--card-border); }
 .profile-pic-large { width: 64px; height: 64px; border-radius: 50%; background-color: var(--icon-bg); background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2394A3B8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'); background-size: cover; background-position: center; border: 2px solid var(--card-border); }
@@ -209,7 +218,6 @@ input[type="checkbox"] { display: none; }
 .menu-item > span:nth-child(2) { flex: 1; font-size: 15px; font-weight: 700; color: var(--text-main); }
 .menu-item .arrow { color: #CBD5E1; font-size: 20px; }
 
-/* 타임라인 결과 화면 */
 .day-tabs-container { display: flex; gap: 8px; padding: 16px 24px; overflow-x: auto; background: var(--bg-app); border-bottom: 1px solid var(--card-border); scrollbar-width: none; z-index: 10; }
 .day-tabs-container::-webkit-scrollbar { display: none; }
 .day-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 20px; border-radius: 16px; background: var(--icon-bg); color: var(--text-sub); min-width: 72px; cursor: pointer; transition: 0.2s; }

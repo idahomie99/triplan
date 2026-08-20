@@ -30,22 +30,39 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     bindRipple();
 
-    const showCustomAlert = (icon, title, desc, callback) => {
+    // 🚀 업그레이드된 부드러운 내부 팝업 (취소 버튼 제어 포함)
+    const showCustomAlert = (options) => {
         const overlay = document.getElementById('custom-alert-overlay');
         const modal = document.getElementById('custom-alert-modal');
-        document.getElementById('alert-icon').innerHTML = `<span class="material-symbols-rounded">${icon}</span>`;
-        document.getElementById('alert-title').innerText = title;
-        document.getElementById('alert-desc').innerText = desc;
+        document.getElementById('alert-icon').innerHTML = `<span class="material-symbols-rounded">${options.icon || 'info'}</span>`;
+        document.getElementById('alert-title').innerText = options.title;
+        document.getElementById('alert-desc').innerText = options.desc;
+        
+        const confirmBtn = document.getElementById('btn-alert-confirm');
+        confirmBtn.innerText = options.confirmText || '확인했어요';
+        if(options.isDanger) confirmBtn.classList.add('danger');
+        else confirmBtn.classList.remove('danger');
+        
+        const cancelBtn = document.getElementById('btn-alert-cancel');
+        if(options.showCancel) {
+            cancelBtn.style.display = 'block';
+            cancelBtn.innerText = options.cancelText || '취소';
+        } else {
+            cancelBtn.style.display = 'none';
+        }
         
         overlay.classList.add('active');
         modal.classList.add('active');
         
-        document.getElementById('btn-alert-confirm').onclick = () => {
+        confirmBtn.onclick = () => {
             modal.classList.remove('active');
             overlay.classList.remove('active');
-            setTimeout(() => {
-                if(callback) callback();
-            }, 300);
+            setTimeout(() => { if(options.onConfirm) options.onConfirm(); }, 300);
+        };
+        
+        cancelBtn.onclick = () => {
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
         };
     };
 
@@ -80,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
 
-    // 🚀 글로벌 상태 변수 (10스텝)
     let aiMode = 'standard'; 
     let currentAiStep = 1; 
     const totalAiSteps = 10; 
@@ -132,7 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
     calendarOverlay.addEventListener('click', closeCalendar);
     
     document.getElementById('btn-confirm-date')?.addEventListener('click', () => {
-        if (!tempStartDate || !tempEndDate) { showCustomAlert('error', '알림', '시작일과 종료일을 모두 선택해주세요.'); return; }
+        if (!tempStartDate || !tempEndDate) { 
+            showCustomAlert({ icon: 'error', title: '알림', desc: '시작일과 종료일을 모두 선택해주세요.' }); 
+            return; 
+        }
         
         if (calendarTargetIndex === -1) {
             aiData.startDate = tempStartDate; aiData.endDate = tempEndDate;
@@ -216,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const countryModalTitle = document.getElementById('country-modal-title');
     let activeDestIndex = 0; 
 
+    // 🚀 목적지 폼 렌더링 (커스텀 드롭다운 구현)
     const renderDestinations = () => {
         destContainer.innerHTML = '';
         const isMulti = aiData.destinations.length > 1;
@@ -231,7 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateStr = dest.startDate ? `${fm(dest.startDate)} ~ ${fm(dest.endDate)} (${dest.stayDays}일)` : '일정 선택';
             const countryStr = dest.country || '국가를 선택하세요';
             const countryColor = dest.country ? '#2563EB' : 'inherit';
+            
+            // 🚀 커스텀 셀렉트 UI 셋팅
             const pinVal = dest.pin || 'auto';
+            let pinIcon = 'auto_awesome'; let pinText = 'AI가 순서 자동 배치';
+            if(pinVal === 'start') { pinIcon = 'flight_takeoff'; pinText = '출발지로 지정'; }
+            else if(pinVal === 'end') { pinIcon = 'flight_land'; pinText = '도착지로 지정'; }
             
             const html = `
                 <div class="dest-item" data-index="${index}" style="animation: fadeIn 0.3s ease-out;">
@@ -248,11 +273,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="stay-date-val">${dateStr}</span>
                         </button>
                         
-                        <select class="pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
-                            <option value="auto" ${pinVal==='auto'?'selected':''}>✨ AI가 순서 자동 배치</option>
-                            <option value="start" ${pinVal==='start'?'selected':''}>🛫 출발지로 지정</option>
-                            <option value="end" ${pinVal==='end'?'selected':''}>🛬 도착지로 지정</option>
-                        </select>
+                        <!-- 🚀 커스텀 셀렉트 드롭다운 -->
+                        <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
+                            <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
+                            <div class="pin-options">
+                                <div class="pin-option" data-val="auto"><span class="material-symbols-rounded">auto_awesome</span> AI가 순서 자동 배치</div>
+                                <div class="pin-option" data-val="start"><span class="material-symbols-rounded">flight_takeoff</span> 출발지로 지정</div>
+                                <div class="pin-option" data-val="end"><span class="material-symbols-rounded">flight_land</span> 도착지로 지정</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="remove-dest-btn" style="${isMulti ? 'display:flex;' : 'display:none;'}">
                         <span class="material-symbols-rounded" style="font-size:16px;">close</span>
@@ -274,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDestinations(); 
     });
 
+    // 🚀 이벤트 델리게이션 (모달, 삭제, 일정, 커스텀 셀렉트)
     destContainer?.addEventListener('click', (e) => {
         const item = e.target.closest('.dest-item');
         if(!item) return;
@@ -292,6 +322,25 @@ document.addEventListener('DOMContentLoaded', () => {
             tempEndDate = aiData.destinations[index].endDate || aiData.endDate;
             calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
         }
+        else if(e.target.closest('.pin-selected')) {
+            const selectContainer = e.target.closest('.custom-pin-select');
+            const isOp = selectContainer.classList.contains('open');
+            document.querySelectorAll('.custom-pin-select').forEach(el => el.classList.remove('open')); // 다른거 닫기
+            if(!isOp) selectContainer.classList.add('open');
+        }
+        else if(e.target.closest('.pin-option')) {
+            const opt = e.target.closest('.pin-option');
+            const val = opt.getAttribute('data-val');
+            aiData.destinations[index].pin = val;
+            renderDestinations(); 
+        }
+    });
+
+    // 화면 아무곳이나 누르면 커스텀 셀렉트 닫기
+    document.addEventListener('click', (e) => {
+        if(!e.target.closest('.custom-pin-select')) {
+            document.querySelectorAll('.custom-pin-select').forEach(el => el.classList.remove('open'));
+        }
     });
 
     destContainer?.addEventListener('input', (e) => {
@@ -299,13 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!item) return;
         const index = parseInt(item.getAttribute('data-index'));
         if(e.target.classList.contains('city-input')) { aiData.destinations[index].city = e.target.value.trim(); validateAiStep(); }
-    });
-
-    destContainer?.addEventListener('change', (e) => {
-        const item = e.target.closest('.dest-item');
-        if(!item) return;
-        const index = parseInt(item.getAttribute('data-index'));
-        if(e.target.classList.contains('pin-select')) { aiData.destinations[index].pin = e.target.value; }
     });
 
     const openCountryModal = (index) => {
@@ -349,9 +391,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
     document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
     
+    // 🚀 메인 스텝 뒤로가기 취소 얼럿
     document.getElementById('btn-back-ai')?.addEventListener('click', () => { 
-        showCustomAlert('warning', '일정 생성 취소', '일정 짜기를 그만두시겠습니까? 진행 중인 정보는 저장되지 않습니다.', () => {
-            aiScreen.classList.remove('active'); 
+        showCustomAlert({
+            icon: 'warning',
+            title: '일정 생성 취소',
+            desc: '일정 짜기를 그만두시겠습니까?\n진행 중인 정보는 저장되지 않습니다.',
+            showCancel: true,
+            confirmText: '네, 그만둘래요',
+            isDanger: true,
+            onConfirm: () => { aiScreen.classList.remove('active'); }
         });
     });
 
@@ -392,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else { document.getElementById('step-7-standard').style.display = 'none'; document.getElementById('step-7-tension').style.display = 'block'; }
     };
     
-    // 🚀 스마트 라우팅 및 10개 스텝 검증 
+    // 🚀 스마트 라우팅 및 검증
     const validateAiStep = () => { 
         if(!btnAiNext) return; 
         if(currentAiStep === 1) btnAiNext.disabled = !(aiData.startDate && aiData.endDate);
@@ -426,22 +475,22 @@ document.addEventListener('DOMContentLoaded', () => {
             else if(chip.classList.contains('std-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.styles = aiData.styles.filter(s => s !== val); } 
-                else { if(aiData.styles.length >= 3) { showCustomAlert('info', '알림', '스타일은 최대 3개까지만 선택할 수 있어요!'); return; } chip.classList.add('selected'); aiData.styles.push(val); }
+                else { if(aiData.styles.length >= 3) { showCustomAlert({icon:'info', title:'알림', desc:'스타일은 최대 3개까지만 선택할 수 있어요!'}); return; } chip.classList.add('selected'); aiData.styles.push(val); }
             }
             else if(chip.classList.contains('my-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.myStyles = aiData.myStyles.filter(s => s !== val); } 
-                else { if(aiData.myStyles.length >= 2) { showCustomAlert('info', '알림', '내 스타일은 2개까지만!'); return; } chip.classList.add('selected'); aiData.myStyles.push(val); }
+                else { if(aiData.myStyles.length >= 2) { showCustomAlert({icon:'info', title:'알림', desc:'내 스타일은 2개까지만!'}); return; } chip.classList.add('selected'); aiData.myStyles.push(val); }
             }
             else if(chip.classList.contains('pt-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.ptStyles = aiData.ptStyles.filter(s => s !== val); } 
-                else { if(aiData.ptStyles.length >= 2) { showCustomAlert('info', '알림', '동행자 스타일은 2개까지만!'); return; } chip.classList.add('selected'); aiData.ptStyles.push(val); }
+                else { if(aiData.ptStyles.length >= 2) { showCustomAlert({icon:'info', title:'알림', desc:'동행자 스타일은 2개까지만!'}); return; } chip.classList.add('selected'); aiData.ptStyles.push(val); }
             }
             else if(chip.classList.contains('theme-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.themes = aiData.themes.filter(s => s !== val); } 
-                else { if(aiData.themes.length >= 2) { showCustomAlert('info', '알림', '테마는 최대 2개까지만 선택할 수 있어요!'); return; } chip.classList.add('selected'); aiData.themes.push(val); }
+                else { if(aiData.themes.length >= 2) { showCustomAlert({icon:'info', title:'알림', desc:'테마는 최대 2개까지만 선택할 수 있어요!'}); return; } chip.classList.add('selected'); aiData.themes.push(val); }
             }
             validateAiStep(); 
         }); 
@@ -462,7 +511,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 🚀 조건부 화면 이동 로직 (국내여행 스마트 스킵)
     if(btnAiNext) {
         btnAiNext.addEventListener('click', () => {
             if (currentAiStep < totalAiSteps) {
@@ -471,23 +519,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let nextStep = currentAiStep + 1;
                 
-                // 🚀 스텝 2 -> 스텝 3/4 라우팅
                 if (currentAiStep === 2) {
                     const isDomesticOnly = aiData.destinations.length > 0 && aiData.destinations.every(d => d.country === '대한민국');
-                    if (isDomesticOnly) {
-                        nextStep = 3; // 🚗 국내면 교통수단 확인
-                    } else {
-                        nextStep = 4; // ✈️ 해외면 바로 항공편 확인
-                    }
+                    if (isDomesticOnly) nextStep = 3; 
+                    else nextStep = 4; 
                 } 
-                // 🚀 스텝 3 -> 스텝 4/5 라우팅
                 else if (currentAiStep === 3) {
                     const hasAirplane = aiData.transports.includes('비행기');
-                    if (hasAirplane) {
-                        nextStep = 4; // ✈️ 국내여도 비행기 타면 항공편 확인
-                    } else {
-                        nextStep = 5; // 🏨 아니면 바로 숙소 폼으로
-                    }
+                    if (hasAirplane) nextStep = 4; 
+                    else nextStep = 5; 
                 }
 
                 if (nextStep <= totalAiSteps) {
@@ -520,13 +560,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     aiScreen.classList.remove('active');
                 } catch(err) {
                     document.getElementById('ai-loading-overlay').classList.remove('active');
-                    console.error("타임라인 생성 중 에러:", err);
-                    showCustomAlert('error', '오류 발생', "일정 분석 중 오류가 났습니다. 다시 시도해주세요! (" + err.message + ")");
+                    console.error(err);
+                    showCustomAlert({icon:'error', title:'오류 발생', desc:"일정 분석 중 오류가 났습니다. 다시 시도해주세요! (" + err.message + ")"});
                 }
             }, 2500);
         } catch(e) {
-            console.error("데이터 세팅 중 에러:", e);
-            showCustomAlert('error', '오류 발생', "데이터 처리 중 오류가 발생했습니다.");
+            console.error(e);
+            showCustomAlert({icon:'error', title:'오류 발생', desc:"데이터 처리 중 오류가 발생했습니다."});
         }
     }
 
@@ -676,9 +716,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(day, false); });
             document.getElementById('btn-plan-b')?.addEventListener('click', () => { 
                 if(!isPlanB) { 
-                    showCustomAlert('umbrella', '우천 시 동선 변경', '비가 오네요! 미술관과 쇼핑몰 등 실내 일정 위주로 동선을 안전하게 재구성했습니다.', () => {
+                    showCustomAlert({icon:'umbrella', title:'우천 시 동선 변경', desc:'비가 오네요! 미술관과 쇼핑몰 등 실내 일정 위주로 동선을 안전하게 재구성했습니다.', onConfirm: () => {
                         renderDayPlan(day, true); 
-                    });
+                    }});
                 }
             });
             
@@ -849,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="explore-card-info">
                             <div class="explore-card-title">${spotName}</div>
                             <div class="explore-card-sub">별점 4.${8-i} · ${spotDesc}</div>
-                            <button class="explore-add-btn ripple-btn" onclick="document.getElementById('custom-alert-overlay').classList.add('active'); document.getElementById('custom-alert-modal').classList.add('active'); document.getElementById('alert-icon').innerHTML='<span class=\\'material-symbols-rounded\\' style=\\'color:#10B981;\\'>check_circle</span>'; document.getElementById('alert-title').innerText='추가 완료'; document.getElementById('alert-desc').innerText='내 일정에 성공적으로 추가되었습니다! 😆';">+ 내 일정에 추가/교체</button>
+                            <button class="explore-add-btn ripple-btn" onclick="document.getElementById('custom-alert-overlay').classList.add('active'); document.getElementById('custom-alert-modal').classList.add('active'); document.getElementById('alert-icon').innerHTML='<span class=\\'material-symbols-rounded\\' style=\\'color:#10B981;\\'>check_circle</span>'; document.getElementById('alert-title').innerText='추가 완료'; document.getElementById('alert-desc').innerText='내 일정에 성공적으로 추가되었습니다! 😆'; document.getElementById('btn-alert-cancel').style.display='none'; document.getElementById('btn-alert-confirm').innerText='확인했어요'; document.getElementById('btn-alert-confirm').classList.remove('danger');">+ 내 일정에 추가/교체</button>
                         </div>
                     </div>`;
                 });
@@ -859,8 +899,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
-        showCustomAlert('warning', '저장하지 않고 나가기', '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', () => {
-            document.getElementById('ai-result-screen').classList.remove('active'); 
+        showCustomAlert({
+            icon: 'warning',
+            title: '저장하지 않고 나가기',
+            desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?',
+            showCancel: true,
+            confirmText: '네, 나갈래요',
+            isDanger: true,
+            onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); }
         });
     });
 
