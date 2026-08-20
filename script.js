@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     bindRipple();
 
-    // 🚀 커스텀 얼럿 함수
     const showCustomAlert = (icon, title, desc, callback) => {
         const overlay = document.getElementById('custom-alert-overlay');
         const modal = document.getElementById('custom-alert-modal');
@@ -81,10 +80,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnAccount) btnAccount.addEventListener('click', handleLoginOrMyPage);
     if(btnBackAccount) btnBackAccount.addEventListener('click', () => accountScreen.classList.remove('active'));
 
-    // 🚀 글로벌 상태 변수 (스텝 9개로 확장)
+    // 🚀 글로벌 상태 변수 (10스텝)
     let aiMode = 'standard'; 
     let currentAiStep = 1; 
-    const totalAiSteps = 9; 
+    const totalAiSteps = 10; 
     const aiProgressBar = document.getElementById('ai-progress-bar'); 
     const btnAiNext = document.getElementById('btn-ai-next');
     const aiScreen = document.getElementById('ai-screen'); 
@@ -92,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let aiData = { 
         startDate: null, endDate: null, totalTripDays: 0,
         destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], 
-        isOptimizeRoute: false, 
+        isOptimizeRoute: false, transports: [],
         arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 
     };
 
@@ -217,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const countryModalTitle = document.getElementById('country-modal-title');
     let activeDestIndex = 0; 
 
-    // 🚀 목적지 폼 렌더링
     const renderDestinations = () => {
         destContainer.innerHTML = '';
         const isMulti = aiData.destinations.length > 1;
@@ -381,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(stepEl) stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; 
         }
         
-        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
+        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
         tempStartDate = null; tempEndDate = null; updateDateTexts(); 
         
         renderDestinations(); 
@@ -394,20 +392,21 @@ document.addEventListener('DOMContentLoaded', () => {
         else { document.getElementById('step-7-standard').style.display = 'none'; document.getElementById('step-7-tension').style.display = 'block'; }
     };
     
-    // 🚀 9개 스텝에 맞춘 검증 로직
+    // 🚀 스마트 라우팅 및 10개 스텝 검증 
     const validateAiStep = () => { 
         if(!btnAiNext) return; 
         if(currentAiStep === 1) btnAiNext.disabled = !(aiData.startDate && aiData.endDate);
         else if(currentAiStep === 2) btnAiNext.disabled = !aiData.destinations.every(d => d.city.trim() !== '');
-        else if(currentAiStep === 3 || currentAiStep === 4) btnAiNext.disabled = false; 
-        else if(currentAiStep === 5) btnAiNext.disabled = aiData.companion === ''; 
-        else if(currentAiStep === 6) btnAiNext.disabled = false; 
-        else if(currentAiStep === 7) {
+        else if(currentAiStep === 3) btnAiNext.disabled = aiData.transports.length === 0;
+        else if(currentAiStep === 4 || currentAiStep === 5) btnAiNext.disabled = false; 
+        else if(currentAiStep === 6) btnAiNext.disabled = aiData.companion === ''; 
+        else if(currentAiStep === 7) btnAiNext.disabled = false; 
+        else if(currentAiStep === 8) {
             if(aiMode === 'standard') btnAiNext.disabled = aiData.styles.length === 0;
             else btnAiNext.disabled = (aiData.myStyles.length === 0 || aiData.ptStyles.length === 0);
         }
-        else if(currentAiStep === 8) btnAiNext.disabled = aiData.themes.length === 0; // 테마 선택 필수
-        else if(currentAiStep === 9) btnAiNext.disabled = false;
+        else if(currentAiStep === 9) btnAiNext.disabled = aiData.themes.length === 0;
+        else if(currentAiStep === 10) btnAiNext.disabled = false;
     };
     
     document.querySelectorAll('.ai-option-card').forEach(card => { 
@@ -418,7 +417,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.ai-chip').forEach(chip => { 
         chip.addEventListener('click', () => { 
-            if(chip.classList.contains('age-chip')) chip.classList.toggle('selected');
+            if(chip.classList.contains('transport-chip')) {
+                const val = chip.getAttribute('data-val');
+                if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.transports = aiData.transports.filter(s => s !== val); } 
+                else { chip.classList.add('selected'); aiData.transports.push(val); }
+            }
+            else if(chip.classList.contains('age-chip')) chip.classList.toggle('selected');
             else if(chip.classList.contains('std-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.styles = aiData.styles.filter(s => s !== val); } 
@@ -458,41 +462,72 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 🚀 조건부 화면 이동 로직 (국내여행 스마트 스킵)
     if(btnAiNext) {
         btnAiNext.addEventListener('click', () => {
             if (currentAiStep < totalAiSteps) {
-                if(currentAiStep === 3) { aiData.arrTime = document.getElementById('ai-input-arr-time').value; aiData.depTime = document.getElementById('ai-input-dep-time').value; }
-                if(currentAiStep === 4) aiData.accom = document.getElementById('ai-input-accom').value.trim();
+                if(currentAiStep === 4) { aiData.arrTime = document.getElementById('ai-input-arr-time').value; aiData.depTime = document.getElementById('ai-input-dep-time').value; }
+                if(currentAiStep === 5) aiData.accom = document.getElementById('ai-input-accom').value.trim();
 
-                const curEl = document.getElementById(`ai-step-${currentAiStep}`);
-                const nextEl = document.getElementById(`ai-step-${currentAiStep + 1}`);
-                curEl.classList.remove('active'); curEl.classList.add('exit');
-                setTimeout(() => nextEl.classList.add('active'), 100);
+                let nextStep = currentAiStep + 1;
                 
-                currentAiStep++; aiProgressBar.style.width = `${(currentAiStep/totalAiSteps)*100}%`;
-                if(currentAiStep === totalAiSteps) btnAiNext.innerText = 'AI 일정 생성하기';
-                validateAiStep();
+                // 🚀 스텝 2 -> 스텝 3/4 라우팅
+                if (currentAiStep === 2) {
+                    const isDomesticOnly = aiData.destinations.length > 0 && aiData.destinations.every(d => d.country === '대한민국');
+                    if (isDomesticOnly) {
+                        nextStep = 3; // 🚗 국내면 교통수단 확인
+                    } else {
+                        nextStep = 4; // ✈️ 해외면 바로 항공편 확인
+                    }
+                } 
+                // 🚀 스텝 3 -> 스텝 4/5 라우팅
+                else if (currentAiStep === 3) {
+                    const hasAirplane = aiData.transports.includes('비행기');
+                    if (hasAirplane) {
+                        nextStep = 4; // ✈️ 국내여도 비행기 타면 항공편 확인
+                    } else {
+                        nextStep = 5; // 🏨 아니면 바로 숙소 폼으로
+                    }
+                }
+
+                if (nextStep <= totalAiSteps) {
+                    const curEl = document.getElementById(`ai-step-${currentAiStep}`);
+                    const nextEl = document.getElementById(`ai-step-${nextStep}`);
+                    curEl.classList.remove('active'); curEl.classList.add('exit');
+                    setTimeout(() => nextEl.classList.add('active'), 100);
+                    
+                    currentAiStep = nextStep; 
+                    aiProgressBar.style.width = `${(currentAiStep/totalAiSteps)*100}%`;
+                    if(currentAiStep === totalAiSteps) btnAiNext.innerText = 'AI 일정 생성하기';
+                    validateAiStep();
+                } else {
+                    submitAiFlow();
+                }
             } 
             else if (currentAiStep === totalAiSteps) {
-                try {
-                    document.getElementById('ai-loading-overlay').classList.add('active');
-                    setTimeout(() => {
-                        try {
-                            document.getElementById('ai-loading-overlay').classList.remove('active');
-                            generateAiTimeline(); 
-                            aiScreen.classList.remove('active');
-                        } catch(err) {
-                            document.getElementById('ai-loading-overlay').classList.remove('active');
-                            console.error("타임라인 생성 중 에러:", err);
-                            showCustomAlert('error', '오류 발생', "일정 분석 중 오류가 났습니다. 다시 시도해주세요! (" + err.message + ")");
-                        }
-                    }, 2500);
-                } catch(e) {
-                    console.error("데이터 세팅 중 에러:", e);
-                    showCustomAlert('error', '오류 발생', "데이터 처리 중 오류가 발생했습니다.");
-                }
+                submitAiFlow();
             }
         });
+    }
+    
+    function submitAiFlow() {
+        try {
+            document.getElementById('ai-loading-overlay').classList.add('active');
+            setTimeout(() => {
+                try {
+                    document.getElementById('ai-loading-overlay').classList.remove('active');
+                    generateAiTimeline(); 
+                    aiScreen.classList.remove('active');
+                } catch(err) {
+                    document.getElementById('ai-loading-overlay').classList.remove('active');
+                    console.error("타임라인 생성 중 에러:", err);
+                    showCustomAlert('error', '오류 발생', "일정 분석 중 오류가 났습니다. 다시 시도해주세요! (" + err.message + ")");
+                }
+            }, 2500);
+        } catch(e) {
+            console.error("데이터 세팅 중 에러:", e);
+            showCustomAlert('error', '오류 발생', "데이터 처리 중 오류가 발생했습니다.");
+        }
     }
 
     // ===================================================================

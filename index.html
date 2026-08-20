@@ -23,11 +23,12 @@
 </head>
 <body>
     <div id="app-container">
+        <!-- 내부 팝업 (Alert) -->
         <div id="custom-alert-overlay" class="alert-overlay"></div>
         <div id="custom-alert-modal" class="alert-modal">
             <div class="alert-icon" id="alert-icon"><span class="material-symbols-rounded">info</span></div>
             <h3 id="alert-title">안내</h3>
-            <p id="alert-desc">여기에 상세 설명이 부드럽게 들어갑니다.</p>
+            <p id="alert-desc">여기에 상세 설명이 들어갑니다.</p>
             <button class="alert-confirm-btn ripple-btn" id="btn-alert-confirm">확인했어요</button>
         </div>
 
@@ -117,10 +118,15 @@
 
                 <div class="ai-step" id="ai-step-2">
                     <h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2><p class="ai-desc">여러 곳을 간다면 아래 추가 버튼을 눌러주세요.</p>
-                    <div id="dest-form-container"></div>
+                    
+                    <div id="dest-form-container">
+                        <!-- JS로 동적 렌더링 -->
+                    </div>
+                    
                     <div style="display:flex; justify-content:flex-end; margin-bottom: 24px;">
                         <button class="add-dest-text-btn" id="btn-add-dest"><span class="material-symbols-rounded" style="font-size:18px;">add</span> 여행지 추가</button>
                     </div>
+
                     <label class="ai-optimize-toggle" id="ai-optimize-wrapper" style="display:none;">
                         <input type="checkbox" id="chk-optimize-route">
                         <div class="toggle-icon"><span class="material-symbols-rounded">auto_awesome</span></div>
@@ -129,28 +135,41 @@
                     </label>
                 </div>
 
-                <div class="ai-step" id="ai-step-3"><h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
+                <!-- 🚀 스텝 3: 국내 여행용 교통수단 확인 (새로 추가) -->
+                <div class="ai-step" id="ai-step-3">
+                    <h2 class="ai-question">주로 이용하실<br>교통수단은 무엇인가요?</h2><p class="ai-desc">다중 선택이 가능합니다. 동선 계산에 활용돼요.</p>
+                    <div class="ai-chips-container" id="transport-chips-container">
+                        <div class="ai-chip transport-chip" data-val="자동차/택시"><span class="material-symbols-rounded" style="font-size:18px;">directions_car</span> 자동차/택시</div>
+                        <div class="ai-chip transport-chip" data-val="대중교통"><span class="material-symbols-rounded" style="font-size:18px;">directions_bus</span> 대중교통</div>
+                        <div class="ai-chip transport-chip" data-val="도보"><span class="material-symbols-rounded" style="font-size:18px;">directions_walk</span> 도보</div>
+                        <div class="ai-chip transport-chip" data-val="비행기"><span class="material-symbols-rounded" style="font-size:18px;">flight</span> 비행기</div>
+                        <div class="ai-chip transport-chip" data-val="기차"><span class="material-symbols-rounded" style="font-size:18px;">train</span> 기차 (KTX 등)</div>
+                    </div>
+                </div>
+
+                <!-- 이후 스텝 번호 하나씩 밀림 -->
+                <div class="ai-step" id="ai-step-4"><h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
                     <div class="ai-time-group"><label>도착지 공항 <b>도착</b> 시간 <span id="label-arr-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-arr-time"></div>
                     <div class="ai-time-group" style="margin-top: 16px;"><label>귀국행 비행기 <b>출발</b> 시간 <span id="label-dep-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-dep-time"></div>
                 </div>
                 
-                <div class="ai-step" id="ai-step-4"><h2 class="ai-question">머무르실 숙소가<br>정해져 있나요?</h2><p class="ai-desc">숙소를 중심으로 동선을 최적화합니다. (선택사항)</p>
+                <div class="ai-step" id="ai-step-5"><h2 class="ai-question">머무르실 숙소가<br>정해져 있나요?</h2><p class="ai-desc">숙소를 중심으로 동선을 최적화합니다. (선택사항)</p>
                     <div class="map-input-group"><input type="text" class="ai-text-input" id="ai-input-accom" placeholder="예: 신주쿠 워싱턴 호텔, 미정"><button class="map-open-btn ripple-btn" id="btn-open-map"><span class="material-symbols-rounded">map</span></button></div>
                 </div>
                 
-                <div class="ai-step" id="ai-step-5"><h2 class="ai-question">누구와 함께<br>여행하시나요?</h2><p class="ai-desc">동행자에 맞춰 식당과 스팟을 추천해 드려요.</p>
+                <div class="ai-step" id="ai-step-6"><h2 class="ai-question">누구와 함께<br>여행하시나요?</h2><p class="ai-desc">동행자에 맞춰 식당과 스팟을 추천해 드려요.</p>
                     <div class="ai-options-grid">
                         <div class="ai-option-card" data-val="혼자서"><div class="circle-icon" style="background: rgba(37, 99, 235, 0.1); color: #2563EB;"><span class="material-symbols-rounded">person</span></div><span class="text">혼자서</span></div><div class="ai-option-card" data-val="연인과"><div class="circle-icon" style="background: rgba(220, 38, 38, 0.1); color: #DC2626;"><span class="material-symbols-rounded">favorite</span></div><span class="text">연인과</span></div><div class="ai-option-card" data-val="친구들과"><div class="circle-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><span class="material-symbols-rounded">diversity_3</span></div><span class="text">친구들과</span></div><div class="ai-option-card" data-val="가족과"><div class="circle-icon" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;"><span class="material-symbols-rounded">family_restroom</span></div><span class="text">가족과</span></div><div class="ai-option-card" data-val="부모님과"><div class="circle-icon" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;"><span class="material-symbols-rounded">elderly</span></div><span class="text">부모님과</span></div><div class="ai-option-card" data-val="아이와"><div class="circle-icon" style="background: rgba(236, 72, 153, 0.1); color: #EC4899;"><span class="material-symbols-rounded">child_care</span></div><span class="text">아이와</span></div>
                     </div>
                 </div>
                 
-                <div class="ai-step" id="ai-step-6"><h2 class="ai-question">여행자 정보를<br>알려주세요</h2><p class="ai-desc">총 인원과 연령대를 모두 선택해 주세요.</p>
+                <div class="ai-step" id="ai-step-7"><h2 class="ai-question">여행자 정보를<br>알려주세요</h2><p class="ai-desc">총 인원과 연령대를 모두 선택해 주세요.</p>
                     <div class="people-counter-box"><span style="font-size: 16px; font-weight: 800; color: var(--text-main);">총 인원</span><div class="counter-controls"><button id="btn-minus-people" class="counter-btn"><span class="material-symbols-rounded">remove</span></button><span id="people-count">1명</span><button id="btn-plus-people" class="counter-btn"><span class="material-symbols-rounded">add</span></button></div></div>
                     <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; margin-top: 24px;">동행자 연령대 (다중 선택 가능)</p>
                     <div class="ai-chips-container" id="age-chips-container"><div class="ai-chip age-chip" data-val="10대">10대 이하</div><div class="ai-chip age-chip" data-val="20대">20대</div><div class="ai-chip age-chip" data-val="30대">30대</div><div class="ai-chip age-chip" data-val="40대">40대</div><div class="ai-chip age-chip" data-val="50대">50대</div><div class="ai-chip age-chip" data-val="60대 이상">60대 이상</div></div>
                 </div>
                 
-                <div class="ai-step" id="ai-step-7">
+                <div class="ai-step" id="ai-step-8">
                     <div id="step-7-standard"><h2 class="ai-question">어떤 스타일의<br>여행을 원하시나요?</h2><p class="ai-desc">최대 3개까지 선택할 수 있어요.</p>
                         <div class="ai-chips-container" id="style-chips-container-std"><div class="ai-chip style-chip std-chip" data-val="힐링"><span class="material-symbols-rounded" style="font-size:18px;">spa</span> 여유로운 힐링</div><div class="ai-chip style-chip std-chip" data-val="먹방"><span class="material-symbols-rounded" style="font-size:18px;">restaurant</span> 맛집 탐방</div><div class="ai-chip style-chip std-chip" data-val="관광"><span class="material-symbols-rounded" style="font-size:18px;">photo_camera</span> 랜드마크 </div><div class="ai-chip style-chip std-chip" data-val="쇼핑"><span class="material-symbols-rounded" style="font-size:18px;">shopping_bag</span> 폭풍 쇼핑</div><div class="ai-chip style-chip std-chip" data-val="액티비티"><span class="material-symbols-rounded" style="font-size:18px;">hiking</span> 액티비티</div><div class="ai-chip style-chip std-chip" data-val="자연"><span class="material-symbols-rounded" style="font-size:18px;">landscape</span> 대자연 </div><div class="ai-chip style-chip std-chip" data-val="예술"><span class="material-symbols-rounded" style="font-size:18px;">palette</span> 로컬 예술</div><div class="ai-chip style-chip std-chip" data-val="호캉스"><span class="material-symbols-rounded" style="font-size:18px;">hotel</span> 호캉스</div></div>
                     </div>
@@ -162,8 +181,7 @@
                     </div>
                 </div>
 
-                <!-- 🚀 스텝 8: 새롭게 추가된 테마 질문 -->
-                <div class="ai-step" id="ai-step-8">
+                <div class="ai-step" id="ai-step-9">
                     <h2 class="ai-question">이번 여행의 테마를<br>골라주세요</h2><p class="ai-desc">최대 2개까지 선택할 수 있어요.</p>
                     <div class="ai-chips-container" id="theme-chips-container">
                         <div class="ai-chip theme-chip" data-val="우정여행">👯‍♀️ 우정여행</div>
@@ -176,8 +194,7 @@
                     </div>
                 </div>
 
-                <!-- 기존 체력 스텝은 9번으로 밀림 -->
-                <div class="ai-step" id="ai-step-9">
+                <div class="ai-step" id="ai-step-10">
                     <h2 class="ai-question">하루 기본 체력은<br>어느 정도인가요?</h2><p class="ai-desc">체력에 맞춰 도보 이동과 휴식 빈도를 조절합니다.</p>
                     <div class="stamina-box">
                         <div class="stamina-icon" id="stamina-emoji"><span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: 0.3s;">battery_5_bar</span></div>
