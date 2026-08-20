@@ -1,6 +1,5 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './firebase-config.js';
 
-// 🚀 대표님의 Firebase(GCP) API 키 연결
 const GEMINI_API_KEY = 'AQ.Ab8RN6L9k9KRGgJsHQ42jihPubHy1XI-p6jEBx470-Tq5YZOfg';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -91,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let aiData = { 
         startDate: null, endDate: null, totalTripDays: 0,
         destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], 
-        isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 
+        isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 
     };
 
     let tempStartDate = null; let tempEndDate = null; let calendarTargetIndex = -1; 
@@ -149,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const monthTitle = document.createElement('div'); monthTitle.className = 'month-title'; monthTitle.innerText = `${drawDate.getFullYear()}년 ${drawDate.getMonth() + 1}월`; calendarContainer.appendChild(monthTitle);
             const grid = document.createElement('div'); grid.className = 'calendar-grid';
             for(let j = 0; j < drawDate.getDay(); j++) { grid.innerHTML += `<div></div>`; }
+            
             const lastDate = new Date(year, month + 1, 0).getDate();
             for(let d = 1; d <= lastDate; d++) {
                 const currentDate = new Date(year, month, d); const cell = document.createElement('div'); cell.className = 'cal-day'; cell.innerText = d;
@@ -215,6 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let pinIcon = 'auto_awesome'; let pinText = 'AI가 순서 자동 배치';
             if(pinVal === 'start') { pinIcon = 'flight_takeoff'; pinText = '출발지로 지정'; }
             else if(pinVal === 'end') { pinIcon = 'flight_land'; pinText = '도착지로 지정'; }
+            // 🚀 4번째 핀 옵션 적용: 출발지 및 도착지로 지정 (sync_alt)
+            else if(pinVal === 'start_end') { pinIcon = 'sync_alt'; pinText = '출발 및 도착지로 지정'; }
             
             const html = `
                 <div class="dest-item" data-index="${index}" style="animation: fadeIn 0.3s ease-out;">
@@ -223,12 +225,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         <input type="text" class="city-input" placeholder="도시 / 랜드마크 자유 입력" value="${dest.city}">
                         <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span><span class="stay-date-val">${dateStr}</span></button>
+                        
                         <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
                             <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
                             <div class="pin-options">
                                 <div class="pin-option" data-val="auto"><span class="material-symbols-rounded">auto_awesome</span> AI가 순서 자동 배치</div>
                                 <div class="pin-option" data-val="start"><span class="material-symbols-rounded">flight_takeoff</span> 출발지로 지정</div>
                                 <div class="pin-option" data-val="end"><span class="material-symbols-rounded">flight_land</span> 도착지로 지정</div>
+                                <!-- 🚀 새로 추가된 4번째 옵션 -->
+                                <div class="pin-option" data-val="start_end"><span class="material-symbols-rounded">sync_alt</span> 출발 및 도착지로 지정</div>
                             </div>
                         </div>
                     </div>
@@ -318,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetAiFlow = () => { 
         currentAiStep = 1; aiStepHistory = [1]; aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`; btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true; btnPrevAiStep.style.display = 'none';
         for(let i=1; i<=totalAiSteps; i++) { const stepEl = document.getElementById(`ai-step-${i}`); if(stepEl) { stepEl.classList.remove('exit'); stepEl.className = i===1 ? 'ai-step active' : 'ai-step'; } }
-        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
+        aiData = { startDate: null, endDate: null, totalTripDays: 0, destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], isOptimizeRoute: false, transports: [], arrTime: '', depTime: '', accom: '', companion: '', people: 1, ages: [], styles: [], myStyles: [], ptStyles: [], themes: [], stamina: 3 }; 
         tempStartDate = null; tempEndDate = null; updateDateTexts(); renderDestinations(); 
         document.getElementById('ai-input-arr-time').value = ''; document.getElementById('ai-input-dep-time').value = ''; document.getElementById('ai-input-accom').value = ''; document.getElementById('people-count').innerText = '1명'; 
         document.getElementById('ai-input-stamina').value = 3; document.getElementById('stamina-emoji').innerHTML = '<span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: color 0.3s ease;">battery_5_bar</span>';
@@ -333,8 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(currentAiStep === 3) btnAiNext.disabled = aiData.transports.length === 0;
         else if(currentAiStep === 4 || currentAiStep === 5) btnAiNext.disabled = false; 
         else if(currentAiStep === 6) btnAiNext.disabled = aiData.companion === ''; 
-        else if(currentAiStep === 7) { if(aiMode === 'standard') btnAiNext.disabled = aiData.styles.length === 0; else btnAiNext.disabled = (aiData.myStyles.length === 0 || aiData.ptStyles.length === 0); }
-        else if(currentAiStep === 8) btnAiNext.disabled = aiData.themes.length === 0;
+        else if(currentAiStep === 7) btnAiNext.disabled = aiData.ages.length === 0;
+        else if(currentAiStep === 8) { if(aiMode === 'standard') btnAiNext.disabled = aiData.styles.length === 0; else btnAiNext.disabled = (aiData.myStyles.length === 0 || aiData.ptStyles.length === 0); }
+        else if(currentAiStep === 9) btnAiNext.disabled = aiData.themes.length === 0;
         else if(currentAiStep === 10) btnAiNext.disabled = false;
     };
     
@@ -349,7 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.transports = aiData.transports.filter(s => s !== val); } 
                 else { chip.classList.add('selected'); aiData.transports.push(val); }
             }
-            else if(chip.classList.contains('age-chip')) chip.classList.toggle('selected');
+            else if(chip.classList.contains('age-chip')) {
+                const val = chip.getAttribute('data-val');
+                if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.ages = aiData.ages.filter(a => a !== val); }
+                else { chip.classList.add('selected'); aiData.ages.push(val); }
+            }
             else if(chip.classList.contains('std-chip')) {
                 const val = chip.getAttribute('data-val');
                 if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.styles = aiData.styles.filter(s => s !== val); } 
@@ -429,9 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===================================================================
-    // 🚀 진짜 Gemini AI 통신 로직
-    // ===================================================================
     async function submitAiFlow() {
         try {
             document.getElementById('ai-loading-overlay').classList.add('active');
@@ -440,14 +447,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const themeText = aiData.themes.join(', ');
             const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
 
+            // 🚀 AI 프롬프트에 'start_end' 인아웃 도시 반영 요청
             const prompt = `
             너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
             
             [사용자 정보]
-            - 여행지: ${destText}
+            - 여행지: ${destText} (* 옵션이 start_end인 경우 여행의 맨 처음(1일차)과 맨 마지막 날짜 일정을 해당 도시로 배정해라)
             - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
             - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
-            - 동행: ${aiData.companion} (${aiData.people}명)
+            - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
             - 테마: ${themeText}
             - 스타일: ${styleText}
             - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
@@ -466,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       "catName": "관광", // 식사, 관광, 휴식, 실내 중 택 1
                       "mIcon": "photo_camera", // restaurant, photo_camera, local_cafe, storefront
                       "name": "진짜 존재하는 명소/식당 이름",
-                      "desc": "장소에 대한 설명과 추천 이유 (1~2문장)",
+                      "desc": "장소에 대한 설명과 연령대/테마에 맞춘 추천 이유 (1~2문장)",
                       "tip": "웨이팅, 포토존 등 진짜 꿀팁"
                     }
                   ]
@@ -484,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.7, responseMimeType: "application/json" }
+                    generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
                 })
             });
 
@@ -496,7 +504,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             let aiResponseText = data.candidates[0].content.parts[0].text;
             
-            // JSON 파싱 (마크다운 백틱 제거 등 안전장치)
             aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
             const parsedData = JSON.parse(aiResponseText);
 
@@ -508,10 +515,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("AI 생성 중 에러:", e);
             document.getElementById('ai-loading-overlay').classList.remove('active');
             
-            // API 키가 활성화 안 된 경우 나오는 안내 모달
             showCustomAlert({
                 icon: 'warning', title: 'API 연결 오류', 
-                desc: '구글 클라우드에서 API 키가 아직 활성화되지 않았습니다!\n(Generative Language API 권한 필요)\n임시 데이터로 화면을 띄워드립니다.',
+                desc: '구글 클라우드에서 API 키가 아직 활성화되지 않았습니다!\n임시 데이터로 화면을 띄워드립니다.',
                 onConfirm: () => {
                     generateMockTimeline(); 
                     aiScreen.classList.remove('active');
@@ -587,7 +593,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ai-result-screen').classList.add('active');
     }
 
-    // API 에러 시 작동하는 임시 목업 데이터
     function generateMockTimeline() {
         const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
         const mainDest = dests[0] || '미지의 여행지';
@@ -790,8 +795,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="explore-card">
                     <div class="explore-card-img" style="background-image: url('${randomImg}?q=80&w=200&auto=format&fit=crop');"></div>
                     <div class="explore-card-info">
-                        <div class="explore-card-title">현지 인기 장소 ${i+1}</div>
-                        <div class="explore-card-sub">별점 4.${8-i} · AI 추천 핫플</div>
+                        <div class="explore-card-title">AI 현지 추천 장소 ${i+1}</div>
+                        <div class="explore-card-sub">별점 4.${8-i} · 리뷰 기반 추천</div>
                         <button class="explore-add-btn ripple-btn" onclick="document.getElementById('custom-alert-overlay').classList.add('active'); document.getElementById('custom-alert-modal').classList.add('active'); document.getElementById('alert-icon').innerHTML='<span class=\\'material-symbols-rounded\\' style=\\'color:#10B981;\\'>check_circle</span>'; document.getElementById('alert-title').innerText='추가 완료'; document.getElementById('alert-desc').innerText='내 일정에 성공적으로 추가되었습니다! 😆'; document.getElementById('btn-alert-cancel').style.display='none'; document.getElementById('btn-alert-confirm').innerText='확인했어요'; document.getElementById('btn-alert-confirm').classList.remove('danger');">+ 내 일정에 추가/교체</button>
                     </div>
                 </div>`;

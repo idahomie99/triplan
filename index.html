@@ -104,13 +104,13 @@
 
         <div id="ai-screen" class="sub-screen">
             <header class="sub-header">
-                <!-- 🚀 스텝 뒤로가기 버튼 추가 -->
-                <div class="header-left" style="width: auto; justify-content: flex-start; gap: 8px;">
+                <div class="header-left">
                     <button class="icon-btn" id="btn-prev-ai-step" style="display: none;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button>
-                    <button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button>
                 </div>
                 <div class="progress-bar-container"><div class="progress-bar" id="ai-progress-bar"></div></div>
-                <div class="header-right" style="width: auto;"></div>
+                <div class="header-right">
+                    <button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button>
+                </div>
             </header>
             <div class="ai-content">
                 
@@ -125,15 +125,10 @@
 
                 <div class="ai-step" id="ai-step-2">
                     <h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2><p class="ai-desc">여러 곳을 간다면 아래 추가 버튼을 눌러주세요.</p>
-                    
-                    <div id="dest-form-container">
-                        <!-- JS로 동적 렌더링 -->
-                    </div>
-                    
+                    <div id="dest-form-container"></div>
                     <div style="display:flex; justify-content:flex-end; margin-bottom: 24px;">
                         <button class="add-dest-text-btn" id="btn-add-dest"><span class="material-symbols-rounded" style="font-size:18px;">add</span> 여행지 추가</button>
                     </div>
-
                     <label class="ai-optimize-toggle" id="ai-optimize-wrapper" style="display:none;">
                         <input type="checkbox" id="chk-optimize-route">
                         <div class="toggle-icon"><span class="material-symbols-rounded">auto_awesome</span></div>
