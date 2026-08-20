@@ -1,7 +1,7 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './firebase-config.js';
 
 // 🚀 Gemini AI API 키
-const GEMINI_API_KEY = 'AQ.Ab8RN6L9k9KRGgJsHQ42jihPubHy1XI-p6jEBx470-Tq5YZOfg';
+const GEMINI_API_KEY = 'AQ.Ab8RN6Kz9AQPUJVDnJBwEtopgto_BHGbahhbYIsG7U4qPssg9w';
 
 document.addEventListener('DOMContentLoaded', () => {
     
