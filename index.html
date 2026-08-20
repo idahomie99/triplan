@@ -23,6 +23,15 @@
 </head>
 <body>
     <div id="app-container">
+        <!-- 🚀 1. 세련된 내부 팝업(Alert) 모달 추가 -->
+        <div id="custom-alert-overlay" class="alert-overlay"></div>
+        <div id="custom-alert-modal" class="alert-modal">
+            <div class="alert-icon" id="alert-icon"><span class="material-symbols-rounded">info</span></div>
+            <h3 id="alert-title">안내</h3>
+            <p id="alert-desc">여기에 상세 설명이 부드럽게 들어갑니다.</p>
+            <button class="alert-confirm-btn ripple-btn" id="btn-alert-confirm">확인했어요</button>
+        </div>
+
         <div id="splash-screen"><div class="splash-logo">Triplan.</div></div>
 
         <header class="top-header" id="top-header">
@@ -72,7 +81,8 @@
         <div id="calendar-modal" class="bottom-sheet">
             <div class="sheet-header"><h3>날짜 선택</h3><button class="icon-btn" id="btn-close-calendar"><span class="material-symbols-rounded">close</span></button></div>
             <div class="sheet-content" id="calendar-scroll-area">
-                <div class="week-days"><span style="color:#DC2626;">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span style="color:#2563EB;">토</span></div>
+                <!-- 🚀 요일 강제 색상 제거 (CSS에서 회색으로 일괄 처리) -->
+                <div class="week-days"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
                 <div id="calendar-grid-container"></div>
             </div>
             <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-date">선택 완료</button></div>
@@ -107,7 +117,6 @@
                     </div>
                 </div>
 
-                <!-- 🚀 스텝 2: 여행지 입력 폼 개선 및 AI 위임 스위치 추가 -->
                 <div class="ai-step" id="ai-step-2">
                     <h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2><p class="ai-desc">여러 곳을 간다면 아래 추가 버튼을 눌러주세요.</p>
                     
