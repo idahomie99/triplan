@@ -236,8 +236,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="dest-inputs">
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         
-                        <!-- 👇 입력창에 비활성화(disabled) 옵션 동적 적용 -->
-                        <input type="text" class="city-input" placeholder="${cityPlaceholder}" value="${dest.city}" ${isCityDisabled ? 'disabled' : ''} style="${cityStyle}">
+                        <!-- 🎯 바로 이 부분! 도시 입력창과 둥근 지도 버튼을 가로로 예쁘게 배치했어 -->
+                        <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                            <input type="text" class="city-input" placeholder="${cityPlaceholder}" value="${dest.city}" ${isCityDisabled ? 'disabled' : ''} style="${cityStyle} width: 100%; padding-right: 48px;">
+                            <button class="open-city-map-btn ripple-btn" style="position: absolute; right: 4px; border: none; background: transparent; color: ${isCityDisabled ? 'var(--card-border)' : '#2563EB'}; cursor: ${isCityDisabled ? 'not-allowed' : 'pointer'}; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%;" ${isCityDisabled ? 'disabled' : ''}>
+                                <span class="material-symbols-rounded">location_on</span>
+                            </button>
+                        </div>
                         
                         <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span><span class="stay-date-val">${dateStr}</span></button>
                         <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
@@ -263,16 +268,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isoCode = countryIsoMap[dest.country];
                 
                 const autocomplete = new google.maps.places.Autocomplete(inputEl, {
-                    types: ['(cities)'], // 지역을 '도시'로만 엄격하게 제한
-                    componentRestrictions: isoCode ? { country: isoCode } : undefined // 선택한 국가 안에서만 찾도록 제한
+                    types: ['(cities)'], 
+                    componentRestrictions: isoCode ? { country: isoCode } : undefined 
                 });
 
-                // 유저가 자동완성 목록에서 도시를 딱 눌렀을 때
                 autocomplete.addListener('place_changed', () => {
                     const place = autocomplete.getPlace();
                     if (place && place.name) {
                         aiData.destinations[index].city = place.name;
-                        validateAiStep(); // 유효성 검사 통과시키기
+                        validateAiStep(); 
                     }
                 });
             }
@@ -292,6 +296,16 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(e.target.closest('.stay-date-btn')) {
             calendarTargetIndex = index; tempStartDate = aiData.destinations[index].startDate || aiData.startDate; tempEndDate = aiData.destinations[index].endDate || aiData.endDate;
             calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
+        }
+        else if(e.target.closest('.open-city-map-btn')) {
+            const btn = e.target.closest('.open-city-map-btn');
+            if(btn.disabled) return;
+            
+            // 타겟을 'city'로 설정하고 지도 모달 열기!
+            currentMapTarget = { type: 'city', index: index };
+            calendarOverlay.style.display = 'block'; 
+            document.getElementById('map-modal').classList.add('active'); 
+            setTimeout(() => initMap(), 300);
         }
         else if(e.target.closest('.pin-selected')) {
             const selectContainer = e.target.closest('.custom-pin-select');
@@ -356,12 +370,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 🚀 구글 맵 (Google Maps API) 연동 전역 변수
+    // 🚀 구글 맵 (Google Maps API) 연동 전역 변수
     let map = null; let marker = null; let geocoder = null;
+    let currentMapTarget = { type: 'accom', index: -1 }; // 👈 추가! (현재 지도 목적)
+    let tempSelectedPlace = ''; // 👈 추가! (임시 선택된 장소 이름)
+
+    // 숙소 지도 버튼 클릭 시 타겟을 'accom'으로 설정
+    document.getElementById('btn-open-map')?.addEventListener('click', () => { 
+        currentMapTarget = { type: 'accom', index: -1 };
+        calendarOverlay.style.display = 'block'; 
+        document.getElementById('map-modal').classList.add('active'); 
+        setTimeout(() => initMap(), 300); 
+    });
 
     const initMap = () => {
         if(!map) { 
             map = new google.maps.Map(document.getElementById('map-container'), {
-                zoom: 13,
+                zoom: 14,
                 disableDefaultUI: true 
             });
             geocoder = new google.maps.Geocoder();
@@ -370,28 +395,69 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchBox = new google.maps.places.SearchBox(searchInput);
             
             map.addListener('bounds_changed', () => { searchBox.setBounds(map.getBounds()); });
-            searchBox.addListener('places_changed', () => { /* 기존 로직 유지 */ });
-            map.addListener('click', (e) => { /* 기존 로직 유지 */ }); 
-        }
-        
-        // 👇 추가된 부분: 선택된 도시가 있으면 거기를 중심으로 지도 이동!
-        const targetCity = aiData.destinations[0]?.city || '';
-        if (targetCity) {
-            geocoder.geocode({ address: targetCity }, (results, status) => {
-                if (status === 'OK' && results[0]) {
-                    map.setCenter(results[0].geometry.location);
-                    map.setZoom(13);
-                } else {
-                    map.setCenter({lat: 37.5665, lng: 126.9780}); // 에러 시 서울로
-                }
+            
+            searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+                if (places.length == 0) return;
+                const place = places[0];
+                if (!place.geometry || !place.geometry.location) return;
+
+                if(marker) marker.setMap(null);
+                map.setCenter(place.geometry.location);
+                map.setZoom(16);
+                marker = new google.maps.Marker({ position: place.geometry.location, map: map });
+                
+                tempSelectedPlace = place.name; 
+                document.getElementById('map-selected-address').innerText = tempSelectedPlace;
             });
-        } else {
-            map.setCenter({lat: 37.5665, lng: 126.9780}); // 입력 안 했으면 서울로
+            
+            map.addListener('click', (e) => { 
+                if(marker) marker.setMap(null); 
+                marker = new google.maps.Marker({ position: e.latLng, map: map }); 
+                
+                geocoder.geocode({ location: e.latLng }, (results, status) => {
+                    if (status === 'OK' && results[0]) {
+                        tempSelectedPlace = results[0].formatted_address;
+                        document.getElementById('map-selected-address').innerText = tempSelectedPlace; 
+                    }
+                }); 
+            }); 
         }
 
-        const searchInputEl = document.getElementById('map-search-input');
-        if(searchInputEl) searchInputEl.value = '';
+        tempSelectedPlace = '';
+        document.getElementById('map-search-input').value = '';
+        document.getElementById('map-selected-address').innerText = '지도를 탭하거나 검색하세요';
+        
+        // 🛰️ GPS 내 위치 가져오기
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    map.setCenter({ lat: position.coords.latitude, lng: position.coords.longitude });
+                },
+                () => { map.setCenter({lat: 37.5665, lng: 126.9780}); } 
+            );
+        } else {
+            map.setCenter({lat: 37.5665, lng: 126.9780});
+        }
+        
         setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
+    };
+
+    const closeMap = () => { document.getElementById('map-modal').classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); }; 
+    document.getElementById('btn-close-map')?.addEventListener('click', closeMap); 
+    
+    document.getElementById('btn-confirm-map').onclick = () => {
+        if (tempSelectedPlace) {
+            if (currentMapTarget.type === 'accom') {
+                document.getElementById('ai-input-accom').value = tempSelectedPlace;
+                aiData.accom = tempSelectedPlace;
+            } else if (currentMapTarget.type === 'city') {
+                aiData.destinations[currentMapTarget.index].city = tempSelectedPlace;
+                renderDestinations(); 
+                validateAiStep();
+            }
+        }
+        closeMap();
     };
 
     document.getElementById('btn-open-map')?.addEventListener('click', () => { calendarOverlay.style.display = 'block'; document.getElementById('map-modal').classList.add('active'); setTimeout(() => initMap(), 300); });
