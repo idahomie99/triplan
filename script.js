@@ -522,130 +522,157 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function submitAiFlow() {
-    let statusInterval = null;
-    try {
-        const loadingOverlay = document.getElementById('ai-loading-overlay');
-        const statusText = document.getElementById('ai-loading-status');
-        loadingOverlay.classList.add('active');
+        let statusInterval = null;
+        try {
+            const loadingOverlay = document.getElementById('ai-loading-overlay');
+            const statusText = document.getElementById('ai-loading-status');
+            loadingOverlay.classList.add('active');
 
-        // 💬 2.2초마다 바뀌는 상태 메시지 목록
-        const loadingMessages = [
-            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">flight_takeoff</span> 항공편 시간 및 공항 이동 동선 계산 중...`,
-            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">location_on</span> 선택하신 테마에 맞는 핫플레이스 수집 중...`,
-            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">directions_walk</span> 체력 소모도를 분석해 무리 없는 루트 구성 중...`,
-            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">restaurant</span> 실패 없는 현지 로컬 맛집 매칭 중...`,
-            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">map</span> 지도 위 최적의 이동 동선 정렬 중...`,
-            `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">auto_awesome</span> 완벽한 여행 일정을 정리하고 있어요!`
-        ];
+            // 💬 2.2초마다 바뀌는 상태 메시지 목록 (머터리얼 아이콘 적용)
+            const loadingMessages = [
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">flight_takeoff</span> 항공편 시간 및 공항 이동 동선 계산 중...`,
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">location_on</span> 선택하신 테마에 맞는 핫플레이스 수집 중...`,
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">directions_walk</span> 체력 소모도를 분석해 무리 없는 루트 구성 중...`,
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">restaurant</span> 실패 없는 현지 로컬 맛집 매칭 중...`,
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">map</span> 지도 위 최적의 이동 동선 정렬 중...`,
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">auto_awesome</span> 완벽한 여행 일정을 정리하고 있어요!`
+            ];
 
-        let msgIdx = 0;
-        if (statusText) {
-            statusText.innerHTML = loadingMessages[0]; // innerText를 innerHTML로 변경
-            statusInterval = setInterval(() => {
-                msgIdx = (msgIdx + 1) % loadingMessages.length;
-                statusText.classList.add('fade');
-                setTimeout(() => {
-                    statusText.innerHTML = loadingMessages[msgIdx]; // 여기도 innerHTML로 변경
-                    statusText.classList.remove('fade');
-                }, 300);
-            }, 2500);
-        }
+            let msgIdx = 0;
+            if (statusText) {
+                statusText.innerHTML = loadingMessages[0];
+                statusInterval = setInterval(() => {
+                    msgIdx = (msgIdx + 1) % loadingMessages.length;
+                    statusText.classList.add('fade');
+                    setTimeout(() => {
+                        statusText.innerHTML = loadingMessages[msgIdx];
+                        statusText.classList.remove('fade');
+                    }, 300);
+                }, 2500);
+            }
 
-        // 새로 추가한 특별 요청 데이터 가져오기
-        aiData.mustDo = document.getElementById('ai-input-must-do')?.value.trim();
+            // 새로 추가한 특별 요청 데이터 가져오기
+            aiData.mustDo = document.getElementById('ai-input-must-do')?.value.trim();
 
-        const destText = aiData.destinations.map(d => `${d.country} ${d.city} (${d.stayDays}일, 옵션: ${d.pin})`).join(', ');
-        const themeText = aiData.themes.join(', ');
-        const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
+            const destText = aiData.destinations.map(d => `${d.country} ${d.city} (${d.stayDays}일, 옵션: ${d.pin})`).join(', ');
+            const themeText = aiData.themes.join(', ');
+            const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
 
-        const prompt = `
-        너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
-        
-        [사용자 정보]
-        - 여행지: ${destText}
-        - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
-        - 항공편: 도착시간 ${aiData.arrTime || '미정'}, 출발시간 ${aiData.depTime || '미정'}
-        - 숙소: ${aiData.accom || '미정'}
-        - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
-        - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
-        - 테마: ${themeText}
-        - 스타일: ${styleText}
-        - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
-        - 특별 요청(필수 반영): ${aiData.mustDo || '없음'}
-        
-        [응답 JSON 구조 - 반드시 이 구조를 지킬 것]
-        {
-          "dailyPlans": [
+            const prompt = `
+            너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
+            
+            [사용자 정보]
+            - 여행지: ${destText}
+            - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
+            - 항공편: 도착시간 ${aiData.arrTime || '미정'}, 출발시간 ${aiData.depTime || '미정'}
+            - 숙소: ${aiData.accom || '미정'}
+            - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
+            - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
+            - 테마: ${themeText}
+            - 스타일: ${styleText}
+            - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
+            - 특별 요청(필수 반영): ${aiData.mustDo || '없음'}
+            
+            [응답 JSON 구조 - 반드시 이 구조를 지킬 것]
             {
-              "day": 1,
-              "city": "도시 이름",
-              "hp": 80,
-              "spots": [
+              "dailyPlans": [
                 {
-                  "time": "10:00",
-                  "type": "tour",
-                  "catName": "관광",
-                  "mIcon": "photo_camera",
-                  "name": "진짜 존재하는 명소/식당 이름",
-                  "lat": 35.6895, 
-                  "lng": 139.6917, 
-                  "desc": "장소 설명 및 이동 수단 구체적 서술",
-                  "tip": "웨이팅, 포토존 등 꿀팁"
+                  "day": 1,
+                  "city": "도시 이름",
+                  "hp": 80,
+                  "spots": [
+                    {
+                      "time": "10:00",
+                      "type": "tour",
+                      "catName": "관광",
+                      "mIcon": "photo_camera",
+                      "name": "진짜 존재하는 명소/식당 이름",
+                      "lat": 35.6895, 
+                      "lng": 139.6917, 
+                      "desc": "장소 설명 및 이동 수단 구체적 서술",
+                      "tip": "웨이팅, 포토존 등 꿀팁"
+                    }
+                  ]
                 }
               ]
             }
-          ]
-        }
-        
-        조건 (절대 엄수):
-        1. 반드시 JSON 형식으로만 응답해라.
-        2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라. (해당 지역의 상징적인 랜드마크나 유명 쇼(예: 항저우의 송성가무쇼 등)를 적극적으로 포함할 것)
-        3. [특별 요청]에 적힌 내용이 있다면 최우선으로 해당 장소나 액티비티를 일정에 무조건 배치해라.
-        4. [항공편] 시간이 주어졌다면 반드시 지켜라! 첫날 일정은 공항 도착 시간 + 수속 시간 이후부터 시작하고, 마지막 날 일정은 공항 출발 시간 3시간 전까지만 짜라.
-        5. [숙소]가 정해져 있다면 아침 출발 및 저녁 복귀 동선을 숙소 기준으로 최적화해라.
-        6. 각 장소의 실제 위도(lat)와 경도(lng)를 정확한 숫자로 기입해라.
-        7. desc 항목에 '도보 10분', '지하철 40분' 등 명소 간 이동 수단과 소요 시간을 디테일하게 서술해라.
-        `;
+            
+            조건 (절대 엄수):
+            1. 반드시 JSON 형식으로만 응답해라.
+            2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라. (해당 지역의 상징적인 랜드마크를 적극적으로 포함할 것)
+            3. [특별 요청]에 적힌 내용이 있다면 최우선으로 해당 장소나 액티비티를 일정에 무조건 배치해라.
+            4. [항공편] 시간이 주어졌다면 반드시 지켜라! 첫날 일정은 공항 도착 시간 + 수속 시간 이후부터 시작하고, 마지막 날 일정은 공항 출발 시간 3시간 전까지만 짜라.
+            5. [숙소]가 정해져 있다면 아침 출발 및 저녁 복귀 동선을 숙소 기준으로 최적화해라.
+            6. 각 장소의 실제 위도(lat)와 경도(lng)를 정확한 숫자로 기입해라.
+            7. desc 항목에 '도보 10분', '지하철 40분' 등 명소 간 이동 수단과 소요 시간을 디테일하게 서술해라.
+            `;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
-            })
-        });
+            // 🚀 끈질긴 자동 재시도(Retry) 로직 도입
+            let data = null;
+            let maxRetries = 2; // 본 요청 1번 + 재시도 2번 = 총 3번 기회
+            let attempt = 0;
 
-        if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.error?.message || "API 연결 실패");
-        }
+            while (attempt <= maxRetries) {
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
+                        })
+                    });
 
-        const data = await response.json();
-        let aiResponseText = data.candidates[0].content.parts[0].text;
-        aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsedData = JSON.parse(aiResponseText);
+                    if (!response.ok) {
+                        const err = await response.json();
+                        // 503(서버 과부하) 또는 429(요청 너무 많음) 에러일 경우 몰래 재시도
+                        if ((response.status === 503 || response.status === 429) && attempt < maxRetries) {
+                            console.warn(`🚨 API 지연 감지 (${response.status}). 3초 뒤 조용히 재시도합니다... (${attempt + 1}/${maxRetries})`);
+                            attempt++;
+                            await new Promise(resolve => setTimeout(resolve, 3000)); // 3초 대기 후 다시 루프
+                            continue;
+                        }
+                        throw new Error(err.error?.message || "API 연결 실패");
+                    }
+                    
+                    data = await response.json();
+                    break; // 완벽하게 성공하면 루프 탈출!
 
-        if (statusInterval) clearInterval(statusInterval);
-        loadingOverlay.classList.remove('active');
-        renderAiTimeline(parsedData); 
-        aiScreen.classList.remove('active');
-
-    } catch(e) {
-        if (statusInterval) clearInterval(statusInterval);
-        console.error("AI 생성 중 에러:", e);
-        document.getElementById('ai-loading-overlay').classList.remove('active');
-        
-        showCustomAlert({
-            icon: 'warning', title: 'API 연결 오류', 
-            desc: '일정을 불러오는 중 오류가 발생했습니다.\n임시 데이터로 화면을 띄워드립니다.',
-            onConfirm: () => {
-                generateMockTimeline(); 
-                aiScreen.classList.remove('active');
+                } catch (err) {
+                    if (attempt < maxRetries) {
+                        console.warn(`🚨 네트워크 연결 불안정. 3초 뒤 조용히 재시도합니다... (${attempt + 1}/${maxRetries})`);
+                        attempt++;
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        continue;
+                    }
+                    throw err; // 끝끝내 3번 다 실패하면 에러 밖으로 던지기
+                }
             }
-        });
+
+            let aiResponseText = data.candidates[0].content.parts[0].text;
+            aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+            const parsedData = JSON.parse(aiResponseText);
+
+            if (statusInterval) clearInterval(statusInterval);
+            loadingOverlay.classList.remove('active');
+            renderAiTimeline(parsedData); 
+            aiScreen.classList.remove('active');
+
+        } catch(e) {
+            if (statusInterval) clearInterval(statusInterval);
+            console.error("AI 생성 중 에러:", e);
+            document.getElementById('ai-loading-overlay').classList.remove('active');
+            
+            showCustomAlert({
+                icon: 'warning', title: 'API 연결 오류', 
+                desc: '서버 트래픽이 너무 많아 일정을 불러오지 못했습니다.\n임시 데이터로 화면을 띄워드립니다.',
+                onConfirm: () => {
+                    generateMockTimeline(); 
+                    aiScreen.classList.remove('active');
+                }
+            });
+        }
     }
-}
 
     let dailyPlans = {}; 
     let currentSelectedDay = 1;
