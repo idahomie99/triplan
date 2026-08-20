@@ -472,89 +472,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function submitAiFlow() {
-        try {
-            document.getElementById('ai-loading-overlay').classList.add('active');
+    let statusInterval = null;
+    try {
+        const loadingOverlay = document.getElementById('ai-loading-overlay');
+        const statusText = document.getElementById('ai-loading-status');
+        loadingOverlay.classList.add('active');
 
-            const destText = aiData.destinations.map(d => `${d.country} ${d.city} (${d.stayDays}일, 옵션: ${d.pin})`).join(', ');
-            const themeText = aiData.themes.join(', ');
-            const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
+        // 💬 2.2초마다 바뀌는 상태 메시지 목록
+        const loadingMessages = [
+            "✈️ 항공편 시간 및 공항 이동 동선 계산 중...",
+            "📍 선택하신 테마에 맞는 핫플레이스 수집 중...",
+            "🚶 체력 소모도를 분석해 무리 없는 루트 구성 중...",
+            "🍽️ 실패 없는 현지 로컬 맛집 매칭 중...",
+            "🗺️ 지도 위 최적의 이동 동선 정렬 중...",
+            "✨ 완벽한 여행 일정을 정리하고 있어요!"
+        ];
 
-            const prompt = `
-            너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
-            
-            [사용자 정보]
-            - 여행지: ${destText}
-            - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
-            - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
-            - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
-            - 테마: ${themeText}
-            - 스타일: ${styleText}
-            - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
-            
-            [응답 JSON 구조 - 반드시 이 구조를 지킬 것]
+        let msgIdx = 0;
+        if (statusText) {
+            statusText.innerText = loadingMessages[0];
+            statusInterval = setInterval(() => {
+                msgIdx = (msgIdx + 1) % loadingMessages.length;
+                statusText.classList.add('fade');
+                setTimeout(() => {
+                    statusText.innerText = loadingMessages[msgIdx];
+                    statusText.classList.remove('fade');
+                }, 300);
+            }, 2500);
+        }
+
+        const destText = aiData.destinations.map(d => `${d.country} ${d.city} (${d.stayDays}일, 옵션: ${d.pin})`).join(', ');
+        const themeText = aiData.themes.join(', ');
+        const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
+
+        const prompt = `
+        너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
+        
+        [사용자 정보]
+        - 여행지: ${destText}
+        - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
+        - 교통수단: ${aiData.transports.join(', ') || '대중교통, 도보'}
+        - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
+        - 테마: ${themeText}
+        - 스타일: ${styleText}
+        - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
+        
+        [응답 JSON 구조 - 반드시 이 구조를 지킬 것]
+        {
+          "dailyPlans": [
             {
-              "dailyPlans": [
+              "day": 1,
+              "city": "도시 이름",
+              "hp": 80,
+              "spots": [
                 {
-                  "day": 1,
-                  "city": "도시 이름",
-                  "hp": 80, // 예상 체력 소모량
-                  "spots": [
-                    {
-                      "time": "10:00",
-                      "type": "tour", // food, tour, cafe, indoor 중 택 1
-                      "catName": "관광", // 식사, 관광, 휴식, 실내 중 택 1
-                      "mIcon": "photo_camera", // restaurant, photo_camera, local_cafe, storefront
-                      "name": "진짜 존재하는 명소/식당 이름",
-                      "desc": "장소에 대한 설명과 연령대/테마에 맞춘 추천 이유 (1~2문장)",
-                      "tip": "웨이팅, 포토존 등 진짜 꿀팁"
-                    }
-                  ]
+                  "time": "10:00",
+                  "type": "tour",
+                  "catName": "관광",
+                  "mIcon": "photo_camera",
+                  "name": "진짜 존재하는 명소/식당 이름",
+                  "desc": "장소에 대한 설명과 추천 이유 (1~2문장)",
+                  "tip": "웨이팅, 포토존 등 꿀팁"
                 }
               ]
             }
-            
-            조건:
-            1. 반드시 JSON 형식으로만 응답해라.
-            2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라.
-            `;
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
-    })
-});
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || "API 연결 실패");
-            }
-
-            const data = await response.json();
-            let aiResponseText = data.candidates[0].content.parts[0].text;
-            
-            aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
-            const parsedData = JSON.parse(aiResponseText);
-
-            document.getElementById('ai-loading-overlay').classList.remove('active');
-            renderAiTimeline(parsedData); 
-            aiScreen.classList.remove('active');
-
-        } catch(e) {
-            console.error("AI 생성 중 에러:", e);
-            document.getElementById('ai-loading-overlay').classList.remove('active');
-            
-            showCustomAlert({
-                icon: 'warning', title: 'API 연결 오류', 
-                desc: '구글 클라우드에서 API 키가 아직 활성화되지 않았습니다!\n임시 데이터로 화면을 띄워드립니다.',
-                onConfirm: () => {
-                    generateMockTimeline(); 
-                    aiScreen.classList.remove('active');
-                }
-            });
+          ]
         }
+        
+        조건:
+        1. 반드시 JSON 형식으로만 응답해라.
+        2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라.
+        `;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error?.message || "API 연결 실패");
+        }
+
+        const data = await response.json();
+        let aiResponseText = data.candidates[0].content.parts[0].text;
+        aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsedData = JSON.parse(aiResponseText);
+
+        if (statusInterval) clearInterval(statusInterval);
+        loadingOverlay.classList.remove('active');
+        renderAiTimeline(parsedData); 
+        aiScreen.classList.remove('active');
+
+    } catch(e) {
+        if (statusInterval) clearInterval(statusInterval);
+        console.error("AI 생성 중 에러:", e);
+        document.getElementById('ai-loading-overlay').classList.remove('active');
+        
+        showCustomAlert({
+            icon: 'warning', title: 'API 연결 오류', 
+            desc: '일정을 불러오는 중 오류가 발생했습니다.\n임시 데이터로 화면을 띄워드립니다.',
+            onConfirm: () => {
+                generateMockTimeline(); 
+                aiScreen.classList.remove('active');
+            }
+        });
     }
+}
 
     let dailyPlans = {}; 
     let currentSelectedDay = 1;
