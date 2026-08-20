@@ -370,10 +370,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 🚀 구글 맵 (Google Maps API) 연동 전역 변수
-    // 🚀 구글 맵 (Google Maps API) 연동 전역 변수
     let map = null; let marker = null; let geocoder = null;
-    let currentMapTarget = { type: 'accom', index: -1 }; // 👈 추가! (현재 지도 목적)
-    let tempSelectedPlace = ''; // 👈 추가! (임시 선택된 장소 이름)
+    let currentMapTarget = { type: 'accom', index: -1 }; 
+    let tempSelectedPlace = ''; 
 
     // 숙소 지도 버튼 클릭 시 타겟을 'accom'으로 설정
     document.getElementById('btn-open-map')?.addEventListener('click', () => { 
@@ -1051,14 +1050,17 @@ let isMapView = false; let currentMarkerIndex = -1;
         const type = chip.getAttribute('data-type');
         const timelineContainer = document.getElementById('ai-timeline-container');
         const exploreContainer = document.getElementById('ai-explore-container');
-        const resultMap = document.getElementById('ai-result-map');
+        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); // 👈 wrapper로 변경!
         
         if(isMapView) { isMapView = false; document.getElementById('top-map-icon').innerText = 'map'; document.getElementById('map-info-card').classList.remove('active'); }
 
         if(type === 'timeline') {
-            timelineContainer.style.display = 'flex'; exploreContainer.style.display = 'none'; resultMap.style.display = 'none';
+            timelineContainer.style.display = 'flex'; exploreContainer.style.display = 'none'; 
+            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; // 👈 wrapper 끄기
         } else {
-            timelineContainer.style.display = 'none'; resultMap.style.display = 'none'; exploreContainer.style.display = 'flex';
+            timelineContainer.style.display = 'none'; 
+            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; // 👈 wrapper 끄기
+            exploreContainer.style.display = 'flex';
             
             let html = '';
             for(let i=0; i<5; i++) {
