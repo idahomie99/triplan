@@ -322,21 +322,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const initMap = () => {
         if(!map) { 
-            // Leaflet 대신 구글 맵 객체 생성
             map = new google.maps.Map(document.getElementById('map-container'), {
                 center: {lat: 37.5665, lng: 126.9780},
                 zoom: 13,
-                disableDefaultUI: true // 모바일 친화적인 깔끔한 UI
+                disableDefaultUI: true 
             });
             geocoder = new google.maps.Geocoder();
             
+            // 👇 추가된 검색창 (SearchBox) 로직
+            const searchInput = document.getElementById('map-search-input');
+            const searchBox = new google.maps.places.SearchBox(searchInput);
+            
+            // 지도를 움직이면 검색 결과도 현재 보고 있는 지역 위주로 추천하도록 설정
+            map.addListener('bounds_changed', () => {
+                searchBox.setBounds(map.getBounds());
+            });
+
+            // 사용자가 자동완성 목록에서 장소를 선택했을 때의 이벤트
+            searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+                if (places.length == 0) return;
+                
+                const place = places[0];
+                if (!place.geometry || !place.geometry.location) return;
+
+                // 기존 마커 지우고 새 위치로 지도 이동
+                if(marker) marker.setMap(null);
+                map.setCenter(place.geometry.location);
+                map.setZoom(16);
+                
+                // 새 마커 꽂기
+                marker = new google.maps.Marker({ position: place.geometry.location, map: map });
+                
+                // 화면 하단 텍스트 및 숙소 입력칸에 이름 자동 입력
+                document.getElementById('map-selected-address').innerText = place.name;
+                document.getElementById('ai-input-accom').value = place.name;
+            });
+            
+            // 기존의 지도를 직접 터치(클릭)해서 마커를 찍는 로직
             map.addListener('click', (e) => { 
                 if(marker) marker.setMap(null); 
                 marker = new google.maps.Marker({ position: e.latLng, map: map }); 
                 
-                // 구글 Geocoding API를 이용해 주소 변환
                 geocoder.geocode({ location: e.latLng }, (results, status) => {
                     if (status === 'OK' && results[0]) {
+                        // 클릭했을 때는 장소 이름 대신 주소가 나옴
                         const placeName = results[0].formatted_address;
                         document.getElementById('map-selected-address').innerText = placeName; 
                         document.getElementById('ai-input-accom').value = placeName;
@@ -344,7 +374,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }); 
             }); 
         }
-        // 구글 맵 모달에서 띄울 때 사이즈 깨짐 방지
+        
+        // 구글 맵 모달 뜰 때마다 입력창 초기화 및 사이즈 리셋
+        document.getElementById('map-search-input').value = '';
         setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
     };
 
