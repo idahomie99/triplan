@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <!-- 🎯 숙소와 똑같이 트렌디한 둥근 사각형 map 아이콘으로 변경! -->
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
                             <input type="text" class="city-input" placeholder="${cityPlaceholder}" value="${dest.city}" ${isCityDisabled ? 'disabled' : ''} style="${cityStyle} width: 100%; padding-right: 48px;">
-                            <button class="open-city-map-btn ripple-btn" style="position: absolute; right: 6px; border: none; background: #F1F5F9; color: ${isCityDisabled ? 'var(--card-border)' : '#3B82F6'}; cursor: ${isCityDisabled ? 'not-allowed' : 'pointer'}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;" ${isCityDisabled ? 'disabled' : ''}>
+                            <button class="open-city-map-btn ripple-btn" style="position: absolute; right: 6px; border: none; background: transparent; color: ${isCityDisabled ? 'var(--card-border)' : '#3B82F6'}; cursor: ${isCityDisabled ? 'not-allowed' : 'pointer'}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;" ${isCityDisabled ? 'disabled' : ''}>
                                 <span class="material-symbols-rounded" style="font-size: 18px;">map</span>
                             </button>
                         </div>
@@ -602,15 +602,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = document.getElementById('ai-loading-status');
             loadingOverlay.classList.add('active');
 
-            // 💬 2.2초마다 바뀌는 상태 메시지 목록 (머터리얼 아이콘 적용)
-            const loadingMessages = [
-                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">flight_takeoff</span> 항공편 시간 및 공항 이동 동선 계산 중...`,
+            // 💬 비행기 선택 유무에 따라 똑똑하게 바뀌는 상태 메시지
+            let loadingMessages = [];
+            if (aiData.transports.includes('비행기')) {
+                loadingMessages.push(`<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">flight_takeoff</span> 항공편 시간 및 공항 이동 동선 계산 중...`);
+            }
+            loadingMessages.push(
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">location_on</span> 선택하신 테마에 맞는 핫플레이스 수집 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">directions_walk</span> 체력 소모도를 분석해 무리 없는 루트 구성 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">restaurant</span> 실패 없는 현지 로컬 맛집 매칭 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">map</span> 지도 위 최적의 이동 동선 정렬 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">auto_awesome</span> 완벽한 여행 일정을 정리하고 있어요!`
-            ];
+            );
 
             let msgIdx = 0;
             if (statusText) {
@@ -878,6 +881,9 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         });
         document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
+
+        const resultScreen = document.getElementById('ai-result-screen');
+        if(resultScreen) resultScreen.scrollTo({ top: 0, behavior: 'smooth' });
         
         document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(day, false); });
         document.getElementById('btn-plan-b')?.addEventListener('click', () => { 
@@ -1073,25 +1079,52 @@ let isMapView = false; let currentMarkerIndex = -1;
             if(resultMapWrapper) resultMapWrapper.style.display = 'none'; // 👈 wrapper 끄기
         } else {
             timelineContainer.style.display = 'none'; 
-            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; // 👈 wrapper 끄기
+            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; 
             exploreContainer.style.display = 'flex';
             
-            let html = '';
-            for(let i=0; i<5; i++) {
-                const randomImg = `https://images.unsplash.com/photo-${fallbackImages[type][Math.floor(Math.random() * fallbackImages[type].length)]}`;
-                html += `
-                <div class="explore-card">
-                    <div class="explore-card-img" style="background-image: url('${randomImg}?q=80&w=200&auto=format&fit=crop');"></div>
-                    <div class="explore-card-info">
-                        <div class="explore-card-title">AI 현지 추천 장소 ${i+1}</div>
-                        <div class="explore-card-sub">별점 4.${8-i} · 리뷰 기반 추천</div>
-                        <button class="explore-add-btn ripple-btn" onclick="document.getElementById('custom-alert-overlay').classList.add('active'); document.getElementById('custom-alert-modal').classList.add('active'); document.getElementById('alert-icon').innerHTML='<span class=\\'material-symbols-rounded\\' style=\\'color:#10B981;\\'>check_circle</span>'; document.getElementById('alert-title').innerText='추가 완료'; document.getElementById('alert-desc').innerText='내 일정에 성공적으로 추가되었습니다! 😆'; document.getElementById('btn-alert-cancel').style.display='none'; document.getElementById('btn-alert-confirm').innerText='확인했어요'; document.getElementById('btn-alert-confirm').classList.remove('danger');">+ 내 일정에 추가/교체</button>
-                    </div>
-                </div>`;
-            }
-            exploreContainer.innerHTML = html;
+            // 👇 구글 API에서 진짜 데이터를 불러오는 동안 보여줄 로딩 뷰
+            exploreContainer.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-sub); width: 100%;"><div class="magic-spinner-ring" style="width: 30px; height: 30px; border-width: 3px; margin: 0 auto 16px;"></div>현지 실시간 추천 장소를 찾고 있습니다...</div>';
+
+            const mainDest = aiData.destinations[0]?.city || '여행지';
+            let queryKeyword = '';
+            if (type === 'food') queryKeyword = '맛집';
+            if (type === 'tour') queryKeyword = '유명 명소 랜드마크';
+            if (type === 'cafe') queryKeyword = '유명 카페';
+
+            if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
+            
+            // 🚀 구글 Places API 텍스트 검색 발동!
+            placesService.textSearch({ query: `${mainDest} ${queryKeyword}` }, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                    let html = '';
+                    const topResults = results.slice(0, 5); // 상위 5개만 깔끔하게 노출
+                    
+                    topResults.forEach((place) => {
+                        const photoUrl = place.photos && place.photos.length > 0 
+                            ? place.photos[0].getUrl({ maxWidth: 400 }) 
+                            : `https://images.unsplash.com/photo-${fallbackImages[type][Math.floor(Math.random() * fallbackImages[type].length)]}?q=80&w=200&auto=format&fit=crop`;
+                        const rating = place.rating || (4 + Math.random()).toFixed(1);
+                        
+                        // 이름과 사진 URL에 들어간 따옴표 에러 방지
+                        const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                        const safePhotoUrl = photoUrl.replace(/'/g, "\\'");
+
+                        html += `
+                        <div class="explore-card">
+                            <div class="explore-card-img" style="background-image: url('${photoUrl}');"></div>
+                            <div class="explore-card-info">
+                                <div class="explore-card-title">${place.name}</div>
+                                <div class="explore-card-sub">별점 ${rating} · 구글 맵 실시간 추천</div>
+                                <button class="explore-add-btn ripple-btn" onclick="openCustomizeModal('${safeName}', '${type}', '${safePhotoUrl}')">+ 내 일정에 교체하기</button>
+                            </div>
+                        </div>`;
+                    });
+                    exploreContainer.innerHTML = html;
+                } else {
+                    exploreContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-sub); width: 100%;">정보를 불러오지 못했습니다.</div>';
+                }
+            });
         }
-    });
 
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
         showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } });
@@ -1099,4 +1132,62 @@ let isMapView = false; let currentMarkerIndex = -1;
 
     const navHome = document.getElementById('nav-home'); 
     if(navHome) navHome.addEventListener('click', () => { navHome.classList.add('active'); if(btnAccount) btnAccount.classList.remove('active'); });
+// 🚀 [커스터마이징] 탐색에서 선택한 장소를 모달에 띄우기
+    window.openCustomizeModal = (placeName, placeType, photoUrl) => {
+        const modal = document.getElementById('customize-modal');
+        const listContainer = document.getElementById('customize-spot-list');
+        const overlay = document.getElementById('calendar-overlay'); 
+        
+        if(!modal || !listContainer) return;
+        
+        const currentSpots = dailyPlans[currentSelectedDay]?.spots || [];
+        if(currentSpots.length === 0) { alert('현재 날짜에 교체할 일정이 없습니다.'); return; }
+
+        let html = '';
+        currentSpots.forEach((spot, index) => {
+            html += `
+            <div class="customize-spot-item ripple-btn" onclick="replaceSpot(${index}, '${placeName}', '${placeType}', '${photoUrl}')" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--card-border); border-radius: 12px; background: white; cursor: pointer;">
+                <div style="width: 48px; height: 48px; border-radius: 8px; background: url('${spot.img}') center/cover;"></div>
+                <div style="flex: 1;">
+                    <div style="font-size: 12px; color: var(--text-sub); font-weight: 600;">${spot.time} · ${spot.catName}</div>
+                    <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-top: 2px;">${spot.name}</div>
+                </div>
+                <span class="material-symbols-rounded" style="color: #2563EB;">swap_horiz</span>
+            </div>`;
+        });
+        
+        listContainer.innerHTML = html;
+        overlay.style.zIndex = 999; // 모달 배경 뎁스 조정
+        overlay.style.display = 'block';
+        setTimeout(() => modal.classList.add('active'), 10);
+    };
+
+    // 🚀 [커스터마이징] 선택한 일정으로 쇽! 교체하기
+    window.replaceSpot = (index, newName, newType, newPhotoUrl) => {
+        const spot = dailyPlans[currentSelectedDay].spots[index];
+        spot.name = newName; spot.img = newPhotoUrl;
+        
+        // 카테고리에 맞춰 아이콘과 컬러 실시간 변경
+        let iconColor = '#8B5CF6'; let iconBg = '#F1F5F9'; let mIcon = 'location_on'; let catName = '추천 장소';
+        if(newType === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; mIcon = 'restaurant'; catName = '식당'; }
+        if(newType === 'tour') { iconColor = '#2563EB'; iconBg = 'rgba(37,99,235,0.1)'; mIcon = 'photo_camera'; catName = '명소'; }
+        if(newType === 'cafe') { iconColor = '#F59E0B'; iconBg = 'rgba(245,158,11,0.1)'; mIcon = 'local_cafe'; catName = '카페'; }
+        
+        spot.type = newType; spot.color = iconColor; spot.bg = iconBg; spot.mIcon = mIcon; spot.catName = catName;
+        spot.desc = '나의 취향에 맞춰 직접 커스터마이징한 특별한 일정입니다 ✨'; spot.tip = ''; 
+
+        // 1. 모달 닫기
+        document.getElementById('customize-modal').classList.remove('active');
+        document.getElementById('calendar-overlay').style.display = 'none';
+        
+        // 2. 일정표 새로고침 및 화면 전환
+        renderDayPlan(currentSelectedDay, false); 
+        document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
+        document.querySelector('.explore-chip[data-type="timeline"]').classList.add('active');
+        document.getElementById('ai-timeline-container').style.display = 'flex'; 
+        document.getElementById('ai-explore-container').style.display = 'none';
+
+        // 3. 기분 좋은 성공 알림!
+        showCustomAlert({icon: 'check_circle', title: '일정 교체 완료', desc: `[${newName}] 장소로 완벽하게 교체되었습니다! 😆`});
+    };
 });

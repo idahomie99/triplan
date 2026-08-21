@@ -159,7 +159,7 @@
                     <!-- 👇 숙소 입력창 트렌디한 둥근 사각형 버튼으로 교체 -->
                     <div style="position: relative; display: flex; align-items: center; width: 100%;">
                         <input type="text" id="ai-input-accom" class="ai-text-input" placeholder="호텔, 게스트하우스 등 (선택)" style="width: 100%; padding-right: 48px;">
-                        <button id="btn-open-map" class="ripple-btn" style="position: absolute; right: 6px; border: none; background: #F1F5F9; color: #3B82F6; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;">
+                        <button id="btn-open-map" class="ripple-btn" style="position: absolute; right: 6px; border: none; background: transparent; color: #3B82F6; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;">
                             <span class="material-symbols-rounded" style="font-size: 18px;">map</span>
                         </button>
                     </div>
@@ -241,6 +241,18 @@
             </div>
         </div>
 
+        <!-- 👇 커스터마이징(일정 교체) 모달창 -->
+        <div id="customize-modal" class="bottom-sheet" style="z-index: 1000;">
+            <div class="sheet-header">
+                <h3>일정 교체하기</h3>
+                <button class="icon-btn" onclick="document.getElementById('customize-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display = 'none';"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="sheet-content">
+                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px;">어느 시간대의 일정과 교체하시겠어요?</p>
+                <div id="customize-spot-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+            </div>
+        </div>
+        
         <div id="ai-loading-overlay">
             <div class="magic-spinner-container">
                 <div class="magic-spinner-ring"></div>
