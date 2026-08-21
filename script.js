@@ -1054,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             const startTime = performance.now();
-            const animate = (time) => {
+           const animate = (time) => {
                 if(routeAnimationAbort) { movingMarker.setMap(null); return resolve(); } 
                 
                 const elapsed = time - startTime;
@@ -1065,7 +1065,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
                 
                 movingMarker.setPosition({lat, lng});
-                routeMap.setCenter({lat, lng}); // 카메라가 원을 실시간으로 추적!
+                
+                // 🎯 [핵심] 카메라 중심을 원보다 살짝 아래로 내려서(위도 - 0.008), 
+                // 원이 화면 상단 3분의 1 지점(시각적 중앙)에 완벽하게 안착하게 만듦!
+                routeMap.setCenter({lat: lat - 0.008, lng: lng}); 
                 
                 if(progress < 1) requestAnimationFrame(animate);
                 else { movingMarker.setMap(null); resolve(); }
@@ -1089,8 +1092,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(badgeEl) badgeEl.innerText = spot.catName;
         if(imgEl) imgEl.style.backgroundImage = `url('${spot.img}')`;
         
-        // 🎯 예전의 -0.005 오프셋을 드디어 뺐습니다! (패딩이 일할 수 있게)
-        routeMap.panTo({lat: pCoords[index].lat, lng: pCoords[index].lng});
+        // 🎯 [핵심] 여기서도 -0.008을 빼서 팝업창 위로 시원하게 띄움!
+        routeMap.panTo({lat: pCoords[index].lat - 0.008, lng: pCoords[index].lng});
+        
         if (infoCard) infoCard.classList.add('active');
         currentMarkerIndex = index;
     };
