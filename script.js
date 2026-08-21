@@ -1009,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 zoom: 13,
                 disableDefaultUI: true,
                 // 🎯 잊어버리지 마세요! 패딩 400을 넣어야 시각적 중앙이 위로 확 올라갑니다.
-                padding: { top: 80, bottom: 480, left: 0, right: 0 } 
+                padding: { top: 80, bottom: 0, left: 0, right: 0 } 
             });
         }
 
