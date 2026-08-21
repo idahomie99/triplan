@@ -835,12 +835,14 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("AI 생성 중 에러:", e);
             document.getElementById('ai-loading-overlay').classList.remove('active');
             
+            // 👇 임시 데이터 로직을 지우고, 재시도를 유도하는 깔끔한 문구로 변경!
             showCustomAlert({
-                icon: 'warning', title: 'API 연결 오류', 
-                desc: '서버 트래픽이 너무 많아 일정을 불러오지 못했습니다.\n임시 데이터로 화면을 띄워드립니다.',
+                icon: 'error', 
+                title: '일시적인 연결 지연', 
+                desc: '현재 이용자가 많아 AI가 일정을 짜는데 실패했어요.\n잠시 후 다시 버튼을 눌러주세요!',
+                confirmText: '확인',
                 onConfirm: () => {
-                    generateMockTimeline(); 
-                    aiScreen.classList.remove('active');
+                    // 모달만 닫히고 11단계 화면에 그대로 남아서 다시 버튼을 누를 수 있음
                 }
             });
         }
