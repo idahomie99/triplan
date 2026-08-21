@@ -1125,6 +1125,7 @@ let isMapView = false; let currentMarkerIndex = -1;
                 }
             });
         }
+    });
 
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
         showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } });
