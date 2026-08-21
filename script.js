@@ -301,9 +301,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = e.target.closest('.open-city-map-btn');
             if(btn.disabled) return;
             
-            currentMapTarget = { type: 'city', index: index };
+            // 👇 선택된 국가 정보(country)를 target 객체에 추가해서 넘겨줌!
+            const selectedCountry = aiData.destinations[index].country;
+            currentMapTarget = { type: 'city', index: index, country: selectedCountry };
 
-            // 💡 상황에 맞게 텍스트 갈아끼우기
             const titleEl = document.getElementById('map-modal-title');
             if(titleEl) titleEl.innerText = '지도에서 도시 찾기';
             const searchInput = document.getElementById('map-search-input');
@@ -356,7 +357,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCountryBack?.addEventListener('click', () => openCountryModal(activeDestIndex));
 
     document.getElementById('btn-ai-standard')?.addEventListener('click', () => { aiMode = 'standard'; aiScreen.classList.add('active'); resetAiFlow(); });
-    document.getElementById('btn-ai-tension')?.addEventListener('click', () => { aiMode = 'tension'; aiScreen.classList.add('active'); resetAiFlow(); });
+    document.getElementById('btn-ai-tension')?.addEventListener('click', () => { 
+        aiMode = 'tension'; 
+        aiScreen.classList.add('active'); 
+        resetAiFlow(); 
+        // 👇 추가
+        aiData.people = 2; 
+        document.getElementById('people-count').innerText = '2명';
+    });
     
     btnPrevAiStep?.addEventListener('click', () => {
         if(aiStepHistory.length > 1) {
@@ -440,16 +448,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('map-search-input').value = '';
         document.getElementById('map-selected-address').innerText = '지도를 탭하거나 검색하세요';
         
-        // 🛰️ GPS 내 위치 가져오기
-        if (navigator.geolocation) {
+        // 🛰️ 선택한 국가로 이동 or GPS 내 위치 가져오기
+        if (currentMapTarget.type === 'city' && currentMapTarget.country) {
+            // 국가가 있으면 그 국가를 중심으로 맵을 띄움
+            geocoder.geocode({ address: currentMapTarget.country }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    map.setCenter(results[0].geometry.location);
+                    map.setZoom(5); // 나라가 한눈에 보이게 줌아웃
+                }
+            });
+        } else if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    map.setCenter({ lat: position.coords.latitude, lng: position.coords.longitude });
-                },
-                () => { map.setCenter({lat: 37.5665, lng: 126.9780}); } 
+                (position) => { map.setCenter({ lat: position.coords.latitude, lng: position.coords.longitude }); map.setZoom(14); },
+                () => { map.setCenter({lat: 37.5665, lng: 126.9780}); map.setZoom(14); } 
             );
         } else {
-            map.setCenter({lat: 37.5665, lng: 126.9780});
+            map.setCenter({lat: 37.5665, lng: 126.9780}); map.setZoom(14);
         }
         
         setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
@@ -501,7 +515,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     document.querySelectorAll('.ai-option-card').forEach(card => { card.addEventListener('click', () => { document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected'); aiData.companion = card.getAttribute('data-val'); validateAiStep(); }); });
-    document.getElementById('btn-minus-people')?.addEventListener('click', () => { if(aiData.people > 1) { aiData.people--; document.getElementById('people-count').innerText = `${aiData.people}명`; }}); 
+    document.getElementById('btn-minus-people')?.addEventListener('click', () => { 
+        const minLimit = aiMode === 'tension' ? 2 : 1; // 텐션 모드면 최소 2명
+        if(aiData.people > minLimit) { 
+            aiData.people--; 
+            document.getElementById('people-count').innerText = `${aiData.people}명`; 
+        }
+    });
     document.getElementById('btn-plus-people')?.addEventListener('click', () => { if(aiData.people < 20) { aiData.people++; document.getElementById('people-count').innerText = `${aiData.people}명`; }});
 
     document.querySelectorAll('.ai-chip').forEach(chip => { 
@@ -899,7 +919,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 🚀 구글 맵 (Google Maps) 라우팅 변수
     let routeMap = null; let pathPolyline = null; let routeMarkers = []; let movingMarker = null;
-let isMapView = false; let currentMarkerIndex = -1;
+    let isMapView = false; let currentMarkerIndex = -1;
+    
+    // 👇 자동 재생 애니메이션 전역 변수들
+    let isPlayingRoute = false; 
+    let routeAnimationAbort = false;
+    let playedDays = {}; // 날짜별 자동 재생 여부 기록
 
     function initMapForResult(mainDest) {
         const resultMapEl = document.getElementById('ai-result-map');
@@ -925,12 +950,11 @@ let isMapView = false; let currentMarkerIndex = -1;
         const exploreEl = document.getElementById('ai-explore-container');
         const topIconEl = document.getElementById('top-map-icon');
         const mapCardEl = document.getElementById('map-info-card');
-        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); // 👈 추가
+        const resultMapWrapper = document.getElementById('ai-result-map-wrapper');
 
         if (timelineEl) timelineEl.style.display = 'flex';
         if (exploreEl) exploreEl.style.display = 'none';
         
-        // 🎯 핵심! wrapper만 숨기고 도화지 자체는 숨기지 않아야 회색 에러가 안 나!
         if (resultMapWrapper) resultMapWrapper.style.display = 'none'; 
         if (resultMapEl) resultMapEl.style.display = 'block'; 
         
@@ -941,45 +965,126 @@ let isMapView = false; let currentMarkerIndex = -1;
         document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
 
-    const animateMovement = (startPos, endPos, duration, callback) => {
-        if(movingMarker) movingMarker.setMap(null);
-        
-        movingMarker = new google.maps.Marker({
-            position: startPos,
-            map: routeMap,
-            icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#10B981', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 10 }
+    // 🚀 비동기(Async) 이동 애니메이션 (이모지 포함!)
+    const animateMovementAsync = (startPos, endPos, duration, mIconStr) => {
+        return new Promise(resolve => {
+            if(movingMarker) movingMarker.setMap(null);
+            
+            movingMarker = new google.maps.Marker({
+                position: startPos,
+                map: routeMap,
+                label: { text: mIconStr, fontFamily: 'Material Symbols Rounded', color: 'white', fontSize: '14px' },
+                icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#10B981', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 12 },
+                zIndex: 999
+            });
+            
+            const startTime = performance.now();
+            const animate = (time) => {
+                if(routeAnimationAbort) { movingMarker.setMap(null); return resolve(); } // 정지 버튼 누르면 즉각 중단
+                
+                const elapsed = time - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                
+                const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
+                const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
+                movingMarker.setPosition({lat, lng});
+                
+                routeMap.panTo({lat, lng}); // 실시간 중심 이동
+                
+                if(progress < 1) requestAnimationFrame(animate);
+                else { movingMarker.setMap(null); resolve(); }
+            };
+            requestAnimationFrame(animate);
         });
-        
-        const startTime = performance.now();
-        const animate = (time) => {
-            const elapsed = time - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const ease = 1 - Math.pow(1 - progress, 3);
-            
-            const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
-            const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
-            movingMarker.setPosition({lat, lng});
-            
-            if(progress < 1) { requestAnimationFrame(animate); } 
-            else { movingMarker.setMap(null); movingMarker = null; if(callback) callback(); }
-        };
-        requestAnimationFrame(animate);
     };
 
+    // 🚀 팝업 카드 띄우기 함수 분리
+    const showMarkerCard = (index, daySpots, pCoords) => {
+        const infoCard = document.getElementById('map-info-card');
+        const spot = daySpots[index];
+        document.getElementById('map-info-title').innerText = spot.name;
+        document.getElementById('map-info-desc').innerText = spot.desc;
+        document.getElementById('map-info-badge').innerText = spot.catName;
+        document.getElementById('map-info-img').style.backgroundImage = `url('${spot.img}')`;
+        
+        routeMap.panTo({lat: pCoords[index].lat - 0.005, lng: pCoords[index].lng});
+        if (infoCard) infoCard.classList.add('active');
+        currentMarkerIndex = index;
+    };
+
+    // 🚀 대망의 전체 경로 투어(Play) 함수
+    const playRouteAnimation = async () => {
+        if(isPlayingRoute) { routeAnimationAbort = true; return; } // 실행 중 누르면 정지
+        
+        isPlayingRoute = true; routeAnimationAbort = false;
+        const playBtn = document.getElementById('btn-play-route');
+        const topBackBtn = document.getElementById('btn-toggle-map-top');
+        const exploreChips = document.querySelector('.explore-chips-container');
+        
+        if (playBtn) {
+            playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">stop</span>';
+            playBtn.style.background = '#DC2626';
+        }
+        if (topBackBtn) { topBackBtn.style.pointerEvents = 'none'; topBackBtn.style.opacity = '0.3'; }
+        if (exploreChips) { exploreChips.style.pointerEvents = 'none'; exploreChips.style.opacity = '0.3'; }
+        
+        const infoCard = document.getElementById('map-info-card');
+        if (infoCard) infoCard.classList.remove('active');
+
+        const daySpots = dailyPlans[currentSelectedDay]?.spots || [];
+        const pCoords = daySpots.map(s => ({lat: parseFloat(s.lat), lng: parseFloat(s.lng)}));
+        
+        const isWalk = aiData.transports.includes('도보') && aiData.transports.length === 1;
+        const mIconStr = isWalk ? 'directions_walk' : 'directions_car'; 
+
+        if (pCoords.length > 0) {
+            routeMap.setZoom(16);
+            routeMap.panTo(pCoords[0]);
+            await new Promise(r => setTimeout(r, 800));
+
+            for(let i = 0; i < pCoords.length; i++) {
+                if(routeAnimationAbort) break;
+                
+                if(i > 0) {
+                    if (infoCard) infoCard.classList.remove('active');
+                    await animateMovementAsync(pCoords[i-1], pCoords[i], 1800, mIconStr);
+                }
+                if(routeAnimationAbort) break;
+
+                showMarkerCard(i, daySpots, pCoords);
+                await new Promise(r => setTimeout(r, 3000)); 
+            }
+        }
+
+        // 🔓 종료 후 복구
+        isPlayingRoute = false; routeAnimationAbort = false;
+        if (playBtn) {
+            playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">play_arrow</span>';
+            playBtn.style.background = '#2563EB';
+        }
+        if (topBackBtn) { topBackBtn.style.pointerEvents = 'auto'; topBackBtn.style.opacity = '1'; }
+        if (exploreChips) { exploreChips.style.pointerEvents = 'auto'; exploreChips.style.opacity = '1'; }
+        
+        if (pCoords.length > 0) {
+            const bounds = new google.maps.LatLngBounds();
+            pCoords.forEach(p => bounds.extend(p));
+            routeMap.fitBounds(bounds);
+        }
+    };
+
+    // 기존의 drawRoute 함수 내용 교체
     const drawRoute = (lat, lng, daySpots) => {
         if(pathPolyline) pathPolyline.setMap(null);
         routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
         currentMarkerIndex = -1;
-        document.getElementById('map-info-card').classList.remove('active');
+        const infoCard = document.getElementById('map-info-card');
+        if(infoCard) infoCard.classList.remove('active');
+        
+        if(isPlayingRoute) { routeAnimationAbort = true; }
 
-        if(!daySpots) {
-            if(dailyPlans && dailyPlans[currentSelectedDay]) daySpots = dailyPlans[currentSelectedDay].spots; else daySpots = [];
-        }
-
-        const pathCoordinates = daySpots.map(spot => ({
-            lat: parseFloat(spot.lat),
-            lng: parseFloat(spot.lng)
-        })).filter(coord => !isNaN(coord.lat) && !isNaN(coord.lng));
+        if(!daySpots) daySpots = dailyPlans[currentSelectedDay]?.spots || [];
+        const pathCoordinates = daySpots.map(s => ({ lat: parseFloat(s.lat), lng: parseFloat(s.lng) })).filter(c => !isNaN(c.lat) && !isNaN(c.lng));
         
         pathPolyline = new google.maps.Polyline({
             path: pathCoordinates, geodesic: true, strokeColor: '#8B5CF6', strokeOpacity: 1.0, strokeWeight: 4
@@ -987,7 +1092,6 @@ let isMapView = false; let currentMarkerIndex = -1;
         pathPolyline.setMap(routeMap);
         
         const bounds = new google.maps.LatLngBounds();
-        
         pathCoordinates.forEach((p, index) => {
             bounds.extend(p);
             const marker = new google.maps.Marker({
@@ -995,33 +1099,26 @@ let isMapView = false; let currentMarkerIndex = -1;
                 label: { text: String(index + 1), color: 'white', fontWeight: 'bold' },
                 icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#8B5CF6', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 14 }
             });
-            
             routeMarkers.push(marker);
-
+            
             marker.addListener('click', () => {
-                const infoCard = document.getElementById('map-info-card');
-                infoCard.classList.remove('active');
-
-                const showCard = () => {
-                    const spot = daySpots[index];
-                    document.getElementById('map-info-title').innerText = spot.name;
-                    document.getElementById('map-info-desc').innerText = spot.desc;
-                    document.getElementById('map-info-badge').innerText = spot.catName;
-                    document.getElementById('map-info-img').style.backgroundImage = `url('${spot.img}?q=80&w=200&auto=format&fit=crop')`;
-                    
-                    routeMap.panTo({lat: p.lat - 0.005, lng: p.lng});
-                    setTimeout(() => infoCard.classList.add('active'), 300);
-                };
-
-                if (index > 0 && currentMarkerIndex < index) {
-                    animateMovement(pathCoordinates[index-1], p, 1200, showCard);
-                } else { showCard(); }
-                currentMarkerIndex = index;
+                if(isPlayingRoute) return; 
+                showMarkerCard(index, daySpots, pathCoordinates);
             });
         });
         
-        if(pathCoordinates.length > 0) routeMap.fitBounds(bounds);
+        if(pathCoordinates.length > 0) {
+            routeMap.fitBounds(bounds);
+            // 👇 해당 날짜 지도를 처음 열었을 때 자동으로 1회 재생!
+            if(!playedDays[currentSelectedDay]) {
+                playedDays[currentSelectedDay] = true;
+                setTimeout(() => playRouteAnimation(), 600);
+            }
+        }
     };
+    
+    // 플레이 버튼에 이벤트 달아주기!
+    document.getElementById('btn-play-route')?.addEventListener('click', playRouteAnimation);
 
     document.getElementById('btn-toggle-map-top')?.addEventListener('click', () => {
         isMapView = !isMapView;

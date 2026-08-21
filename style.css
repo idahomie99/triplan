@@ -190,7 +190,18 @@ input[type="checkbox"] { display: none; }
 .stamina-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; background: #E2E8F0; outline: none; margin-bottom: 20px; }
 .stamina-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #8B5CF6; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 .stamina-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-sub); line-height: 1.4; margin-top: 8px; text-align: center; }
-.stamina-labels span { width: 20%; display: inline-block; }
+.stamina-labels span {
+    position: absolute;
+    top: 0;
+    width: 60px; /* 텍스트가 안 잘리게 너비 확보 */
+    text-align: center;
+}
+/* 슬라이더의 24px 원 크기를 반영한 소름 돋게 완벽한 퍼센트 계산 */
+.stamina-labels span:nth-child(1) { left: 0%; transform: translateX(-50%); margin-left: 12px; }
+.stamina-labels span:nth-child(2) { left: 25%; transform: translateX(-50%); margin-left: 6px; }
+.stamina-labels span:nth-child(3) { left: 50%; transform: translateX(-50%); }
+.stamina-labels span:nth-child(4) { left: 75%; transform: translateX(-50%); margin-left: -6px; }
+.stamina-labels span:nth-child(5) { left: 100%; transform: translateX(-50%); margin-left: -12px; }
 
 .ai-footer { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px 24px 40px 24px; background: linear-gradient(to top, var(--bg-app) 80%, transparent); z-index: 10; padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 20px));}
 #btn-ai-next { background: linear-gradient(135deg, #8B5CF6, #D946EF); box-shadow: 0 10px 20px rgba(217, 70, 239, 0.3); transition: 0.3s; }
