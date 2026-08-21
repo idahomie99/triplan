@@ -116,7 +116,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     const closeCalendar = () => { calendarModal.classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); };
-    document.getElementById('btn-close-calendar')?.addEventListener('click', closeCalendar); calendarOverlay.addEventListener('click', closeCalendar);
+    document.getElementById('btn-close-calendar')?.addEventListener('click', closeCalendar); 
+    
+    // 👇 배경(오버레이) 클릭 시 열려있는 모든 바텀 시트(모달)를 찾아 깔끔하게 닫아주는 만능 로직!
+    calendarOverlay.addEventListener('click', () => {
+        // 화면에 있는 모든 바텀 시트의 'active' 클래스를 제거해서 스르륵 내림
+        document.querySelectorAll('.bottom-sheet').forEach(sheet => {
+            sheet.classList.remove('active');
+        });
+        // 0.3초 뒤에 까만 배경도 숨김
+        setTimeout(() => { calendarOverlay.style.display = 'none'; }, 300);
+    });
     
     document.getElementById('btn-confirm-date')?.addEventListener('click', () => {
         if (!tempStartDate || !tempEndDate) { showCustomAlert({ icon: 'error', title: '알림', desc: '시작일과 종료일을 모두 선택해주세요.' }); return; }
@@ -935,8 +945,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 center: {lat: 37.5665, lng: 126.9780},
                 zoom: 13,
                 disableDefaultUI: true,
-                // 👇 [핵심] 하단 UI(팝업, 저장버튼)와 상단 탭 높이를 계산해 시각적 중앙을 위로 끌어올림!
-                padding: { top: 80, bottom: 280, left: 0, right: 0 } 
+                // 👇 bottom 패딩을 280 -> 400으로 팍 늘려서 시각적 중앙을 위로 시원하게 올림!
+                padding: { top: 80, bottom: 400, left: 0, right: 0 } 
             });
         }
 

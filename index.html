@@ -273,9 +273,10 @@
         <div id="ai-result-screen" class="sub-screen" style="z-index: 130; overflow: hidden; background: var(--bg-body);">
             <header class="sub-header" style="background: var(--bg-app); border-bottom: 1px solid var(--card-border); z-index: 20;">
                 <div class="header-left"><button class="icon-btn" id="btn-back-ai-result"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
-                <div class="result-header-info">
-                    <h2 id="ai-result-title" style="font-size: 18px;">여행 일정</h2>
-                    <p id="ai-result-subtitle" style="font-size: 12px; color: var(--text-sub);">AI가 완성한 최적의 동선</p>
+                <!-- 👇 flex: 1과 min-width: 0으로 구역을 제한하고, 텍스트가 길면 ... 으로 예쁘게 잘리도록 처리! -->
+                <div class="result-header-info" style="flex: 1; min-width: 0; padding: 0 16px;">
+                    <h2 id="ai-result-title" style="font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">여행 일정</h2>
+                    <p id="ai-result-subtitle" style="font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">AI가 완성한 최적의 동선</p>
                 </div>
                 <div class="header-right" style="display: flex; width: auto; gap: 4px; justify-content: flex-end;">
                     <button class="icon-btn" id="btn-toggle-map-top"><span class="material-symbols-rounded" id="top-map-icon">map</span></button>
