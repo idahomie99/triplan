@@ -264,7 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기
         document.querySelectorAll('.city-input').forEach((inputEl, index) => {
             const dest = aiData.destinations[index];
-            if (dest.country && window.google) {
+            // 🛡️ 구글 맵과 places 라이브러리가 완전히 로딩되었을 때만 실행하도록 방어막 추가!
+            if (dest.country && window.google && window.google.maps && window.google.maps.places) {
                 const isoCode = countryIsoMap[dest.country];
                 
                 const autocomplete = new google.maps.places.Autocomplete(inputEl, {
