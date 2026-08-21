@@ -934,7 +934,9 @@ document.addEventListener('DOMContentLoaded', () => {
             routeMap = new google.maps.Map(resultMapEl, {
                 center: {lat: 37.5665, lng: 126.9780},
                 zoom: 13,
-                disableDefaultUI: true
+                disableDefaultUI: true,
+                // 👇 [핵심] 하단 UI(팝업, 저장버튼)와 상단 탭 높이를 계산해 시각적 중앙을 위로 끌어올림!
+                padding: { top: 80, bottom: 280, left: 0, right: 0 } 
             });
         }
 
@@ -1002,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // 🚀 팝업 카드 띄우기 함수 분리
     const showMarkerCard = (index, daySpots, pCoords) => {
         const infoCard = document.getElementById('map-info-card');
         const spot = daySpots[index];
@@ -1017,11 +1020,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(badgeEl) badgeEl.innerText = spot.catName;
         if(imgEl) imgEl.style.backgroundImage = `url('${spot.img}')`;
         
-        routeMap.panTo({lat: pCoords[index].lat - 0.005, lng: pCoords[index].lng});
+        // 👇 -0.005 오프셋 제거! 패딩이 적용되어 있으니 정좌표를 넣어도 네가 말한 '빨간 점'에 예쁘게 안착함
+        routeMap.panTo({lat: pCoords[index].lat, lng: pCoords[index].lng});
         if (infoCard) infoCard.classList.add('active');
         currentMarkerIndex = index;
     };
-    
+
     // 🚀 대망의 전체 경로 투어(Play) 함수
     const playRouteAnimation = async () => {
         if(isPlayingRoute) { routeAnimationAbort = true; return; } 
