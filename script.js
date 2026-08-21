@@ -526,15 +526,65 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(currentAiStep === 11) btnAiNext.disabled = false;
     };
     
-    document.querySelectorAll('.ai-option-card').forEach(card => { card.addEventListener('click', () => { document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); card.classList.add('selected'); aiData.companion = card.getAttribute('data-val'); validateAiStep(); }); });
+    document.querySelectorAll('.ai-option-card').forEach(card => { 
+        card.addEventListener('click', () => { 
+            document.querySelectorAll('.ai-option-card').forEach(c => c.classList.remove('selected')); 
+            card.classList.add('selected'); 
+            aiData.companion = card.getAttribute('data-val'); 
+
+            // 🎯 혼자서 vs 일행 분기 로직
+            if(aiData.companion === '혼자서') {
+                aiData.people = 1;
+                document.getElementById('people-count').innerText = '1명';
+                
+                // 연령대 1개만 남기고 초기화
+                if(aiData.ages.length > 1) {
+                    aiData.ages = [aiData.ages[0]];
+                    document.querySelectorAll('.age-chip').forEach(c => {
+                        if(c.getAttribute('data-val') !== aiData.ages[0]) c.classList.remove('selected');
+                    });
+                }
+                
+                // 특정 테마 숨기기 및 선택 해제
+                const hideThemes = ['우정여행', '커플여행', '신혼여행', '가족여행', '효도여행'];
+                document.querySelectorAll('.theme-chip').forEach(c => {
+                    const val = c.getAttribute('data-val');
+                    if(hideThemes.includes(val)) {
+                        c.style.display = 'none';
+                        if(c.classList.contains('selected')) {
+                            c.classList.remove('selected');
+                            aiData.themes = aiData.themes.filter(t => t !== val);
+                        }
+                    }
+                });
+            } else {
+                // 혼자가 아니면 무조건 최소 2명!
+                if(aiData.people < 2) { 
+                    aiData.people = 2; 
+                    document.getElementById('people-count').innerText = '2명'; 
+                }
+                // 숨겼던 테마 다시 보이기
+                document.querySelectorAll('.theme-chip').forEach(c => c.style.display = 'inline-flex');
+            }
+
+            validateAiStep(); 
+        }); 
+    });
+
     document.getElementById('btn-minus-people')?.addEventListener('click', () => { 
-        const minLimit = aiMode === 'tension' ? 2 : 1; // 텐션 모드면 최소 2명
+        // 🎯 최소 인원 계산 로직 (혼자가 아니면 최소 2명)
+        const minLimit = (aiMode === 'tension' || aiData.companion !== '혼자서') ? 2 : 1;
         if(aiData.people > minLimit) { 
             aiData.people--; 
             document.getElementById('people-count').innerText = `${aiData.people}명`; 
         }
+    }); 
+    document.getElementById('btn-plus-people')?.addEventListener('click', () => { 
+        if(aiData.people < 20) { 
+            aiData.people++; 
+            document.getElementById('people-count').innerText = `${aiData.people}명`; 
+        }
     });
-    document.getElementById('btn-plus-people')?.addEventListener('click', () => { if(aiData.people < 20) { aiData.people++; document.getElementById('people-count').innerText = `${aiData.people}명`; }});
 
     document.querySelectorAll('.ai-chip').forEach(chip => { 
         chip.addEventListener('click', () => { 
@@ -545,8 +595,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             else if(chip.classList.contains('age-chip')) {
                 const val = chip.getAttribute('data-val');
-                if(chip.classList.contains('selected')) { chip.classList.remove('selected'); aiData.ages = aiData.ages.filter(a => a !== val); }
-                else { chip.classList.add('selected'); aiData.ages.push(val); }
+                if(chip.classList.contains('selected')) { 
+                    chip.classList.remove('selected'); aiData.ages = aiData.ages.filter(a => a !== val); 
+                } else { 
+                    // 🎯 혼자일 땐 연령대 1개만 선택 가능!
+                    if(aiData.companion === '혼자서' && aiData.ages.length >= 1) {
+                        showCustomAlert({icon:'info', title:'알림', desc:'혼자 여행할 때는 연령대를 1개만 선택할 수 있어요!'}); return;
+                    }
+                    chip.classList.add('selected'); aiData.ages.push(val); 
+                }
             }
             else if(chip.classList.contains('std-chip')) {
                 const val = chip.getAttribute('data-val');
@@ -945,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 center: {lat: 37.5665, lng: 126.9780},
                 zoom: 13,
                 disableDefaultUI: true,
-                // 👇 bottom 패딩을 280 -> 400으로 팍 늘려서 시각적 중앙을 위로 시원하게 올림!
+                // 🎯 잊어버리지 마세요! 패딩 400을 넣어야 시각적 중앙이 위로 확 올라갑니다.
                 padding: { top: 80, bottom: 400, left: 0, right: 0 } 
             });
         }
@@ -964,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const exploreEl = document.getElementById('ai-explore-container');
         const topIconEl = document.getElementById('top-map-icon');
         const mapCardEl = document.getElementById('map-info-card');
-        const resultMapWrapper = document.getElementById('ai-result-map-wrapper');
+        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); 
 
         if (timelineEl) timelineEl.style.display = 'flex';
         if (exploreEl) exploreEl.style.display = 'none';
@@ -979,7 +1036,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
 
-    // 🚀 비동기(Async) 이동 애니메이션 (카메라 팔로우 & 속도 개선)
     const animateMovementAsync = (startPos, endPos, duration, mIconStr) => {
         return new Promise(resolve => {
             if(movingMarker) movingMarker.setMap(null);
@@ -997,15 +1053,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const elapsed = time - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3); // 스무스한 움직임
+                const ease = 1 - Math.pow(1 - progress, 3);
                 
                 const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
                 const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
                 
                 movingMarker.setPosition({lat, lng});
-                
-                // 🎯 [핵심] panTo 대신 setCenter를 써야 끊김 없이 원을 따라 카메라가 중앙 이동함!
-                routeMap.setCenter({lat, lng}); 
+                routeMap.setCenter({lat, lng}); // 카메라가 원을 실시간으로 추적!
                 
                 if(progress < 1) requestAnimationFrame(animate);
                 else { movingMarker.setMap(null); resolve(); }
@@ -1014,7 +1068,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // 🚀 팝업 카드 띄우기 함수 분리
     const showMarkerCard = (index, daySpots, pCoords) => {
         const infoCard = document.getElementById('map-info-card');
         const spot = daySpots[index];
@@ -1030,13 +1083,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(badgeEl) badgeEl.innerText = spot.catName;
         if(imgEl) imgEl.style.backgroundImage = `url('${spot.img}')`;
         
-        // 👇 -0.005 오프셋 제거! 패딩이 적용되어 있으니 정좌표를 넣어도 네가 말한 '빨간 점'에 예쁘게 안착함
+        // 🎯 예전의 -0.005 오프셋을 드디어 뺐습니다! (패딩이 일할 수 있게)
         routeMap.panTo({lat: pCoords[index].lat, lng: pCoords[index].lng});
         if (infoCard) infoCard.classList.add('active');
         currentMarkerIndex = index;
     };
 
-    // 🚀 대망의 전체 경로 투어(Play) 함수
     const playRouteAnimation = async () => {
         if(isPlayingRoute) { routeAnimationAbort = true; return; } 
         
@@ -1068,18 +1120,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if(i > 0) {
                     if (infoCard) infoCard.classList.remove('active');
-                    
-                    // 🎯 [핵심] 거리에 비례하여 이동 소요 시간(속도) 동적 계산!
                     let calcDuration = 1500; 
                     if (window.google && google.maps.geometry) {
                         const dist = google.maps.geometry.spherical.computeDistanceBetween(
                             new google.maps.LatLng(pCoords[i-1].lat, pCoords[i-1].lng),
                             new google.maps.LatLng(pCoords[i].lat, pCoords[i].lng)
                         );
-                        calcDuration = (dist / 1000) * 1000; // 1km당 1초 (1000ms)
-                        calcDuration = Math.max(1200, Math.min(calcDuration, 3500)); // 너무 빠르거나 너무 느리지 않게 1.2초 ~ 3.5초 사이로 보정
+                        calcDuration = (dist / 1000) * 1000; 
+                        calcDuration = Math.max(1200, Math.min(calcDuration, 3500)); 
                     }
-                    
                     await animateMovementAsync(pCoords[i-1], pCoords[i], calcDuration, mIconStr);
                 }
                 if(routeAnimationAbort) break;
@@ -1094,14 +1143,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (topBackBtn) { topBackBtn.style.pointerEvents = 'auto'; topBackBtn.style.opacity = '1'; }
         if (exploreChips) { exploreChips.style.pointerEvents = 'auto'; exploreChips.style.opacity = '1'; }
         
+        // 🎯 애니메이션 종료 시 팝업 닫고 지도 축소 (전체 루트 보이게!)
+        if (infoCard) infoCard.classList.remove('active');
         if (pCoords.length > 0) {
             const bounds = new google.maps.LatLngBounds();
             pCoords.forEach(p => bounds.extend(p));
-            routeMap.fitBounds(bounds);
+            // 여백을 주어 핀이 모서리에 안 잘리게 예쁘게 줌아웃
+            routeMap.fitBounds(bounds, { top: 100, bottom: 420, left: 50, right: 50 });
         }
     };
 
-    // 기존의 drawRoute 함수 내용 교체
     const drawRoute = (lat, lng, daySpots) => {
         if(pathPolyline) pathPolyline.setMap(null);
         routeMarkers.forEach(m => m.setMap(null)); routeMarkers = [];
@@ -1136,14 +1187,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if(pathCoordinates.length > 0) {
-            routeMap.fitBounds(bounds);
-            // 👇 해당 날짜 지도를 처음 열었을 때 자동으로 1회 재생!
+            routeMap.fitBounds(bounds, { top: 100, bottom: 420, left: 50, right: 50 });
             if(!playedDays[currentSelectedDay]) {
                 playedDays[currentSelectedDay] = true;
                 setTimeout(() => playRouteAnimation(), 600);
             }
         }
     };
+    
+    document.getElementById('btn-play-route')?.addEventListener('click', playRouteAnimation);
+
+    // 🎯 드디어 X 버튼 활성화!
+    document.getElementById('btn-close-map-info')?.addEventListener('click', () => {
+        document.getElementById('map-info-card').classList.remove('active');
+    });
     
     // 플레이 버튼에 이벤트 달아주기!
     document.getElementById('btn-play-route')?.addEventListener('click', playRouteAnimation);
