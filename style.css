@@ -262,7 +262,7 @@ input[type="checkbox"] { display: none; }
     position: absolute;
     width: 86px;
     height: 86px;
-    background: var(--bg-app);
+    background: transparent;
     border-radius: 50%;
     display: flex;
     justify-content: center;

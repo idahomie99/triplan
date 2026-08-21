@@ -1002,6 +1002,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const showMarkerCard = (index, daySpots, pCoords) => {
+        const infoCard = document.getElementById('map-info-card');
+        const spot = daySpots[index];
+        if(!spot) return;
+        
+        const titleEl = document.getElementById('map-info-title');
+        const descEl = document.getElementById('map-info-desc');
+        const badgeEl = document.getElementById('map-info-badge');
+        const imgEl = document.getElementById('map-info-img');
+
+        if(titleEl) titleEl.innerText = spot.name;
+        if(descEl) descEl.innerText = spot.desc;
+        if(badgeEl) badgeEl.innerText = spot.catName;
+        if(imgEl) imgEl.style.backgroundImage = `url('${spot.img}')`;
+        
+        routeMap.panTo({lat: pCoords[index].lat - 0.005, lng: pCoords[index].lng});
+        if (infoCard) infoCard.classList.add('active');
+        currentMarkerIndex = index;
+    };
+    
     // 🚀 대망의 전체 경로 투어(Play) 함수
     const playRouteAnimation = async () => {
         if(isPlayingRoute) { routeAnimationAbort = true; return; } 
