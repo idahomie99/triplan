@@ -448,14 +448,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('map-search-input').value = '';
         document.getElementById('map-selected-address').innerText = '지도를 탭하거나 검색하세요';
         
-        // 🛰️ 선택한 국가로 이동 or GPS 내 위치 가져오기
+        // 🛰️ 선택한 국가/도시로 이동 (GPS 무작정 묻기 방지!)
         if (currentMapTarget.type === 'city' && currentMapTarget.country) {
-            // 국가가 있으면 그 국가를 중심으로 맵을 띄움
             geocoder.geocode({ address: currentMapTarget.country }, (results, status) => {
-                if (status === 'OK' && results[0]) {
-                    map.setCenter(results[0].geometry.location);
-                    map.setZoom(5); // 나라가 한눈에 보이게 줌아웃
-                }
+                if (status === 'OK' && results[0]) { map.setCenter(results[0].geometry.location); map.setZoom(5); }
+            });
+        } else if (currentMapTarget.type === 'accom' && aiData.destinations[0]?.city) {
+            // 숙소를 찾을 땐 사용자가 고른 '도시'를 중심으로 열어줌!
+            geocoder.geocode({ address: aiData.destinations[0].city }, (results, status) => {
+                if (status === 'OK' && results[0]) { map.setCenter(results[0].geometry.location); map.setZoom(13); }
             });
         } else if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -965,14 +966,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
 
-    // 🚀 비동기(Async) 이동 애니메이션 (이모지 포함!)
+    // 🚀 비동기(Async) 이동 애니메이션 (카메라 팔로우 & 속도 개선)
     const animateMovementAsync = (startPos, endPos, duration, mIconStr) => {
         return new Promise(resolve => {
             if(movingMarker) movingMarker.setMap(null);
             
             movingMarker = new google.maps.Marker({
-                position: startPos,
-                map: routeMap,
+                position: startPos, map: routeMap,
                 label: { text: mIconStr, fontFamily: 'Material Symbols Rounded', color: 'white', fontSize: '14px' },
                 icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#10B981', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 12 },
                 zIndex: 999
@@ -980,17 +980,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const startTime = performance.now();
             const animate = (time) => {
-                if(routeAnimationAbort) { movingMarker.setMap(null); return resolve(); } // 정지 버튼 누르면 즉각 중단
+                if(routeAnimationAbort) { movingMarker.setMap(null); return resolve(); } 
                 
                 const elapsed = time - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const ease = 1 - Math.pow(1 - progress, 3);
+                const ease = 1 - Math.pow(1 - progress, 3); // 스무스한 움직임
                 
                 const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
                 const lng = startPos.lng + (endPos.lng - startPos.lng) * ease;
+                
                 movingMarker.setPosition({lat, lng});
                 
-                routeMap.panTo({lat, lng}); // 실시간 중심 이동
+                // 🎯 [핵심] panTo 대신 setCenter를 써야 끊김 없이 원을 따라 카메라가 중앙 이동함!
+                routeMap.setCenter({lat, lng}); 
                 
                 if(progress < 1) requestAnimationFrame(animate);
                 else { movingMarker.setMap(null); resolve(); }
@@ -999,33 +1001,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // 🚀 팝업 카드 띄우기 함수 분리
-    const showMarkerCard = (index, daySpots, pCoords) => {
-        const infoCard = document.getElementById('map-info-card');
-        const spot = daySpots[index];
-        document.getElementById('map-info-title').innerText = spot.name;
-        document.getElementById('map-info-desc').innerText = spot.desc;
-        document.getElementById('map-info-badge').innerText = spot.catName;
-        document.getElementById('map-info-img').style.backgroundImage = `url('${spot.img}')`;
-        
-        routeMap.panTo({lat: pCoords[index].lat - 0.005, lng: pCoords[index].lng});
-        if (infoCard) infoCard.classList.add('active');
-        currentMarkerIndex = index;
-    };
-
     // 🚀 대망의 전체 경로 투어(Play) 함수
     const playRouteAnimation = async () => {
-        if(isPlayingRoute) { routeAnimationAbort = true; return; } // 실행 중 누르면 정지
+        if(isPlayingRoute) { routeAnimationAbort = true; return; } 
         
         isPlayingRoute = true; routeAnimationAbort = false;
         const playBtn = document.getElementById('btn-play-route');
         const topBackBtn = document.getElementById('btn-toggle-map-top');
         const exploreChips = document.querySelector('.explore-chips-container');
         
-        if (playBtn) {
-            playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">stop</span>';
-            playBtn.style.background = '#DC2626';
-        }
+        if (playBtn) { playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">stop</span>'; playBtn.style.background = '#DC2626'; }
         if (topBackBtn) { topBackBtn.style.pointerEvents = 'none'; topBackBtn.style.opacity = '0.3'; }
         if (exploreChips) { exploreChips.style.pointerEvents = 'none'; exploreChips.style.opacity = '0.3'; }
         
@@ -1048,7 +1033,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if(i > 0) {
                     if (infoCard) infoCard.classList.remove('active');
-                    await animateMovementAsync(pCoords[i-1], pCoords[i], 1800, mIconStr);
+                    
+                    // 🎯 [핵심] 거리에 비례하여 이동 소요 시간(속도) 동적 계산!
+                    let calcDuration = 1500; 
+                    if (window.google && google.maps.geometry) {
+                        const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                            new google.maps.LatLng(pCoords[i-1].lat, pCoords[i-1].lng),
+                            new google.maps.LatLng(pCoords[i].lat, pCoords[i].lng)
+                        );
+                        calcDuration = (dist / 1000) * 1000; // 1km당 1초 (1000ms)
+                        calcDuration = Math.max(1200, Math.min(calcDuration, 3500)); // 너무 빠르거나 너무 느리지 않게 1.2초 ~ 3.5초 사이로 보정
+                    }
+                    
+                    await animateMovementAsync(pCoords[i-1], pCoords[i], calcDuration, mIconStr);
                 }
                 if(routeAnimationAbort) break;
 
@@ -1057,12 +1054,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 🔓 종료 후 복구
         isPlayingRoute = false; routeAnimationAbort = false;
-        if (playBtn) {
-            playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">play_arrow</span>';
-            playBtn.style.background = '#2563EB';
-        }
+        if (playBtn) { playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">play_arrow</span>'; playBtn.style.background = '#2563EB'; }
         if (topBackBtn) { topBackBtn.style.pointerEvents = 'auto'; topBackBtn.style.opacity = '1'; }
         if (exploreChips) { exploreChips.style.pointerEvents = 'auto'; exploreChips.style.opacity = '1'; }
         
@@ -1179,8 +1172,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if(resultMapWrapper) resultMapWrapper.style.display = 'none'; 
             exploreContainer.style.display = 'flex';
             
-            // 👇 구글 API에서 진짜 데이터를 불러오는 동안 보여줄 로딩 뷰
-            exploreContainer.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-sub); width: 100%;"><div class="magic-spinner-ring" style="width: 30px; height: 30px; border-width: 3px; margin: 0 auto 16px;"></div>현지 실시간 추천 장소를 찾고 있습니다...</div>';
+            // 👇 토스/에어비앤비 스타일의 세련된 스켈레톤(뼈대) 로딩 애니메이션
+            exploreContainer.innerHTML = `
+                <style>@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }</style>
+                <div style="display:flex; flex-direction:column; gap:16px; width:100%; padding: 0 4px;">
+                    ${Array(4).fill(0).map(() => `
+                        <div style="background: white; border-radius: 16px; padding: 12px; display:flex; gap:16px; border: 1px solid var(--card-border);">
+                            <div style="width: 80px; height: 80px; border-radius: 12px; background: #E2E8F0; animation: pulse 1.5s infinite;"></div>
+                            <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+                                <div style="width: 70%; height: 16px; background: #E2E8F0; border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+                                <div style="width: 40%; height: 12px; background: #E2E8F0; border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>`;
 
             const mainDest = aiData.destinations[0]?.city || '여행지';
             let queryKeyword = '';

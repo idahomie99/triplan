@@ -189,14 +189,24 @@ input[type="checkbox"] { display: none; }
 .stamina-icon { font-size: 40px; margin-bottom: 20px; display: flex; justify-content: center; }
 .stamina-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 4px; background: #E2E8F0; outline: none; margin-bottom: 20px; }
 .stamina-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #8B5CF6; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-.stamina-labels { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-sub); line-height: 1.4; margin-top: 8px; text-align: center; }
+.stamina-labels {
+    position: relative; /* 👈 이 기준점이 없어서 텍스트가 날아갔던 거야! */
+    width: 100%;
+    height: 40px;
+    margin-top: 16px;
+}
+
 .stamina-labels span {
     position: absolute;
     top: 0;
-    width: 60px; /* 텍스트가 안 잘리게 너비 확보 */
+    width: 80px;
     text-align: center;
+    font-size: 11px;
+    color: var(--text-sub);
+    font-weight: 700;
 }
-/* 슬라이더의 24px 원 크기를 반영한 소름 돋게 완벽한 퍼센트 계산 */
+
+/* 동그라미(24px) 중심점(12px)에 맞춘 완벽한 퍼센트 계산식 */
 .stamina-labels span:nth-child(1) { left: 0%; transform: translateX(-50%); margin-left: 12px; }
 .stamina-labels span:nth-child(2) { left: 25%; transform: translateX(-50%); margin-left: 6px; }
 .stamina-labels span:nth-child(3) { left: 50%; transform: translateX(-50%); }
