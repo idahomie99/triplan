@@ -694,6 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // 🚨 [UI 테스트용 프리패스 스위치] 퇴근하기 전에 이 세 줄은 꼭 지워주세요! 🚨
         generateMockTimeline(); 
         document.getElementById('ai-step-screen').classList.remove('active');
+        document.getElementById('ai-result-screen')?.classList.add('active');
         return;
 
         let statusInterval = null;
