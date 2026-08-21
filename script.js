@@ -580,6 +580,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }); 
     document.getElementById('btn-plus-people')?.addEventListener('click', () => { 
+        // 🎯 '혼자서' 모드일 때는 최대 인원을 1명으로 쾅 못 박기!
+        if (aiData.companion === '혼자서') {
+            showCustomAlert({icon:'info', title:'알림', desc:'혼자 여행할 때는 인원을 추가할 수 없어요!'});
+            return;
+        }
+        
         if(aiData.people < 20) { 
             aiData.people++; 
             document.getElementById('people-count').innerText = `${aiData.people}명`; 
@@ -1003,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 zoom: 13,
                 disableDefaultUI: true,
                 // 🎯 잊어버리지 마세요! 패딩 400을 넣어야 시각적 중앙이 위로 확 올라갑니다.
-                padding: { top: 80, bottom: 400, left: 0, right: 0 } 
+                padding: { top: 80, bottom: 480, left: 0, right: 0 } 
             });
         }
 
@@ -1145,11 +1151,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 🎯 애니메이션 종료 시 팝업 닫고 지도 축소 (전체 루트 보이게!)
         if (infoCard) infoCard.classList.remove('active');
+        // [✨ 수정 후]
         if (pCoords.length > 0) {
             const bounds = new google.maps.LatLngBounds();
             pCoords.forEach(p => bounds.extend(p));
-            // 여백을 주어 핀이 모서리에 안 잘리게 예쁘게 줌아웃
-            routeMap.fitBounds(bounds, { top: 100, bottom: 420, left: 50, right: 50 });
+            // 👇 맵 자체 패딩이 있으니 여기선 살짝 여백(50)만 줍니다! (우주 줌아웃 방지)
+            routeMap.fitBounds(bounds, 50);
         }
     };
 
@@ -1186,8 +1193,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         
+        // [✨ 수정 후]
         if(pathCoordinates.length > 0) {
-            routeMap.fitBounds(bounds, { top: 100, bottom: 420, left: 50, right: 50 });
+            // 👇 여기도 마찬가지로 50만 줍니다!
+            routeMap.fitBounds(bounds, 50);
             if(!playedDays[currentSelectedDay]) {
                 playedDays[currentSelectedDay] = true;
                 setTimeout(() => playRouteAnimation(), 600);
@@ -1249,6 +1258,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active')); chip.classList.add('active');
         
+        // 🎯 탭(카테고리) 변경 시 화면 스크롤 맨 위로 부드럽게 쫙! 올려주기
+        const resultScreen = document.getElementById('ai-result-screen');
+        if(resultScreen) resultScreen.scrollTo({ top: 0, behavior: 'smooth' });
+
         const type = chip.getAttribute('data-type');
         const timelineContainer = document.getElementById('ai-timeline-container');
         const exploreContainer = document.getElementById('ai-explore-container');
