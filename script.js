@@ -271,11 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
             destContainer.insertAdjacentHTML('beforeend', html);
         });
 
-        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기
+        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기 및 강제 선택 방어막 (중복 제거된 깔끔한 버전)
         document.querySelectorAll('.city-input').forEach((inputEl, index) => {
             const dest = aiData.destinations[index];
-            // 🛡️ 구글 맵과 places 라이브러리가 완전히 로딩되었을 때만 실행하도록 방어막 추가!
-            if (dest.country && window.google && window.google.maps && window.google.maps.places) {
+            
+            dest.isVerified = dest.isVerified !== undefined ? dest.isVerified : (dest.city ? true : false);
+
+            if (window.google && window.google.maps && window.google.maps.places) {
                 const isoCode = countryIsoMap[dest.country];
                 
                 const autocomplete = new google.maps.places.Autocomplete(inputEl, {
@@ -287,10 +289,59 @@ document.addEventListener('DOMContentLoaded', () => {
                     const place = autocomplete.getPlace();
                     if (place && place.name) {
                         aiData.destinations[index].city = place.name;
+                        aiData.destinations[index].isVerified = true; 
                         validateAiStep(); 
                     }
                 });
             }
+
+            // 🛡️ 자동완성을 안 고치고 생으로 입력 후 포커스를 뺄 때의 방어막 (단 한 번만 실행되도록 정리!)
+            inputEl.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (inputEl.value.trim() !== '' && !aiData.destinations[index].isVerified) {
+                        showCustomAlert({
+                            icon: 'warning', 
+                            title: '도시 선택 확인', 
+                            desc: '정확한 위치 인식을 위해 반드시 아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!'
+                        });
+                        inputEl.value = '';
+                        aiData.destinations[index].city = '';
+                        validateAiStep();
+                    }
+                }, 200);
+            });
+
+            // 타이핑을 다시 시작하면 검증 해제
+            inputEl.addEventListener('input', () => {
+                aiData.destinations[index].isVerified = false;
+                aiData.destinations[index].city = inputEl.value.trim();
+                validateAiStep();
+            });
+        });
+
+            // 🛡️ 사용자가 자동완성을 안 고치고 그냥 키보드로 오타를 치거나 생으로 입력하고 포커스를 뺄 때의 방어막!
+            inputEl.addEventListener('blur', (e) => {
+                setTimeout(() => {
+                    // 자동완성을 안 골랐는데 텍스트가 적혀있다면? -> 가짜 입력이므로 경고하고 리셋!
+                    if (inputEl.value.trim() !== '' && !aiData.destinations[index].isVerified) {
+                        showCustomAlert({
+                            icon: 'warning', 
+                            title: '도시 선택 확인', 
+                            desc: '정확한 위치 인식을 위해 반드시 아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!'
+                        });
+                        inputEl.value = '';
+                        aiData.destinations[index].city = '';
+                        validateAiStep();
+                    }
+                }, 200);
+            });
+
+            // 타이핑을 다시 시작하면 검증 해제
+            inputEl.addEventListener('input', () => {
+                aiData.destinations[index].isVerified = false;
+                aiData.destinations[index].city = inputEl.value.trim();
+                validateAiStep();
+            });
         });
     };
 
@@ -1343,6 +1394,45 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
         showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } });
     });
+
+// 🛡️ 숙소 입력란 자동완성 강제 선택 방어막
+    const accomInput = document.getElementById('ai-input-accom');
+    if (accomInput && window.google && window.google.maps && window.google.maps.places) {
+        let isAccomVerified = false;
+
+        const accomAutocomplete = new google.maps.places.Autocomplete(accomInput, {
+            types: ['establishment', 'geocode']
+        });
+
+        accomAutocomplete.addListener('place_changed', () => {
+            const place = accomAutocomplete.getPlace();
+            if (place && place.name) {
+                accomInput.value = place.name;
+                aiData.accom = place.name;
+                isAccomVerified = true;
+                validateAiStep();
+            }
+        });
+
+        accomInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (accomInput.value.trim() !== '' && !isAccomVerified) {
+                    showCustomAlert({
+                        icon: 'warning', 
+                        title: '숙소 선택 확인', 
+                        desc: '정확한 동선 계산을 위해 자동완성 목록에서 숙소를 선택하거나 [지도에서 찾기]를 이용해주세요!'
+                    });
+                    accomInput.value = '';
+                    aiData.accom = '';
+                }
+            }, 200);
+        });
+
+        accomInput.addEventListener('input', () => {
+            isAccomVerified = false;
+            aiData.accom = accomInput.value.trim();
+        });
+    }
 
     const navHome = document.getElementById('nav-home'); 
     if(navHome) navHome.addEventListener('click', () => { navHome.classList.add('active'); if(btnAccount) btnAccount.classList.remove('active'); });
