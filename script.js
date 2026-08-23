@@ -714,23 +714,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function submitAiFlow() {
-
         let statusInterval = null;
         try {
             const loadingOverlay = document.getElementById('ai-loading-overlay');
             const statusText = document.getElementById('ai-loading-status');
             loadingOverlay.classList.add('active');
 
-            // 💬 비행기 선택 유무에 따라 똑똑하게 바뀌는 상태 메시지
             let loadingMessages = [];
             if (aiData.transports.includes('비행기')) {
                 loadingMessages.push(`<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">flight_takeoff</span> 항공편 시간 및 공항 이동 동선 계산 중...`);
             }
             loadingMessages.push(
+                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">cloud</span> 현지 기상 상황 분석 및 날씨 데이터 연동 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">location_on</span> 선택하신 테마에 맞는 핫플레이스 수집 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">directions_walk</span> 체력 소모도를 분석해 무리 없는 루트 구성 중...`,
-                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">restaurant</span> 실패 없는 현지 로컬 맛집 매칭 중...`,
-                `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">map</span> 지도 위 최적의 이동 동선 정렬 중...`,
                 `<span class="material-symbols-rounded" style="vertical-align: text-bottom; font-size: 18px; margin-right: 4px;">auto_awesome</span> 완벽한 여행 일정을 정리하고 있어요!`
             );
 
@@ -747,19 +744,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 2500);
             }
 
-            // 새로 추가한 특별 요청 데이터 가져오기
-            aiData.mustDo = document.getElementById('ai-input-must-do')?.value.trim();
+            // 🌤️ [날씨 로직] 5일 이내인지 확인하고 OpenWeatherMap API 호출하기
+            let weatherContextStr = '';
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const startD = new Date(aiData.startDate);
+            startD.setHours(0,0,0,0);
+            const diffDays = Math.ceil((startD.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            const mainCity = aiData.destinations[0]?.city || 'Seoul';
+            
+            if (diffDays <= 5 && diffDays >= 0) {
+                try {
+                    const res = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(mainCity)}&appid=e47059c3681366dbf59d9cc81fe7336f&units=metric&lang=kr`);
+                    if (res.ok) {
+                        const wData = await res.json();
+                        let forecasts = {};
+                        wData.list.forEach(item => {
+                            const date = item.dt_txt.split(' ')[0];
+                            if(item.dt_txt.includes('12:00:00') || item.dt_txt.includes('15:00:00')) {
+                                forecasts[date] = { temp: Math.round(item.main.temp), desc: item.weather[0].description };
+                            }
+                        });
+                        
+                        weatherContextStr = '[날씨 데이터]\n다음은 OpenWeatherMap의 실제 일기예보입니다. 이 날씨에 맞춰 동선을 배분하세요:\n';
+                        for(let i=0; i<aiData.totalTripDays; i++) {
+                            let d = new Date(startD);
+                            d.setDate(d.getDate() + i);
+                            const dStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                            if(forecasts[dStr]) {
+                                weatherContextStr += `- Day ${i+1}: ${forecasts[dStr].desc}, ${forecasts[dStr].temp}°C (실제 날씨)\n`;
+                            } else {
+                                weatherContextStr += `- Day ${i+1}: 예보 없음. ${startD.getMonth()+1}월 평균 날씨 반영 바람\n`;
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.log('날씨 API 연동 실패, 평균 날씨로 대체');
+                    weatherContextStr = `[날씨 데이터]\n해당 도시의 ${startD.getMonth()+1}월 평균 날씨를 반영하여 일정을 짜주세요.`;
+                }
+            } else {
+                weatherContextStr = `[날씨 데이터]\n여행일이 6일 이후입니다. 해당 도시의 ${startD.getMonth()+1}월 평균 기온과 날씨(건기/우기)를 반영하여 일정을 짜주세요.`;
+            }
 
+            aiData.mustDo = document.getElementById('ai-input-must-do')?.value.trim();
             const destText = aiData.destinations.map(d => `${d.country} ${d.city} (${d.stayDays}일, 옵션: ${d.pin})`).join(', ');
             const themeText = aiData.themes.join(', ');
             const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
 
             const prompt = `
-            너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소, 식당, 카페로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
+            너는 세계 최고의 맞춤형 여행 플래너 AI야. 사용자의 입력 데이터를 바탕으로 실존하는 장소로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
             
             [사용자 정보]
             - 여행지: ${destText}
-            - 여행 시기: ${aiData.startDate ? aiData.startDate.getMonth() + 1 : '현재'}월 👈 (추가: 이 달의 평균 날씨, 우기/건기, 기온을 반드시 고려해서 실내/실외 일정을 배분할 것)
             - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
             - 항공편: 도착시간 ${aiData.arrTime || '미정'}, 출발시간 ${aiData.depTime || '미정'}
             - 숙소: ${aiData.accom || '미정'}
@@ -767,46 +804,49 @@ document.addEventListener('DOMContentLoaded', () => {
             - 동행: ${aiData.companion} (${aiData.people}명, 연령대: ${aiData.ages.join(', ')})
             - 테마: ${themeText}
             - 스타일: ${styleText}
-            - 체력(1~5): ${aiData.stamina} (체력에 맞춰 하루 일정 개수 조절)
-            - 특별 요청(필수 반영): ${aiData.mustDo || '없음'}
+            - 체력(1~5): ${aiData.stamina} 
+            - 특별 요청: ${aiData.mustDo || '없음'}
+            ${weatherContextStr}
             
-            [응답 JSON 구조 - 반드시 이 구조를 지킬 것]
+            [응답 JSON 구조 - 반드시 지킬 것]
             {
               "dailyPlans": [
                 {
                   "day": 1,
                   "city": "도시 이름",
                   "hp": 80,
+                  "weather": {
+                    "mIcon": "sunny", 
+                    "temp": "28°C",
+                    "text": "맑음 (실제 날씨)" 
+                  },
                   "spots": [
                     {
                       "time": "10:00",
                       "type": "tour",
                       "catName": "관광",
                       "mIcon": "photo_camera",
-                      "name": "진짜 존재하는 명소/식당 이름",
+                      "name": "실존 장소 이름",
                       "lat": 35.6895, 
                       "lng": 139.6917, 
-                      "desc": "장소 설명 및 이동 수단 구체적 서술",
-                      "tip": "웨이팅, 포토존 등 꿀팁"
+                      "desc": "장소 설명 및 이동 수단",
+                      "tip": "꿀팁"
                     }
                   ]
                 }
               ]
             }
             
-            조건 (절대 엄수):
-            1. 반드시 JSON 형식으로만 응답해라.
-            2. 무조건 구글 맵에 검색되는 실존하는 진짜 장소로 구성해라. (해당 지역의 상징적인 랜드마크를 적극적으로 포함할 것)
-            3. [특별 요청]에 적힌 내용이 있다면 최우선으로 해당 장소나 액티비티를 일정에 무조건 배치해라.
-            4. [항공편] 시간이 주어졌다면 반드시 지켜라! 첫날 일정은 공항 도착 시간 + 수속 시간 이후부터 시작하고, 마지막 날 일정은 공항 출발 시간 3시간 전까지만 짜라.
-            5. [숙소]가 정해져 있다면 아침 출발 및 저녁 복귀 동선을 숙소 기준으로 최적화해라.
-            6. 각 장소의 실제 위도(lat)와 경도(lng)를 정확한 숫자로 기입해라.
-            7. desc 항목에 '도보 10분', '지하철 40분' 등 명소 간 이동 수단과 소요 시간을 디테일하게 서술해라.
+            조건:
+            1. 반드시 JSON 형식으로만 응답.
+            2. [특별 요청] 반영 최우선.
+            3. 각 장소 실제 위도(lat), 경도(lng) 필수.
+            4. 날씨 데이터(weather) 항목 필수: mIcon은 날씨에 맞는 Material Symbol(sunny, rainy, cloudy, ac_unit 등) 영문명 작성. text 항목에 실제 날씨인지 평균 날씨인지 표기할 것.
+            5. 비가 오거나 우기인 경우 실내 스팟(쇼핑몰, 미술관 등)을 적극 배치할 것.
             `;
 
-            // 🚀 끈질긴 자동 재시도(Retry) 로직 도입
             let data = null;
-            let maxRetries = 2; // 본 요청 1번 + 재시도 2번 = 총 3번 기회
+            let maxRetries = 2; 
             let attempt = 0;
 
             while (attempt <= maxRetries) {
@@ -822,27 +862,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (!response.ok) {
                         const err = await response.json();
-                        // 503(서버 과부하) 또는 429(요청 너무 많음) 에러일 경우 몰래 재시도
                         if ((response.status === 503 || response.status === 429) && attempt < maxRetries) {
-                            console.warn(`🚨 API 지연 감지 (${response.status}). 3초 뒤 조용히 재시도합니다... (${attempt + 1}/${maxRetries})`);
                             attempt++;
-                            await new Promise(resolve => setTimeout(resolve, 3000)); // 3초 대기 후 다시 루프
+                            await new Promise(resolve => setTimeout(resolve, 3000));
                             continue;
                         }
                         throw new Error(err.error?.message || "API 연결 실패");
                     }
                     
                     data = await response.json();
-                    break; // 완벽하게 성공하면 루프 탈출!
+                    break; 
 
                 } catch (err) {
                     if (attempt < maxRetries) {
-                        console.warn(`🚨 네트워크 연결 불안정. 3초 뒤 조용히 재시도합니다... (${attempt + 1}/${maxRetries})`);
                         attempt++;
                         await new Promise(resolve => setTimeout(resolve, 3000));
                         continue;
                     }
-                    throw err; // 끝끝내 3번 다 실패하면 에러 밖으로 던지기
+                    throw err; 
                 }
             }
 
@@ -859,17 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusInterval) clearInterval(statusInterval);
             console.error("AI 생성 중 에러:", e);
             document.getElementById('ai-loading-overlay').classList.remove('active');
-            
-            // 👇 임시 데이터 로직을 지우고, 재시도를 유도하는 깔끔한 문구로 변경!
-            showCustomAlert({
-                icon: 'error', 
-                title: '일시적인 연결 지연', 
-                desc: '현재 이용자가 많아 AI가 일정을 짜는데 실패했어요.\n잠시 후 다시 버튼을 눌러주세요!',
-                confirmText: '확인',
-                onConfirm: () => {
-                    // 모달만 닫히고 11단계 화면에 그대로 남아서 다시 버튼을 누를 수 있음
-                }
-            });
+            showCustomAlert({ icon: 'error', title: '일시적인 연결 지연', desc: '현재 이용자가 많아 AI가 일정을 짜는데 실패했어요.\n잠시 후 다시 버튼을 눌러주세요!', confirmText: '확인' });
         }
     }
 
@@ -883,7 +910,7 @@ document.addEventListener('DOMContentLoaded', () => {
         indoor: ['1582967788606-a171c1080cb0', '1519567241046-7f570eee3ce6', '1499856871958-5b9627545d1a']
     };
 
-    let placesService = null; // 구글 장소 사진 가져올 서비스 변수
+    let placesService = null; 
 
     function renderAiTimeline(aiResponse) {
         const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
@@ -921,9 +948,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let survivalTip = slot.tip ? `<div class="survival-tip"><span class="material-symbols-rounded tip-icon">lightbulb</span><span class="tip-text">${slot.tip}</span></div>` : '';
                 
-                // 1. 초기엔 Unsplash 임시 사진을 깔아둠
                 let initialImg = `https://images.unsplash.com/photo-${fallbackImages[slot.type] ? fallbackImages[slot.type][Math.floor(Math.random() * fallbackImages[slot.type].length)] : fallbackImages.tour[0]}?q=80&w=400&auto=format&fit=crop`;
-                let uniqueImgId = `spot-img-${dayPlan.day}-${sIndex}`; // 고유 ID 부여
+                let uniqueImgId = `spot-img-${dayPlan.day}-${sIndex}`;
 
                 daySpots.push({ 
                     time: slot.time, type: slot.type, catName: slot.catName, mIcon: slot.mIcon, 
@@ -931,32 +957,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     desc: slot.desc, img: initialImg, imgId: uniqueImgId, color: iconColor, bg: iconBg, tip: survivalTip 
                 });
                 
-                // 🚀 2. 구글 Places API로 진짜 사진 백그라운드 탐색! (서버 과부하 방지를 위해 시간차 호출)
                 setTimeout(() => {
                     if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
-                    const request = { query: `${mainDest} ${slot.name}`, fields: ['photos'] };
+                    const request = { query: `${mainDest} ${slot.name}`, fields: ['photos', 'place_id'] };
                     
                     placesService.findPlaceFromQuery(request, (results, status) => {
                         if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
                             const targetSpot = dailyPlans[dayPlan.day].spots[sIndex];
                             
-                            // 🌟 1. 나중에 리뷰 띄울 때 쓰려고 장소 고유 번호(place_id)를 저장!
+                            // 🌟 리뷰 연동을 위한 Place ID 필수 저장!
                             targetSpot.place_id = results[0].place_id; 
                             
-                            // 2. 사진이 있으면 기존처럼 사진도 업데이트!
-                            if (results[0].photos) {
+                            if(results[0].photos) {
                                 const realPhotoUrl = results[0].photos[0].getUrl({ maxWidth: 400 });
                                 targetSpot.img = realPhotoUrl;
-                                
                                 const imgEl = document.getElementById(uniqueImgId);
                                 if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`;
                             }
                         }
                     });
-                }, (pIndex * 5 + sIndex) * 300); // 일정 하나당 0.3초 텀을 두고 순차적으로 불러옴
+                }, (pIndex * 5 + sIndex) * 300); 
 
             }); 
-            dailyPlans[dayPlan.day] = { hp: dayPlan.hp, spots: daySpots };
+            
+            // 🌟 날씨 데이터를 일별 계획에 저장!
+            const defaultWeather = { mIcon: 'sunny', temp: '알 수 없음', text: '기본 날씨 (평균)' };
+            dailyPlans[dayPlan.day] = { hp: dayPlan.hp, weather: dayPlan.weather || defaultWeather, spots: daySpots };
         });
 
         renderDayPlan(1, false);
@@ -979,12 +1005,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const plan = dailyPlans[day];
         if(!plan) return;
         
+        // 🌟 날씨 아이콘에 따라 예쁜 색상 매칭
+        let weatherColor = '#F59E0B'; // 기본 맑음(노란색)
+        if(plan.weather.mIcon === 'rainy' || plan.weather.mIcon === 'water_drop') weatherColor = '#3B82F6';
+        if(plan.weather.mIcon === 'cloudy' || plan.weather.mIcon === 'partly_cloudy') weatherColor = '#94A3B8';
+        if(plan.weather.mIcon === 'ac_unit' || plan.weather.mIcon === 'snowing') weatherColor = '#06B6D4';
+
         let timelineHtml = `
+            <div style="display:flex; align-items:center; gap:16px; background:var(--card-bg); padding:16px 20px; border-radius:16px; border:1px solid var(--card-border); margin-bottom:20px; box-shadow:0 4px 12px var(--shadow-color);">
+                <div style="width:46px; height:46px; border-radius:50%; background:var(--icon-bg); display:flex; justify-content:center; align-items:center;">
+                    <span class="material-symbols-rounded" style="font-size:26px; color:${weatherColor};">${plan.weather.mIcon}</span>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:15px; font-weight:800; color:var(--text-main); margin-bottom:2px;">${plan.weather.temp} · ${plan.weather.text}</div>
+                    <div style="font-size:12px; font-weight:600; color:var(--text-sub);">날씨를 완벽하게 반영한 스마트 동선입니다.</div>
+                </div>
+            </div>
+
             <div class="plan-b-toggle">
                 <div class="plan-b-btn ${!isPlanB ? 'active' : ''}" id="btn-plan-a"><span class="material-symbols-rounded">wb_sunny</span>기본 일정</div>
                 <div class="plan-b-btn ${isPlanB ? 'active' : ''}" id="btn-plan-b"><span class="material-symbols-rounded">umbrella</span>우천 시 (플랜 B)</div>
                 <div class="plan-b-bg" style="transform: translateX(${isPlanB ? '100%' : '0'});"></div>
             </div>
+            
             <div class="hp-bar-container"><div class="hp-title"><span>오늘의 예상 체력 소모</span><span>${plan.hp}%</span></div><div class="hp-track"><div class="hp-fill" style="width: ${plan.hp}%;"></div></div><p style="font-size:11px; color:var(--text-sub); margin-top:8px; font-weight:600;">${plan.hp > 80 ? '⚠️ 체력 소모가 매우 큽니다. 편한 신발을 신고 휴식을 챙기세요!' : '✨ 컨디션 안배에 딱 좋은 완벽한 플랜입니다.'}</p></div>
         `;
 
@@ -992,7 +1035,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let currentCat = spot.catName;
             if(isPlanB && spot.type === 'tour') currentCat = '실내 대체'; 
             
-            // 👇 고유 ID(imgId)를 적용해서 구글 사진이 도착하면 쇽! 하고 바뀌게 설정
             let imgHtml = spot.img ? `<div class="tc-img" id="${spot.imgId}" style="background-image: url('${spot.img}');"></div>` : '';
 
             timelineHtml += `
