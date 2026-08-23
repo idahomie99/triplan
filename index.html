@@ -39,14 +39,24 @@
 
         <div id="splash-screen">
         <div class="splash-logo">
-            <!-- 🌟 텍스트나 기본 아이콘 대신 준비된 가로형 로고 이미지 삽입! -->
-            <img src="image/triplaninappimg.png" alt="Triplan" style="width: 140px; height: auto; object-fit: contain; animation: pulse 1.5s infinite;">
+            <!-- 🌟 다크모드/라이트모드 자동 스위칭 로고 -->
+            <picture>
+                <!-- 폰이 다크 모드일 때 띄울 이미지 (텍스트가 밝은색) -->
+                <source srcset="image/triplaninappimg_dark.png" media="(prefers-color-scheme: dark)">
+                <!-- 폰이 라이트 모드일 때 띄울 기본 이미지 (텍스트가 어두운색) -->
+                <img src="image/triplaninappimg.png" alt="Triplan" style="width: 140px; height: auto; object-fit: contain; animation: pulse 1.5s infinite;">
+            </picture>
         </div>
     </div>
 
         <header class="top-header" id="top-header">
-            <!-- 🌟 글자 대신 준비된 가로형 이미지 로고 삽입 -->
-            <img src="image/triplaninappimg.png" alt="Triplan" style="height: 24px; width: auto; object-fit: contain; margin-left: 4px; cursor: pointer;">
+            <!-- 🌟 다크모드/라이트모드 자동 스위칭 로고 -->
+            <picture>
+                <!-- 다크 모드용 로고 -->
+                <source srcset="image/triplaninappimg_dark.png" media="(prefers-color-scheme: dark)">
+                <!-- 기본(라이트 모드) 로고 -->
+                <img src="image/triplaninappimg.png" alt="Triplan" style="height: 24px; width: auto; object-fit: contain; margin-left: 4px; cursor: pointer;">
+            </picture>
             <div class="profile-pic" id="btn-top-profile"></div>
         </header>
 
