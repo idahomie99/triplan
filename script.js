@@ -941,7 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.explore-chip').forEach(c => c?.classList.remove('active')); document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
 
-    const animateMovementAsync = (startPos, endPos, duration, mIconStr) => { ... // 이 부분은 그대로 두셔도 됩니다. 기존과 동일한 애니메이션 로직. (길이상 생략하지 말고 기존 파일에 있는 거 그대로 쓰시거나, 덮어쓰기 편하게 아래 합쳐드릴게요.)
+    const animateMovementAsync = (startPos, endPos, duration, mIconStr) => {
         return new Promise(resolve => {
             if(movingMarker) movingMarker.setMap(null);
             movingMarker = new google.maps.Marker({ position: startPos, map: routeMap, label: { text: mIconStr, fontFamily: 'Material Symbols Rounded', color: 'white', fontSize: '14px' }, icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#10B981', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 12 }, zIndex: 999 });
