@@ -415,13 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-open-map')?.addEventListener('click', () => { 
         currentMapTarget = { type: 'accom', index: -1 };
         
-        // 💡 상황에 맞게 텍스트 갈아끼우기
         const titleEl = document.getElementById('map-modal-title');
         if(titleEl) titleEl.innerText = '지도에서 숙소 찾기';
         const searchInput = document.getElementById('map-search-input');
         if(searchInput) searchInput.placeholder = '호텔이나 랜드마크 이름 검색';
 
-        calendarOverlay.style.display = 'block'; 
+        // 🌟 팝업 띄울 때 까만 배경 우선순위 올려서 엉킴 방지!
+        document.getElementById('calendar-overlay').style.zIndex = '1000'; 
+        document.getElementById('calendar-overlay').style.display = 'block'; 
         document.getElementById('map-modal').classList.add('active'); 
         setTimeout(() => initMap(), 300); 
     });
@@ -452,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 tempSelectedPlace = place.name; 
                 document.getElementById('map-selected-address').innerText = tempSelectedPlace;
+                document.getElementById('btn-confirm-map').disabled = false; // 🌟 핀 꽂으면 설정 버튼 활성화!
             });
             
             map.addListener('click', (e) => { 
@@ -462,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (status === 'OK' && results[0]) {
                         tempSelectedPlace = results[0].formatted_address;
                         document.getElementById('map-selected-address').innerText = tempSelectedPlace; 
+                        document.getElementById('btn-confirm-map').disabled = false; // 🌟 핀 꽂으면 설정 버튼 활성화!
                     }
                 }); 
             }); 
@@ -470,14 +473,13 @@ document.addEventListener('DOMContentLoaded', () => {
         tempSelectedPlace = '';
         document.getElementById('map-search-input').value = '';
         document.getElementById('map-selected-address').innerText = '지도를 탭하거나 검색하세요';
+        document.getElementById('btn-confirm-map').disabled = true; // 🌟 처음엔 버튼 비활성화
         
-        // 🛰️ 선택한 국가/도시로 이동 (GPS 무작정 묻기 방지!)
         if (currentMapTarget.type === 'city' && currentMapTarget.country) {
             geocoder.geocode({ address: currentMapTarget.country }, (results, status) => {
                 if (status === 'OK' && results[0]) { map.setCenter(results[0].geometry.location); map.setZoom(5); }
             });
         } else if (currentMapTarget.type === 'accom' && aiData.destinations[0]?.city) {
-            // 숙소를 찾을 땐 사용자가 고른 '도시'를 중심으로 열어줌!
             geocoder.geocode({ address: aiData.destinations[0].city }, (results, status) => {
                 if (status === 'OK' && results[0]) { map.setCenter(results[0].geometry.location); map.setZoom(13); }
             });
@@ -493,8 +495,34 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
     };
 
-    const closeMap = () => { document.getElementById('map-modal').classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); }; 
+    const closeMap = () => { 
+        document.getElementById('map-modal').classList.remove('active'); 
+        document.getElementById('calendar-overlay').style.zIndex = ''; // 까만 배경 초기화
+        setTimeout(() => document.getElementById('calendar-overlay').style.display = 'none', 300); 
+    }; 
     document.getElementById('btn-close-map')?.addEventListener('click', closeMap); 
+
+    // 🌟 빠져있던 '이 위치로 설정' 버튼 클릭 로직 부활!
+    const btnConfirmMap = document.getElementById('btn-confirm-map');
+    if (btnConfirmMap) {
+        btnConfirmMap.addEventListener('click', () => {
+            if (tempSelectedPlace) {
+                if (currentMapTarget.type === 'accom') { 
+                    document.getElementById('ai-input-accom').value = tempSelectedPlace; 
+                    aiData.accom = tempSelectedPlace; 
+                    aiData.isAccomVerified = true; 
+                    validateAiStep(); 
+                } 
+                else if (currentMapTarget.type === 'city') { 
+                    aiData.destinations[currentMapTarget.index].city = tempSelectedPlace; 
+                    aiData.destinations[currentMapTarget.index].isVerified = true; 
+                    renderDestinations(); 
+                    validateAiStep(); 
+                }
+            }
+            closeMap();
+        });
+    }
     
     const btnConfirmMap = document.getElementById('btn-confirm-map');
     if (btnConfirmMap) {
