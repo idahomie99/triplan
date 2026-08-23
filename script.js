@@ -252,6 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                         </div>
                         
+                        <!-- 🌟 타이핑 시 나타날 부드러운 안내 문구 추가! (기본 숨김) -->
+                        <div class="autocomplete-hint" style="display: none; font-size: 12px; color: #3B82F6; margin-top: 8px; padding-left: 4px; font-weight: 700; align-items: center; gap: 4px; animation: fadeIn 0.2s ease-out;">
+                            <span class="material-symbols-rounded" style="font-size: 16px;">info</span>
+                            아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!
+                        </div>
+                        
                         <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span><span class="stay-date-val">${dateStr}</span></button>
                         <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
                             <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
@@ -269,11 +275,17 @@ document.addEventListener('DOMContentLoaded', () => {
             destContainer.insertAdjacentHTML('beforeend', html);
         });
 
-        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기 및 강제 선택 방어막
+        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기
         document.querySelectorAll('.city-input').forEach((inputEl, index) => {
             const dest = aiData.destinations[index];
+            const hintEl = inputEl.closest('.dest-item').querySelector('.autocomplete-hint'); // 🌟 안내 문구 요소 찾기
             
             dest.isVerified = dest.isVerified !== undefined ? dest.isVerified : (dest.city ? true : false);
+
+            // 초기 렌더링 시: 글자는 썼는데 아직 목록에서 안 골랐다면 힌트 띄우기
+            if (!dest.isVerified && inputEl.value.trim().length > 0) {
+                hintEl.style.display = 'flex';
+            }
 
             if (window.google && window.google.maps && window.google.maps.places) {
                 const isoCode = countryIsoMap[dest.country];
@@ -288,31 +300,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (place && place.name) {
                         aiData.destinations[index].city = place.name;
                         aiData.destinations[index].isVerified = true; 
+                        hintEl.style.display = 'none'; // 🌟 목록에서 제대로 고르면 힌트 사라짐!
                         validateAiStep(); 
                     }
                 });
             }
 
-            // 🛡️ 자동완성 강제 방어막
+            // 🛡️ 자동완성 강제 방어막 (팝업 삭제! 조용히 데이터만 초기화)
             inputEl.addEventListener('blur', () => {
                 setTimeout(() => {
                     if (inputEl.value.trim() !== '' && !aiData.destinations[index].isVerified) {
-                        showCustomAlert({
-                            icon: 'warning', 
-                            title: '도시 선택 확인', 
-                            desc: '정확한 위치 인식을 위해 반드시 아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!'
-                        });
                         inputEl.value = '';
                         aiData.destinations[index].city = '';
+                        hintEl.style.display = 'none'; // 🌟 포커스 벗어나서 내용 날아갈 땐 힌트도 숨김
                         validateAiStep();
                     }
                 }, 200);
             });
 
-            // 타이핑을 다시 시작하면 검증 해제
+            // 타이핑을 다시 시작하면 검증 해제 & 힌트 띄우기!
             inputEl.addEventListener('input', () => {
                 aiData.destinations[index].isVerified = false;
                 aiData.destinations[index].city = inputEl.value.trim();
+                
+                // 🌟 한 글자라도 치면 힌트가 스르륵 뜸! 다 지우면 사라짐.
+                if (inputEl.value.trim().length > 0) {
+                    hintEl.style.display = 'flex';
+                } else {
+                    hintEl.style.display = 'none';
+                }
+                
                 validateAiStep();
             });
         });
@@ -538,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const validateAiStep = () => { 
         if(!btnAiNext) return; 
         if(currentAiStep === 1) btnAiNext.disabled = !(aiData.startDate && aiData.endDate);
-        else if(currentAiStep === 2) btnAiNext.disabled = !aiData.destinations.every(d => d.city.trim() !== '');
+        else if(currentAiStep === 2) btnAiNext.disabled = !aiData.destinations.every(d => d.city.trim() !== '' && d.isVerified);
         else if(currentAiStep === 3) btnAiNext.disabled = aiData.transports.length === 0;
         else if(currentAiStep === 4 || currentAiStep === 5) btnAiNext.disabled = false; 
         else if(currentAiStep === 6) btnAiNext.disabled = aiData.companion === ''; 
@@ -1073,29 +1090,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // 👇 자동 재생 애니메이션 전역 변수들
     let isPlayingRoute = false; 
     let routeAnimationAbort = false;
-    let playedDays = {}; // 날짜별 자동 재생 여부 기록
+    let isAnimationPaused = false; // 🌟 일시정지 상태 변수
+    let playedDays = {}; 
 
     function initMapForResult(mainDest) {
         const resultMapEl = document.getElementById('ai-result-map');
         if(!routeMap && resultMapEl) {
             routeMap = new google.maps.Map(resultMapEl, {
-                center: {lat: 37.5665, lng: 126.9780},
-                zoom: 13,
-                disableDefaultUI: true,
-                // 🎯 잊어버리지 마세요! 패딩 400을 넣어야 시각적 중앙이 위로 확 올라갑니다.
+                center: {lat: 37.5665, lng: 126.9780}, zoom: 13, disableDefaultUI: true,
                 padding: { top: 80, bottom: 0, left: 0, right: 0 } 
             });
         }
-
         if(mainDest !== '미지의 여행지' && routeMap) {
             const tempGeocoder = new google.maps.Geocoder();
             tempGeocoder.geocode({address: mainDest}, (results, status) => {
-                if(status === 'OK' && routeMap) {
-                    routeMap.setCenter(results[0].geometry.location);
-                }
+                if(status === 'OK' && routeMap) { routeMap.setCenter(results[0].geometry.location); }
             });
         }
-
         isMapView = false; currentMarkerIndex = -1;
         const timelineEl = document.getElementById('ai-timeline-container');
         const exploreEl = document.getElementById('ai-explore-container');
@@ -1105,10 +1116,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (timelineEl) timelineEl.style.display = 'flex';
         if (exploreEl) exploreEl.style.display = 'none';
-        
         if (resultMapWrapper) resultMapWrapper.style.display = 'none'; 
         if (resultMapEl) resultMapEl.style.display = 'block'; 
-        
         if (topIconEl) topIconEl.innerText = 'map';
         if (mapCardEl) mapCardEl.classList.remove('active');
         
@@ -1127,12 +1136,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 zIndex: 999
             });
             
-            const startTime = performance.now();
-           const animate = (time) => {
+            let startTime = performance.now();
+            let elapsedTotal = 0;
+            let lastTime = startTime;
+            
+            const animate = (time) => {
                 if(routeAnimationAbort) { movingMarker.setMap(null); return resolve(); } 
                 
-                const elapsed = time - startTime;
-                const progress = Math.min(elapsed / duration, 1);
+                let deltaTime = time - lastTime;
+                lastTime = time;
+
+                if(!isAnimationPaused) elapsedTotal += deltaTime; // 🌟 정지 안 됐을 때만 시간 흐름!
+                
+                const progress = Math.min(elapsedTotal / duration, 1);
                 const ease = 1 - Math.pow(1 - progress, 3);
                 
                 const lat = startPos.lat + (endPos.lat - startPos.lat) * ease;
@@ -1140,8 +1156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 movingMarker.setPosition({lat, lng});
                 
-                // 🎯 [해결 & 위치 조정] 핀이 중앙보다 살짝 위에 뜨도록 -0.003 적용!
-                routeMap.setCenter({lat: lat - 0.003, lng: lng}); 
+                if(!isAnimationPaused) routeMap.setCenter({lat: lat - 0.003, lng: lng}); 
                 
                 if(progress < 1) requestAnimationFrame(animate);
                 else { movingMarker.setMap(null); resolve(); }
@@ -1150,23 +1165,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const waitWithPause = async (ms) => {
+        let elapsed = 0;
+        const interval = 50;
+        while (elapsed < ms) {
+            if (routeAnimationAbort) return;
+            if (!isAnimationPaused) elapsed += interval;
+            await new Promise(r => setTimeout(r, interval));
+        }
+    };
+
     const showMarkerCard = (index, daySpots, pCoords) => {
         const infoCard = document.getElementById('map-info-card');
         const spot = daySpots[index];
         if(!spot) return;
         
-        const titleEl = document.getElementById('map-info-title');
-        const descEl = document.getElementById('map-info-desc');
-        const badgeEl = document.getElementById('map-info-badge');
-        const imgEl = document.getElementById('map-info-img');
-
-        if(titleEl) titleEl.innerText = spot.name;
-        if(descEl) descEl.innerText = spot.desc;
-        if(badgeEl) badgeEl.innerText = spot.catName;
-        if(imgEl) imgEl.style.backgroundImage = `url('${spot.img}')`;
+        document.getElementById('map-info-title').innerText = spot.name;
+        document.getElementById('map-info-desc').innerText = spot.desc;
+        document.getElementById('map-info-badge').innerText = spot.catName;
+        document.getElementById('map-info-img').style.backgroundImage = `url('${spot.img}')`;
         
         routeMap.panTo({lat: pCoords[index].lat - 0.003, lng: pCoords[index].lng});
-        
         if (infoCard) infoCard.classList.add('active');
         currentMarkerIndex = index;
     };
@@ -1174,28 +1193,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const playRouteAnimation = async () => {
         if(isPlayingRoute) { routeAnimationAbort = true; return; } 
         
-        isPlayingRoute = true; routeAnimationAbort = false;
+        isPlayingRoute = true; routeAnimationAbort = false; isAnimationPaused = false;
+        
         const playBtn = document.getElementById('btn-play-route');
+        const blocker = document.getElementById('animation-blocker');
         const topBackBtn = document.getElementById('btn-toggle-map-top');
         const exploreChips = document.querySelector('.explore-chips-container');
         
         if (playBtn) { playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">stop</span>'; playBtn.style.background = '#DC2626'; }
         if (topBackBtn) { topBackBtn.style.pointerEvents = 'none'; topBackBtn.style.opacity = '0.3'; }
         if (exploreChips) { exploreChips.style.pointerEvents = 'none'; exploreChips.style.opacity = '0.3'; }
+        if (blocker) blocker.style.display = 'block'; 
         
         const infoCard = document.getElementById('map-info-card');
         if (infoCard) infoCard.classList.remove('active');
 
         const daySpots = dailyPlans[currentSelectedDay]?.spots || [];
         const pCoords = daySpots.map(s => ({lat: parseFloat(s.lat), lng: parseFloat(s.lng)}));
-        
-        const isWalk = aiData.transports.includes('도보') && aiData.transports.length === 1;
-        const mIconStr = isWalk ? 'directions_walk' : 'directions_car'; 
 
         if (pCoords.length > 0) {
             routeMap.setZoom(16);
             routeMap.panTo(pCoords[0]);
-            await new Promise(r => setTimeout(r, 800));
+            await waitWithPause(800);
 
             for(let i = 0; i < pCoords.length; i++) {
                 if(routeAnimationAbort) break;
@@ -1203,35 +1222,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(i > 0) {
                     if (infoCard) infoCard.classList.remove('active');
                     let calcDuration = 1500; 
+                    let dist = 0;
                     if (window.google && google.maps.geometry) {
-                        const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                        dist = google.maps.geometry.spherical.computeDistanceBetween(
                             new google.maps.LatLng(pCoords[i-1].lat, pCoords[i-1].lng),
                             new google.maps.LatLng(pCoords[i].lat, pCoords[i].lng)
                         );
                         calcDuration = (dist / 1000) * 1000; 
                         calcDuration = Math.max(1200, Math.min(calcDuration, 3500)); 
                     }
-                    await animateMovementAsync(pCoords[i-1], pCoords[i], calcDuration, mIconStr);
+                    
+                    // 🌟 도보/택시 똑똑하게 분리! (1.5km 미만이면 도보 애니메이션)
+                    let currentMIcon = 'directions_car';
+                    if (aiData.transports.includes('도보') && dist < 1500) currentMIcon = 'directions_walk';
+                    else if (aiData.transports.length === 1 && aiData.transports.includes('도보')) currentMIcon = 'directions_walk';
+                    
+                    await animateMovementAsync(pCoords[i-1], pCoords[i], calcDuration, currentMIcon);
                 }
                 if(routeAnimationAbort) break;
 
                 showMarkerCard(i, daySpots, pCoords);
-                await new Promise(r => setTimeout(r, 3000)); 
+                await waitWithPause(3000); 
             }
         }
 
-        isPlayingRoute = false; routeAnimationAbort = false;
+        isPlayingRoute = false; routeAnimationAbort = false; isAnimationPaused = false;
         if (playBtn) { playBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px;">play_arrow</span>'; playBtn.style.background = '#2563EB'; }
         if (topBackBtn) { topBackBtn.style.pointerEvents = 'auto'; topBackBtn.style.opacity = '1'; }
         if (exploreChips) { exploreChips.style.pointerEvents = 'auto'; exploreChips.style.opacity = '1'; }
+        if (blocker) blocker.style.display = 'none'; 
         
-        // 🎯 애니메이션 종료 시 팝업 닫고 지도 축소 (전체 루트 보이게!)
         if (infoCard) infoCard.classList.remove('active');
-        // [✨ 수정 후]
         if (pCoords.length > 0) {
             const bounds = new google.maps.LatLngBounds();
             pCoords.forEach(p => bounds.extend(p));
-            // 👇 맵 자체 패딩이 있으니 여기선 살짝 여백(50)만 줍니다! (우주 줌아웃 방지)
             routeMap.fitBounds(bounds, 50);
         }
     };
@@ -1269,9 +1293,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         
-        // [✨ 수정 후]
         if(pathCoordinates.length > 0) {
-            // 👇 여기도 마찬가지로 50만 줍니다!
             routeMap.fitBounds(bounds, 50);
             if(!playedDays[currentSelectedDay]) {
                 playedDays[currentSelectedDay] = true;
@@ -1280,14 +1302,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    document.getElementById('btn-play-route')?.addEventListener('click', playRouteAnimation);
-
-    // 🎯 드디어 X 버튼 활성화!
     document.getElementById('btn-close-map-info')?.addEventListener('click', () => {
         document.getElementById('map-info-card').classList.remove('active');
     });
     
-    // 플레이 버튼에 이벤트 달아주기!
     document.getElementById('btn-play-route')?.addEventListener('click', playRouteAnimation);
 
     document.getElementById('btn-toggle-map-top')?.addEventListener('click', () => {
@@ -1300,8 +1318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(isMapView) {
             if(timelineContainer) timelineContainer.style.display = 'none'; 
             if(exploreContainer) exploreContainer.style.display = 'none';
-            
-            // 👇 block 대신 flex를 써서 영역을 꽉 채우게 수정!
             if(resultMapWrapper) {
                 resultMapWrapper.style.display = 'flex';
                 resultMapWrapper.style.flexDirection = 'column';
@@ -1309,7 +1325,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(mapIcon) mapIcon.innerText = 'format_list_bulleted'; 
             
             if(routeMap) {
-                // 👇 150ms 뒤에 사이즈를 재계산하고 강제로 센터를 맞춰서 회색 지도 방지!
                 setTimeout(() => {
                     google.maps.event.trigger(routeMap, 'resize');
                     routeMap.panTo(routeMap.getCenter()); 
@@ -1336,13 +1351,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chip.classList.add('active');
         
         const type = chip.getAttribute('data-type');
-        
-        // 🌟 여기서 딱 한 번만 선언합니다! (중복 에러 해결)
         const timelineContainer = document.getElementById('ai-timeline-container');
         const exploreContainer = document.getElementById('ai-explore-container');
         const resultMapWrapper = document.getElementById('ai-result-map-wrapper');
         
-        // 🎯 탭(카테고리) 변경 시 화면 스크롤 맨 위로 부드럽게 쫙! 올려주기
         if(timelineContainer) timelineContainer.scrollTo({ top: 0, behavior: 'smooth' });
         if(exploreContainer) exploreContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1360,7 +1372,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(resultMapWrapper) resultMapWrapper.style.display = 'none'; 
             exploreContainer.style.display = 'flex';
             
-            // 👇 토스/에어비앤비 스타일의 세련된 스켈레톤(뼈대) 로딩 애니메이션
             exploreContainer.innerHTML = `
                 <style>@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }</style>
                 <div style="display:flex; flex-direction:column; gap:16px; width:100%; padding: 0 4px;">
@@ -1383,11 +1394,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
             
-            // 🚀 구글 Places API 텍스트 검색 발동!
             placesService.textSearch({ query: `${mainDest} ${queryKeyword}` }, (results, status) => {
                 if (status === google.maps.places.PlacesServiceStatus.OK && results) {
                     let html = '';
-                    const topResults = results.slice(0, 5); // 상위 5개만 깔끔하게 노출
+                    const topResults = results.slice(0, 5); 
                     
                     topResults.forEach((place) => {
                         const photoUrl = place.photos && place.photos.length > 0 
@@ -1398,13 +1408,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
                         const safePhotoUrl = photoUrl.replace(/'/g, "\\'");
 
+                        // 🌟 카테고리 카드 누르면 리뷰 모달 뜨게 연결!
                         html += `
-                        <div class="explore-card">
+                        <div class="explore-card" onclick="window.openPlaceDetail('${place.place_id}')" style="cursor:pointer;">
                             <div class="explore-card-img" style="background-image: url('${photoUrl}');"></div>
                             <div class="explore-card-info">
                                 <div class="explore-card-title">${place.name}</div>
                                 <div class="explore-card-sub">별점 ${rating} · 구글 맵 실시간 추천</div>
-                                <button class="explore-add-btn ripple-btn" onclick="openCustomizeModal('${safeName}', '${type}', '${safePhotoUrl}')">+ 내 일정에 교체하기</button>
+                                <button class="explore-add-btn ripple-btn" onclick="event.stopPropagation(); window.openCustomizeModal('${safeName}', '${type}', '${safePhotoUrl}')">+ 내 일정에 교체하기</button>
                             </div>
                         </div>`;
                     });
@@ -1420,55 +1431,37 @@ document.addEventListener('DOMContentLoaded', () => {
         showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } });
     });
 
-// 🛡️ 숙소 입력란 자동완성 강제 선택 방어막
     const accomInput = document.getElementById('ai-input-accom');
     if (accomInput && window.google && window.google.maps && window.google.maps.places) {
         let isAccomVerified = false;
-
-        const accomAutocomplete = new google.maps.places.Autocomplete(accomInput, {
-            types: ['establishment', 'geocode']
-        });
+        const accomAutocomplete = new google.maps.places.Autocomplete(accomInput, { types: ['establishment', 'geocode'] });
 
         accomAutocomplete.addListener('place_changed', () => {
             const place = accomAutocomplete.getPlace();
-            if (place && place.name) {
-                accomInput.value = place.name;
-                aiData.accom = place.name;
-                isAccomVerified = true;
-                validateAiStep();
-            }
+            if (place && place.name) { accomInput.value = place.name; aiData.accom = place.name; isAccomVerified = true; validateAiStep(); }
         });
 
+        // 🌟 여기도 강제 팝업 삭제! 조용히 데이터만 초기화
         accomInput.addEventListener('blur', () => {
             setTimeout(() => {
                 if (accomInput.value.trim() !== '' && !isAccomVerified) {
-                    showCustomAlert({
-                        icon: 'warning', 
-                        title: '숙소 선택 확인', 
-                        desc: '정확한 동선 계산을 위해 자동완성 목록에서 숙소를 선택하거나 [지도에서 찾기]를 이용해주세요!'
-                    });
-                    accomInput.value = '';
-                    aiData.accom = '';
+                    aiData.accom = ''; 
                 }
             }, 200);
         });
 
-        accomInput.addEventListener('input', () => {
-            isAccomVerified = false;
-            aiData.accom = accomInput.value.trim();
-        });
+        accomInput.addEventListener('input', () => { isAccomVerified = false; aiData.accom = accomInput.value.trim(); });
     }
 
     const navHome = document.getElementById('nav-home'); 
     if(navHome) navHome.addEventListener('click', () => { navHome.classList.add('active'); if(btnAccount) btnAccount.classList.remove('active'); });
-// 🚀 [커스터마이징] 탐색에서 선택한 장소를 모달에 띄우기
+
     window.openCustomizeModal = (placeName, placeType, photoUrl) => {
         const modal = document.getElementById('customize-modal');
         const listContainer = document.getElementById('customize-spot-list');
         const overlay = document.getElementById('calendar-overlay'); 
         
         if(!modal || !listContainer) return;
-        
         const currentSpots = dailyPlans[currentSelectedDay]?.spots || [];
         if(currentSpots.length === 0) { alert('현재 날짜에 교체할 일정이 없습니다.'); return; }
 
@@ -1486,17 +1479,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         listContainer.innerHTML = html;
-        overlay.style.zIndex = 999; // 모달 배경 뎁스 조정
+        overlay.style.zIndex = 999; 
         overlay.style.display = 'block';
         setTimeout(() => modal.classList.add('active'), 10);
     };
 
-    // 🚀 [커스터마이징] 선택한 일정으로 쇽! 교체하기
+    // 🌟 3번 요청: 교체 시 문구 간소화 + 탭 유지 (화면 안 튕김!)
     window.replaceSpot = (index, newName, newType, newPhotoUrl) => {
         const spot = dailyPlans[currentSelectedDay].spots[index];
         spot.name = newName; spot.img = newPhotoUrl;
         
-        // 카테고리에 맞춰 아이콘과 컬러 실시간 변경
         let iconColor = '#8B5CF6'; let iconBg = '#F1F5F9'; let mIcon = 'location_on'; let catName = '추천 장소';
         if(newType === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; mIcon = 'restaurant'; catName = '식당'; }
         if(newType === 'tour') { iconColor = '#2563EB'; iconBg = 'rgba(37,99,235,0.1)'; mIcon = 'photo_camera'; catName = '명소'; }
@@ -1505,49 +1497,49 @@ document.addEventListener('DOMContentLoaded', () => {
         spot.type = newType; spot.color = iconColor; spot.bg = iconBg; spot.mIcon = mIcon; spot.catName = catName;
         spot.desc = '나의 취향에 맞춰 직접 커스터마이징한 특별한 일정입니다 ✨'; spot.tip = ''; 
 
-        // 1. 모달 닫기
         document.getElementById('customize-modal').classList.remove('active');
         document.getElementById('calendar-overlay').style.display = 'none';
         
-        // 2. 일정표 새로고침 및 화면 전환
         renderDayPlan(currentSelectedDay, false); 
-        document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active'));
-        document.querySelector('.explore-chip[data-type="timeline"]').classList.add('active');
-        document.getElementById('ai-timeline-container').style.display = 'flex'; 
-        document.getElementById('ai-explore-container').style.display = 'none';
-
-        // 3. 기분 좋은 성공 알림!
-        showCustomAlert({icon: 'check_circle', title: '일정 교체 완료', desc: `[${newName}] 장소로 완벽하게 교체되었습니다! 😆`});
+        showCustomAlert({icon: 'check_circle', title: '일정 교체 완료', desc: ''});
     };
 
-    // 🌟 지도 팝업 텍스트 클릭 시 구글 장소 상세(리뷰) 불러오기
-    document.getElementById('map-info-texts-wrap')?.addEventListener('click', () => {
-        const spot = dailyPlans[currentSelectedDay]?.spots[currentMarkerIndex];
-        if(!spot) return;
+    // 🌟 5번 요청: 상세 정보(리뷰)에 가로 스크롤 사진 & 머터리얼 별점 추가
+    window.openPlaceDetail = (placeId) => {
+        if(!placeId) { showCustomAlert({icon:'info', title:'안내', desc:'이 장소는 상세 리뷰가 제공되지 않습니다.'}); return; }
 
-        if(!spot.place_id) {
-            showCustomAlert({icon:'info', title:'안내', desc:'이 장소는 상세 리뷰가 제공되지 않습니다.'});
-            return;
-        }
+        isAnimationPaused = true; // 모달 열릴 때 애니메이션 멈춤
 
         document.getElementById('calendar-overlay').style.display = 'block';
         document.getElementById('calendar-overlay').style.zIndex = 999;
         document.getElementById('place-detail-modal').classList.add('active');
-        document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-sub);">리뷰를 불러오는 중입니다...</div>';
+        document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-sub);">정보를 불러오는 중입니다...</div>';
 
         if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
         
-        // 리뷰, 평점, 구글맵 링크 가져오기
-        placesService.getDetails({ placeId: spot.place_id, fields: ['name', 'rating', 'reviews', 'url'] }, (place, status) => {
+        placesService.getDetails({ placeId: placeId, fields: ['name', 'rating', 'reviews', 'url', 'photos'] }, (place, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
-                let html = `
+                let html = '';
+                
+                // 가로로 넘겨보는 사진 5장
+                if(place.photos && place.photos.length > 0) {
+                    html += `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:16px; scrollbar-width:none; -webkit-overflow-scrolling: touch;">`;
+                    place.photos.slice(0, 5).forEach(p => {
+                        html += `<div style="width:140px; height:140px; flex-shrink:0; border-radius:12px; background:url('${p.getUrl({maxWidth:400})}') center/cover; box-shadow:0 2px 8px var(--shadow-color);"></div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                html += `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h3 style="font-size:20px; font-weight:800; color:var(--text-main);">${place.name}</h3>
-                        <span style="background:#FEF08A; color:#D97706; padding:6px 10px; border-radius:8px; font-weight:800; font-size:14px;">⭐ ${place.rating || '평점없음'}</span>
+                        <h3 style="font-size:20px; font-weight:800; color:var(--text-main); line-height:1.3;">${place.name}</h3>
+                        <span style="background:#FEF08A; color:#D97706; padding:6px 10px; border-radius:8px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                            <span class="material-symbols-rounded" style="font-size:16px;">star</span> ${place.rating || '없음'}
+                        </span>
                     </div>`;
                     
                 if(place.reviews && place.reviews.length > 0) {
-                    place.reviews.slice(0, 3).forEach(rev => { // 상위 3개 리뷰만
+                    place.reviews.slice(0, 3).forEach(rev => { 
                         html += `
                         <div style="background:var(--icon-bg); padding:16px; border-radius:16px; margin-bottom:12px;">
                             <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-sub); display:flex; align-items:center; gap:6px;">
@@ -1556,17 +1548,82 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="font-size:14px; color:var(--text-main); line-height:1.5;">"${rev.text}"</div>
                         </div>`;
                     });
-                } else {
-                    html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`;
-                }
+                } else { html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`; }
                 
                 html += `<button class="search-btn ripple-btn" style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.open('${place.url}', '_blank')"><span class="material-symbols-rounded">map</span>구글 맵에서 크게 보기</button>`;
                 
                 document.getElementById('detail-modal-content').innerHTML = html;
-            } else {
-                document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 20px;">리뷰 정보를 불러오지 못했습니다.</div>';
+            } else { document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 20px;">리뷰 정보를 불러오지 못했습니다.</div>'; }
+        });
+    };
+
+    document.getElementById('map-info-texts-wrap')?.addEventListener('click', () => {
+        const spot = dailyPlans[currentSelectedDay]?.spots[currentMarkerIndex];
+        if(spot) window.openPlaceDetail(spot.place_id);
+    });
+
+    // 🌟 모달창 닫을 때 애니메이션 다시 돌아가게 하기
+    const closeBottomSheet = (modalId) => {
+        document.getElementById(modalId).classList.remove('active');
+        document.getElementById('calendar-overlay').style.display = 'none';
+        isAnimationPaused = false; 
+    };
+
+    document.getElementById('btn-close-place-detail')?.addEventListener('click', () => closeBottomSheet('place-detail-modal'));
+    document.querySelector('#customize-modal .icon-btn')?.addEventListener('click', () => closeBottomSheet('customize-modal'));
+
+    // ==========================================
+    // 🌟 네이티브 앱 UX 1: 바텀시트 아래로 스와이프해서 닫기 
+    // ==========================================
+    document.querySelectorAll('.bottom-sheet').forEach(sheet => {
+        let startY = 0; let currentY = 0;
+        sheet.addEventListener('touchstart', (e) => {
+            const content = sheet.querySelector('.sheet-content');
+            if (content && content.scrollTop > 0) return; 
+            startY = e.touches[0].clientY;
+        }, {passive: true});
+        
+        sheet.addEventListener('touchmove', (e) => {
+            if (startY === 0) return;
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+            if (diff > 0) sheet.style.transform = `translateY(${diff}px)`;
+        }, {passive: true});
+        
+        sheet.addEventListener('touchend', (e) => {
+            if (startY === 0) return;
+            const diff = currentY - startY;
+            if (diff > 100) { 
+                sheet.classList.remove('active');
+                document.getElementById('calendar-overlay').style.display = 'none';
+                isAnimationPaused = false; 
             }
+            sheet.style.transform = '';
+            startY = 0; currentY = 0;
         });
     });
 
-}); // 
+    // ==========================================
+    // 🌟 네이티브 앱 UX 2: 화면 왼쪽 끝에서 오른쪽으로 스와이프(뒤로가기)
+    // ==========================================
+    let edgeStartX = 0; let edgeStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+        edgeStartX = e.touches[0].clientX; edgeStartY = e.touches[0].clientY;
+    }, {passive: true});
+    
+    document.addEventListener('touchend', (e) => {
+        if (edgeStartX < 30) {
+            const endX = e.changedTouches[0].clientX; const endY = e.changedTouches[0].clientY;
+            if (endX - edgeStartX > 50 && Math.abs(endY - edgeStartY) < 50) {
+                const resultScreen = document.getElementById('ai-result-screen');
+                const aiScreen = document.getElementById('ai-screen');
+                const accountScreen = document.getElementById('account-screen');
+                
+                if (resultScreen && resultScreen.classList.contains('active')) document.getElementById('btn-back-ai-result')?.click();
+                else if (aiScreen && aiScreen.classList.contains('active')) document.getElementById('btn-back-ai')?.click();
+                else if (accountScreen && accountScreen.classList.contains('active')) document.getElementById('btn-back-account')?.click();
+            }
+        }
+    });
+
+}); // 👈 이거 절대 지우지 마! (여기가 진짜 파일의 맨 끝이야!)

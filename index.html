@@ -316,9 +316,11 @@
             <div id="ai-result-map-wrapper" style="display: none; flex: 1; width: 100%; z-index: 1; position: relative;">
                 <div id="ai-result-map" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
                 
-                <div id="map-info-card" class="map-info-card">
+                <!-- 🌟 애니메이션 중 터치 방어막 -->
+                <div id="animation-blocker" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: transparent;"></div>
+                
+                <div id="map-info-card" class="map-info-card" style="z-index: 10;">
                     <div class="map-info-img" id="map-info-img"></div>
-                    <!-- 🌟 클릭할 수 있게 id 추가 및 커서 포인터 추가 -->
                     <div class="map-info-texts" id="map-info-texts-wrap" style="cursor: pointer;">
                         <div class="map-info-badge" id="map-info-badge">관광</div>
                         <h4 id="map-info-title">장소 이름</h4>
@@ -327,7 +329,6 @@
                     <button class="icon-btn close-info-card" id="btn-close-map-info"><span class="material-symbols-rounded" style="font-size: 20px;">close</span></button>
                 </div>
                 
-                <!-- 👇 지도 자동 재생 버튼 추가! -->
                 <button id="btn-play-route" class="ripple-btn" style="position: absolute; top: 16px; right: 16px; width: 52px; height: 52px; border-radius: 50%; background: #2563EB; color: white; border: none; box-shadow: 0 4px 14px rgba(37,99,235,0.4); z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
                     <span class="material-symbols-rounded" style="font-size: 28px;">play_arrow</span>
                 </button>
@@ -340,17 +341,18 @@
             </div>
         </div>
 
-        <script type="module" src="firebase-config.js"></script>
-        <script type="module" src="script.js"></script>
-    </div>
-</body>
-</html>
-
-<!-- 🌟 장소 상세 & 리뷰 모달 -->
+        <!-- 🌟 장소 상세 & 리뷰 모달 (위치 정상화) -->
         <div id="place-detail-modal" class="bottom-sheet" style="z-index: 1000;">
             <div class="sheet-header">
                 <h3>장소 상세정보</h3>
-                <button class="icon-btn" onclick="document.getElementById('place-detail-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display = 'none';"><span class="material-symbols-rounded">close</span></button>
+                <button class="icon-btn" id="btn-close-place-detail"><span class="material-symbols-rounded">close</span></button>
             </div>
             <div class="sheet-content" id="detail-modal-content"></div>
         </div>
+
+        <script type="module" src="firebase-config.js"></script>
+        <script type="module" src="script.js"></script>
+    </div> <!-- app-container 끝 -->
+</body>
+</html>
+
