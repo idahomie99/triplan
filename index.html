@@ -308,7 +308,7 @@
             <div class="ai-footer"><button class="search-btn ripple-btn" id="btn-ai-next" disabled>다음으로</button></div>
         </div>
 
-        <div id="map-modal" class="bottom-sheet">
+        <div id="map-modal" class="bottom-sheet" style="z-index: 1005;">
             <div class="sheet-header">
                 <!-- 👇 모달 제목이 동적으로 바뀔 수 있게 ID 추가 -->
                 <h3 id="map-modal-title">지도에서 숙소 찾기</h3>
@@ -330,7 +330,7 @@
         </div>
 
         <!-- 👇 커스터마이징(일정 교체) 모달창 -->
-        <div id="customize-modal" class="bottom-sheet" style="z-index: 1000;">
+        <div id="customize-modal" class="bottom-sheet" style="z-index: 1005;">
             <div class="sheet-header">
                 <h3>일정 교체하기</h3>
                 <button class="icon-btn" onclick="document.getElementById('customize-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display = 'none';"><span class="material-symbols-rounded">close</span></button>

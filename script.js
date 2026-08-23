@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         <!-- 🌟 힌트를 입력창 위로 올리고 빨간색으로 변경! -->
                         <div class="autocomplete-hint" style="display: none; font-size: 12px; color: #DC2626; margin-bottom: 6px; padding-left: 4px; font-weight: 700; align-items: center; gap: 4px; animation: fadeIn 0.2s ease-out;">
-                            <span class="material-symbols-rounded" style="font-size: 16px;">error</span> 아래 자동완성 목록을 눌러야 선택 완료됩니다!
+                            <span class="material-symbols-rounded" style="font-size: 16px;">error</span> 아래 자동완성 목록을 눌러서 선택해 주세요.
                         </div>
                         
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
@@ -496,22 +496,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeMap = () => { document.getElementById('map-modal').classList.remove('active'); setTimeout(() => calendarOverlay.style.display = 'none', 300); }; 
     document.getElementById('btn-close-map')?.addEventListener('click', closeMap); 
     
-    document.getElementById('btn-confirm-map').onclick = () => {
-        if (tempSelectedPlace) {
-            if (currentMapTarget.type === 'accom') {
-                document.getElementById('ai-input-accom').value = tempSelectedPlace;
-                aiData.accom = tempSelectedPlace;
-                aiData.isAccomVerified = true; // 🌟 지도에서 고르면 자동 검증!
-                validateAiStep();
-            } else if (currentMapTarget.type === 'city') {
-                aiData.destinations[currentMapTarget.index].city = tempSelectedPlace;
-                aiData.destinations[currentMapTarget.index].isVerified = true; // 🌟 도시도 지도에서 고르면 자동 검증!
-                renderDestinations(); 
-                validateAiStep();
+    const btnConfirmMap = document.getElementById('btn-confirm-map');
+    if (btnConfirmMap) {
+        btnConfirmMap.addEventListener('click', () => {
+            if (tempSelectedPlace) {
+                if (currentMapTarget.type === 'accom') { 
+                    document.getElementById('ai-input-accom').value = tempSelectedPlace; 
+                    aiData.accom = tempSelectedPlace; 
+                    aiData.isAccomVerified = true; 
+                    validateAiStep(); 
+                } 
+                else if (currentMapTarget.type === 'city') { 
+                    aiData.destinations[currentMapTarget.index].city = tempSelectedPlace; 
+                    aiData.destinations[currentMapTarget.index].isVerified = true; 
+                    renderDestinations(); 
+                    validateAiStep(); 
+                }
             }
-        }
-        closeMap();
-    };
+            // 맵 닫고, 뒤에 까만 배경 상태 초기화 확실히 하기
+            document.getElementById('map-modal').classList.remove('active'); 
+            document.getElementById('calendar-overlay').style.zIndex = '';
+            document.getElementById('calendar-overlay').style.display = 'none';
+        });
+    }
 
     const resetAiFlow = () => { 
         currentAiStep = 1; aiStepHistory = [1]; aiProgressBar.style.width = `${(1/totalAiSteps)*100}%`; btnAiNext.innerText = '다음으로'; btnAiNext.disabled = true; btnPrevAiStep.style.display = 'none';
@@ -1160,13 +1167,39 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-close-place-detail')?.addEventListener('click', () => closeBottomSheet('place-detail-modal'));
     document.querySelector('#customize-modal .icon-btn')?.addEventListener('click', () => closeBottomSheet('customize-modal'));
 
+   // ==========================================
+    // 🌟 네이티브 앱 UX 1: 바텀시트 스와이프 (뒷배경 끌려감 완벽 방어)
+    // ==========================================
     document.querySelectorAll('.bottom-sheet').forEach(sheet => {
         let startY = 0; let currentY = 0;
-        sheet.addEventListener('touchstart', (e) => { const content = sheet.querySelector('.sheet-content'); if (content && content.scrollTop > 0) return; startY = e.touches[0].clientY; }, {passive: true});
-        sheet.addEventListener('touchmove', (e) => { if (startY === 0) return; currentY = e.touches[0].clientY; const diff = currentY - startY; if (diff > 0) sheet.style.transform = `translateY(${diff}px)`; }, {passive: true});
+        
+        sheet.addEventListener('touchstart', (e) => { 
+            const content = sheet.querySelector('.sheet-content'); 
+            // 스크롤이 내려가 있을 땐 스와이프 동작 안 함
+            if (content && content.scrollTop > 0) return; 
+            startY = e.touches[0].clientY; 
+        }, {passive: true});
+        
+        // 👇 passive: false 로 바꾸고 e.preventDefault() 를 넣어야 배경이 안 끌려갑니다!
+        sheet.addEventListener('touchmove', (e) => { 
+            if (startY === 0) return; 
+            currentY = e.touches[0].clientY; 
+            const diff = currentY - startY; 
+            if (diff > 0) {
+                e.preventDefault(); // 🌟 모바일 브라우저의 고무줄 스크롤 현상 차단!
+                sheet.style.transform = `translateY(${diff}px)`; 
+            }
+        }, {passive: false}); 
+        
         sheet.addEventListener('touchend', (e) => {
-            if (startY === 0) return; const diff = currentY - startY;
-            if (diff > 100) { sheet.classList.remove('active'); document.getElementById('calendar-overlay').style.zIndex = ''; document.getElementById('calendar-overlay').style.display = 'none'; isAnimationPaused = false; }
+            if (startY === 0) return; 
+            const diff = currentY - startY;
+            if (diff > 100) { 
+                sheet.classList.remove('active'); 
+                document.getElementById('calendar-overlay').style.zIndex = ''; 
+                document.getElementById('calendar-overlay').style.display = 'none'; 
+                isAnimationPaused = false; 
+            }
             sheet.style.transform = ''; startY = 0; currentY = 0;
         });
     });
