@@ -394,3 +394,40 @@ input[type="checkbox"] { display: none; }
 .result-action-area { position: absolute; bottom: 0; left: 0; width: 100%; padding: 0 24px 40px 24px; padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 20px)); display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
 .result-action-area > * { pointer-events: auto; }
 .floating-save-btn { width: 100%; background: linear-gradient(135deg, #8B5CF6, #D946EF); color: white; border: none; padding: 18px 24px; border-radius: 16px; font-size: 16px; font-weight: 800; display: flex; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 10px 20px rgba(217, 70, 239, 0.3); cursor: pointer; }
+
+/* 🌟 구글 자동완성(Autocomplete) 드롭다운 토스/에어비앤비 스타일 커스텀 */
+.pac-container {
+    background-color: var(--bg-body, #ffffff) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    margin-top: 8px !important;
+    font-family: inherit !important;
+    z-index: 999999 !important;
+    padding: 8px 0 !important;
+}
+
+/* 자동완성 리스트 아이템 디자인 */
+.pac-item {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    border-top: none !important;
+    color: var(--text-main, #1F2937) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: background 0.2s ease !important;
+}
+
+.pac-item:hover {
+    background-color: rgba(139, 92, 246, 0.06) !important; /* 브랜드 보라색 연한 포인트 */
+}
+
+/* 아이콘(핀 모양) 색상 커스텀 및 불필요한 요소 정리 */
+.pac-icon {
+    margin-right: 12px !important;
+}
+.pac-matched {
+    font-weight: 600 !important;
+    color: #8B5CF6 !important; /* 검색어 일치 부분 보라색 강조 */
+}
