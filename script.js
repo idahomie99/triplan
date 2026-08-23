@@ -1056,50 +1056,6 @@ document.addEventListener('DOMContentLoaded', () => {
         accomInput.addEventListener('input', () => { aiData.isAccomVerified = false; aiData.accom = accomInput.value.trim(); validateAiStep(); });
     }
 
-    document.getElementById('btn-open-map')?.addEventListener('click', () => { 
-        currentMapTarget = { type: 'accom', index: -1 }; document.getElementById('map-modal-title').innerText = '지도에서 숙소 찾기'; document.getElementById('map-search-input').placeholder = '호텔이나 랜드마크 이름 검색';
-        document.getElementById('calendar-overlay').style.zIndex = '1000'; document.getElementById('calendar-overlay').style.display = 'block'; setTimeout(() => document.getElementById('map-modal').classList.add('active'), 10);
-        setTimeout(() => initMap(), 300); 
-    });
-
-    const initMap = () => {
-        if(!map) { 
-            map = new google.maps.Map(document.getElementById('map-container'), { zoom: 14, disableDefaultUI: true });
-            geocoder = new google.maps.Geocoder(); const searchBox = new google.maps.places.SearchBox(document.getElementById('map-search-input'));
-            map.addListener('bounds_changed', () => { searchBox.setBounds(map.getBounds()); });
-            searchBox.addListener('places_changed', () => {
-                const places = searchBox.getPlaces(); if (places.length == 0) return; const place = places[0]; if (!place.geometry || !place.geometry.location) return;
-                if(marker) marker.setMap(null); map.setCenter(place.geometry.location); map.setZoom(16);
-                marker = new google.maps.Marker({ position: place.geometry.location, map: map });
-                tempSelectedPlace = place.name; document.getElementById('map-selected-address').innerText = tempSelectedPlace;
-                document.getElementById('btn-confirm-map').disabled = false; // 🌟 맵 버튼 활성화
-            });
-            map.addListener('click', (e) => { 
-                if(marker) marker.setMap(null); marker = new google.maps.Marker({ position: e.latLng, map: map }); 
-                geocoder.geocode({ location: e.latLng }, (results, status) => {
-                    if (status === 'OK' && results[0]) { tempSelectedPlace = results[0].formatted_address; document.getElementById('map-selected-address').innerText = tempSelectedPlace; document.getElementById('btn-confirm-map').disabled = false; } // 🌟 맵 버튼 활성화
-                }); 
-            }); 
-        }
-        tempSelectedPlace = ''; document.getElementById('map-search-input').value = ''; document.getElementById('map-selected-address').innerText = '지도를 탭하거나 검색하세요'; document.getElementById('btn-confirm-map').disabled = true; // 🌟 맵 켤땐 다시 잠금
-        if (currentMapTarget.type === 'city' && currentMapTarget.country) { geocoder.geocode({ address: currentMapTarget.country }, (results, status) => { if (status === 'OK' && results[0]) { map.setCenter(results[0].geometry.location); map.setZoom(5); } }); } 
-        else if (currentMapTarget.type === 'accom' && aiData.destinations[0]?.city) { geocoder.geocode({ address: aiData.destinations[0].city }, (results, status) => { if (status === 'OK' && results[0]) { map.setCenter(results[0].geometry.location); map.setZoom(13); } }); } 
-        else if (navigator.geolocation) { navigator.geolocation.getCurrentPosition( (position) => { map.setCenter({ lat: position.coords.latitude, lng: position.coords.longitude }); map.setZoom(14); }, () => { map.setCenter({lat: 37.5665, lng: 126.9780}); map.setZoom(14); } ); } 
-        else { map.setCenter({lat: 37.5665, lng: 126.9780}); map.setZoom(14); }
-        setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
-    };
-
-    const closeMap = () => { document.getElementById('map-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display = 'none'; }; 
-    document.getElementById('btn-close-map')?.addEventListener('click', closeMap); 
-    
-    document.getElementById('btn-confirm-map').onclick = () => {
-        if (tempSelectedPlace) {
-            if (currentMapTarget.type === 'accom') { document.getElementById('ai-input-accom').value = tempSelectedPlace; aiData.accom = tempSelectedPlace; aiData.isAccomVerified = true; validateAiStep(); } 
-            else if (currentMapTarget.type === 'city') { aiData.destinations[currentMapTarget.index].city = tempSelectedPlace; aiData.destinations[currentMapTarget.index].isVerified = true; renderDestinations(); validateAiStep(); }
-        }
-        closeMap();
-    };
-
     window.openCustomizeModal = (placeName, placeType, photoUrl, lat, lng) => {
         const modal = document.getElementById('customize-modal'); const listContainer = document.getElementById('customize-spot-list'); const overlay = document.getElementById('calendar-overlay'); 
         if(!modal || !listContainer) return;
