@@ -818,7 +818,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   "weather": {
                     "mIcon": "sunny", 
                     "temp": "28°C",
-                    "text": "맑음 (실제 날씨)" 
+                    "text": "맑음" 
                   },
                   "spots": [
                     {
@@ -841,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
             1. 반드시 JSON 형식으로만 응답.
             2. [특별 요청] 반영 최우선.
             3. 각 장소 실제 위도(lat), 경도(lng) 필수.
-            4. 날씨 데이터(weather) 항목 필수: mIcon은 날씨에 맞는 Material Symbol(sunny, rainy, cloudy, ac_unit 등) 영문명 작성. text 항목에 실제 날씨인지 평균 날씨인지 표기할 것.
+            4. 날씨 데이터(weather) 항목 필수: mIcon은 날씨에 맞는 Material Symbol(sunny, rainy, cloudy, ac_unit 등) 영문명 작성. text 항목에는 '맑음', '흐림', '비' 등 날씨 상태만 군더더기 없이 깔끔하게 작성할 것. 괄호나 부연 설명을 절대 붙이지 말 것.
             5. 비가 오거나 우기인 경우 실내 스팟(쇼핑몰, 미술관 등)을 적극 배치할 것.
             `;
 
@@ -981,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }); 
             
             // 🌟 날씨 데이터를 일별 계획에 저장!
-            const defaultWeather = { mIcon: 'sunny', temp: '알 수 없음', text: '기본 날씨 (평균)' };
+            const defaultWeather = { mIcon: 'calendar_month', temp: '-', text: '월 평균 날씨 기준' };
             dailyPlans[dayPlan.day] = { hp: dayPlan.hp, weather: dayPlan.weather || defaultWeather, spots: daySpots };
         });
 
