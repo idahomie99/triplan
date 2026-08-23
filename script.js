@@ -235,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
             else if(pinVal === 'end') { pinIcon = 'flight_land'; pinText = '도착지로 지정'; }
             else if(pinVal === 'start_end') { pinIcon = 'sync_alt'; pinText = '출발 및 도착지로 지정'; }
             
-            // 👇 국가 선택 여부에 따라 입력창 활성/비활성화 처리
             const isCityDisabled = !dest.country;
             const cityPlaceholder = isCityDisabled ? '국가를 먼저 선택해주세요' : '도시 이름 검색 (자동완성)';
             const cityStyle = isCityDisabled ? 'opacity: 0.5; cursor: not-allowed; background: var(--card-border);' : '';
@@ -246,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="dest-inputs">
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         
-                        <!-- 🎯 숙소와 똑같이 트렌디한 둥근 사각형 map 아이콘으로 변경! -->
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
                             <input type="text" class="city-input" placeholder="${cityPlaceholder}" value="${dest.city}" ${isCityDisabled ? 'disabled' : ''} style="${cityStyle} width: 100%; padding-right: 48px;">
                             <button class="open-city-map-btn ripple-btn" style="position: absolute; right: 6px; border: none; background: transparent; color: ${isCityDisabled ? 'var(--card-border)' : '#3B82F6'}; cursor: ${isCityDisabled ? 'not-allowed' : 'pointer'}; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;" ${isCityDisabled ? 'disabled' : ''}>
@@ -271,14 +269,54 @@ document.addEventListener('DOMContentLoaded', () => {
             destContainer.insertAdjacentHTML('beforeend', html);
         });
 
-        // 타이핑을 다시 시작하면 검증 해제
+        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기 및 강제 선택 방어막
+        document.querySelectorAll('.city-input').forEach((inputEl, index) => {
+            const dest = aiData.destinations[index];
+            
+            dest.isVerified = dest.isVerified !== undefined ? dest.isVerified : (dest.city ? true : false);
+
+            if (window.google && window.google.maps && window.google.maps.places) {
+                const isoCode = countryIsoMap[dest.country];
+                
+                const autocomplete = new google.maps.places.Autocomplete(inputEl, {
+                    types: ['(cities)'], 
+                    componentRestrictions: isoCode ? { country: isoCode } : undefined 
+                });
+
+                autocomplete.addListener('place_changed', () => {
+                    const place = autocomplete.getPlace();
+                    if (place && place.name) {
+                        aiData.destinations[index].city = place.name;
+                        aiData.destinations[index].isVerified = true; 
+                        validateAiStep(); 
+                    }
+                });
+            }
+
+            // 🛡️ 자동완성 강제 방어막
+            inputEl.addEventListener('blur', () => {
+                setTimeout(() => {
+                    if (inputEl.value.trim() !== '' && !aiData.destinations[index].isVerified) {
+                        showCustomAlert({
+                            icon: 'warning', 
+                            title: '도시 선택 확인', 
+                            desc: '정확한 위치 인식을 위해 반드시 아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!'
+                        });
+                        inputEl.value = '';
+                        aiData.destinations[index].city = '';
+                        validateAiStep();
+                    }
+                }, 200);
+            });
+
+            // 타이핑을 다시 시작하면 검증 해제
             inputEl.addEventListener('input', () => {
                 aiData.destinations[index].isVerified = false;
                 aiData.destinations[index].city = inputEl.value.trim();
                 validateAiStep();
             });
-        }); // forEach 끝
-    }; // renderDestinations 함수 끝
+        });
+    };
 
     document.getElementById('btn-add-dest')?.addEventListener('click', () => { 
         aiData.destinations.push({ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }); 
