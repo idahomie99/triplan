@@ -328,10 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.target.closest('.country-select-btn')) { openCountryModal(index); }
         else if(e.target.closest('.remove-dest-btn')) { if(aiData.destinations.length > 1) { aiData.destinations.splice(index, 1); renderDestinations(); validateAiStep(); } }
         else if(e.target.closest('.stay-date-btn')) {
-            else if(e.target.closest('.stay-date-btn')) {
             calendarTargetIndex = index; tempStartDate = aiData.destinations[index].startDate || aiData.startDate; tempEndDate = aiData.destinations[index].endDate || aiData.endDate;
-            // 👇 zIndex 부분 추가!
-            calendarOverlay.style.zIndex = '1000'; calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
+            calendarOverlay.style.zIndex = '1000'; 
+            calendarOverlay.style.display = 'block'; 
+            setTimeout(() => calendarModal.classList.add('active'), 10); 
+            renderCalendar();
         }
         else if(e.target.closest('.open-city-map-btn')) {
             const btn = e.target.closest('.open-city-map-btn');
