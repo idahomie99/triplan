@@ -333,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // 👇 zIndex 부분 추가!
             calendarOverlay.style.zIndex = '1000'; calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
         }
-        }
         else if(e.target.closest('.open-city-map-btn')) {
             const btn = e.target.closest('.open-city-map-btn');
             if(btn.disabled) return;
@@ -1173,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-show-before').style.background = 'white'; document.getElementById('btn-show-before').style.color = 'var(--text-sub)'; document.getElementById('btn-show-before').style.border = '1px solid #CBD5E1';
         drawMiniMap(true);
     });
-    
+
     // 🌟 2. 진짜 교체 발동
     document.getElementById('btn-do-replace')?.addEventListener('click', () => {
         if(!pendingReplaceData) return;
