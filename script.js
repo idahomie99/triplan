@@ -1332,24 +1332,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const chip = e.target.closest('.explore-chip');
         if(!chip) return;
         
-        document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active')); chip.classList.add('active');
+        document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active')); 
+        chip.classList.add('active');
         
-        // 🎯 탭(카테고리) 변경 시 화면 스크롤 맨 위로 부드럽게 쫙! 올려주기
+        const type = chip.getAttribute('data-type');
+        
+        // 🌟 여기서 딱 한 번만 선언합니다! (중복 에러 해결)
         const timelineContainer = document.getElementById('ai-timeline-container');
         const exploreContainer = document.getElementById('ai-explore-container');
+        const resultMapWrapper = document.getElementById('ai-result-map-wrapper');
+        
+        // 🎯 탭(카테고리) 변경 시 화면 스크롤 맨 위로 부드럽게 쫙! 올려주기
         if(timelineContainer) timelineContainer.scrollTo({ top: 0, behavior: 'smooth' });
         if(exploreContainer) exploreContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
-        const type = chip.getAttribute('data-type');
-        const timelineContainer = document.getElementById('ai-timeline-container');
-        const exploreContainer = document.getElementById('ai-explore-container');
-        const resultMapWrapper = document.getElementById('ai-result-map-wrapper'); // 👈 wrapper로 변경!
-        
-        if(isMapView) { isMapView = false; document.getElementById('top-map-icon').innerText = 'map'; document.getElementById('map-info-card').classList.remove('active'); }
+        if(isMapView) { 
+            isMapView = false; 
+            document.getElementById('top-map-icon').innerText = 'map'; 
+            document.getElementById('map-info-card').classList.remove('active'); 
+        }
 
         if(type === 'timeline') {
             timelineContainer.style.display = 'flex'; exploreContainer.style.display = 'none'; 
-            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; // 👈 wrapper 끄기
+            if(resultMapWrapper) resultMapWrapper.style.display = 'none'; 
         } else {
             timelineContainer.style.display = 'none'; 
             if(resultMapWrapper) resultMapWrapper.style.display = 'none'; 
@@ -1390,7 +1395,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             : `https://images.unsplash.com/photo-${fallbackImages[type][Math.floor(Math.random() * fallbackImages[type].length)]}?q=80&w=200&auto=format&fit=crop`;
                         const rating = place.rating || (4 + Math.random()).toFixed(1);
                         
-                        // 이름과 사진 URL에 들어간 따옴표 에러 방지
                         const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
                         const safePhotoUrl = photoUrl.replace(/'/g, "\\'");
 
