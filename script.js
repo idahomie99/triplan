@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const splashScreen = document.getElementById('splash-screen');
     if (splashScreen) {
-        setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1500);
+        // 👇 맨 뒤에 1500을 1000(1초)으로 변경!
+        setTimeout(() => { splashScreen.classList.add('hide'); setTimeout(() => splashScreen.remove(), 500); }, 1000);
     }
 
     const mainContent = document.getElementById('main-content');
