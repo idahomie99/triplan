@@ -759,6 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             [사용자 정보]
             - 여행지: ${destText}
+            - 여행 시기: ${aiData.startDate ? aiData.startDate.getMonth() + 1 : '현재'}월 👈 (추가: 이 달의 평균 날씨, 우기/건기, 기온을 반드시 고려해서 실내/실외 일정을 배분할 것)
             - 전체 여행: ${aiData.totalTripDays}일 (${fm(aiData.startDate)} ~ ${fm(aiData.endDate)})
             - 항공편: 도착시간 ${aiData.arrTime || '미정'}, 출발시간 ${aiData.depTime || '미정'}
             - 숙소: ${aiData.accom || '미정'}
@@ -936,15 +937,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     const request = { query: `${mainDest} ${slot.name}`, fields: ['photos'] };
                     
                     placesService.findPlaceFromQuery(request, (results, status) => {
-                        if (status === google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos) {
-                            const realPhotoUrl = results[0].photos[0].getUrl({ maxWidth: 400 });
-                            
-                            // 3. 사진을 성공적으로 찾으면 데이터를 업데이트하고 화면 요소도 즉시 교체
+                        if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
                             const targetSpot = dailyPlans[dayPlan.day].spots[sIndex];
-                            if(targetSpot) targetSpot.img = realPhotoUrl;
                             
-                            const imgEl = document.getElementById(uniqueImgId);
-                            if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`;
+                            // 🌟 1. 나중에 리뷰 띄울 때 쓰려고 장소 고유 번호(place_id)를 저장!
+                            targetSpot.place_id = results[0].place_id; 
+                            
+                            // 2. 사진이 있으면 기존처럼 사진도 업데이트!
+                            if (results[0].photos) {
+                                const realPhotoUrl = results[0].photos[0].getUrl({ maxWidth: 400 });
+                                targetSpot.img = realPhotoUrl;
+                                
+                                const imgEl = document.getElementById(uniqueImgId);
+                                if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`;
+                            }
                         }
                     });
                 }, (pIndex * 5 + sIndex) * 300); // 일정 하나당 0.3초 텀을 두고 순차적으로 불러옴
@@ -1003,8 +1009,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
 
-        const resultScreen = document.getElementById('ai-result-screen');
-        if(resultScreen) resultScreen.scrollTo({ top: 0, behavior: 'smooth' });
+        const timelineContainer = document.getElementById('ai-timeline-container');
+        if(timelineContainer) timelineContainer.scrollTo({ top: 0, behavior: 'smooth' });
         
         document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(day, false); });
         document.getElementById('btn-plan-b')?.addEventListener('click', () => { 
@@ -1092,9 +1098,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 movingMarker.setPosition({lat, lng});
                 
-                // 🎯 [핵심] 카메라 중심을 원보다 살짝 아래로 내려서(위도 - 0.008), 
-                // 원이 화면 상단 3분의 1 지점(시각적 중앙)에 완벽하게 안착하게 만듦!
-                routeMap.panTo({lat: pCoords[index].lat, lng: pCoords[index].lng});
+                // 🎯 [해결 & 위치 조정] 핀이 중앙보다 살짝 위에 뜨도록 -0.003 적용!
+                routeMap.setCenter({lat: lat - 0.003, lng: lng}); 
                 
                 if(progress < 1) requestAnimationFrame(animate);
                 else { movingMarker.setMap(null); resolve(); }
@@ -1118,7 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(badgeEl) badgeEl.innerText = spot.catName;
         if(imgEl) imgEl.style.backgroundImage = `url('${spot.img}')`;
         
-        routeMap.setCenter({lat: lat, lng: lng});
+        routeMap.panTo({lat: pCoords[index].lat - 0.003, lng: pCoords[index].lng});
         
         if (infoCard) infoCard.classList.add('active');
         currentMarkerIndex = index;
@@ -1288,8 +1293,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.explore-chip').forEach(c => c.classList.remove('active')); chip.classList.add('active');
         
         // 🎯 탭(카테고리) 변경 시 화면 스크롤 맨 위로 부드럽게 쫙! 올려주기
-        const resultScreen = document.getElementById('ai-result-screen');
-        if(resultScreen) resultScreen.scrollTo({ top: 0, behavior: 'smooth' });
+        const timelineContainer = document.getElementById('ai-timeline-container');
+        const exploreContainer = document.getElementById('ai-explore-container');
+        if(timelineContainer) timelineContainer.scrollTo({ top: 0, behavior: 'smooth' });
+        if(exploreContainer) exploreContainer.scrollTo({ top: 0, behavior: 'smooth' });
 
         const type = chip.getAttribute('data-type');
         const timelineContainer = document.getElementById('ai-timeline-container');
@@ -1466,4 +1473,54 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. 기분 좋은 성공 알림!
         showCustomAlert({icon: 'check_circle', title: '일정 교체 완료', desc: `[${newName}] 장소로 완벽하게 교체되었습니다! 😆`});
     };
-});
+
+    // 🌟 지도 팝업 텍스트 클릭 시 구글 장소 상세(리뷰) 불러오기
+    document.getElementById('map-info-texts-wrap')?.addEventListener('click', () => {
+        const spot = dailyPlans[currentSelectedDay]?.spots[currentMarkerIndex];
+        if(!spot) return;
+
+        if(!spot.place_id) {
+            showCustomAlert({icon:'info', title:'안내', desc:'이 장소는 상세 리뷰가 제공되지 않습니다.'});
+            return;
+        }
+
+        document.getElementById('calendar-overlay').style.display = 'block';
+        document.getElementById('calendar-overlay').style.zIndex = 999;
+        document.getElementById('place-detail-modal').classList.add('active');
+        document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-sub);">리뷰를 불러오는 중입니다...</div>';
+
+        if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
+        
+        // 리뷰, 평점, 구글맵 링크 가져오기
+        placesService.getDetails({ placeId: spot.place_id, fields: ['name', 'rating', 'reviews', 'url'] }, (place, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                let html = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3 style="font-size:20px; font-weight:800; color:var(--text-main);">${place.name}</h3>
+                        <span style="background:#FEF08A; color:#D97706; padding:6px 10px; border-radius:8px; font-weight:800; font-size:14px;">⭐ ${place.rating || '평점없음'}</span>
+                    </div>`;
+                    
+                if(place.reviews && place.reviews.length > 0) {
+                    place.reviews.slice(0, 3).forEach(rev => { // 상위 3개 리뷰만
+                        html += `
+                        <div style="background:var(--icon-bg); padding:16px; border-radius:16px; margin-bottom:12px;">
+                            <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-sub); display:flex; align-items:center; gap:6px;">
+                                <span class="material-symbols-rounded" style="font-size:16px;">account_circle</span> ${rev.author_name}
+                            </div>
+                            <div style="font-size:14px; color:var(--text-main); line-height:1.5;">"${rev.text}"</div>
+                        </div>`;
+                    });
+                } else {
+                    html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`;
+                }
+                
+                html += `<button class="search-btn ripple-btn" style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.open('${place.url}', '_blank')"><span class="material-symbols-rounded">map</span>구글 맵에서 크게 보기</button>`;
+                
+                document.getElementById('detail-modal-content').innerHTML = html;
+            } else {
+                document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 20px;">리뷰 정보를 불러오지 못했습니다.</div>';
+            }
+        });
+    });
+
+}); // 

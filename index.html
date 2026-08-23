@@ -158,12 +158,13 @@
                 <div class="ai-step" id="ai-step-3">
                     <h2 class="ai-question">주로 이용하실<br>교통수단은 무엇인가요?</h2><p class="ai-desc">다중 선택이 가능합니다. 동선 계산에 활용돼요.</p>
                     <div class="ai-chips-container" id="transport-chips-container">
-                        <div class="ai-chip transport-chip" data-val="자동차/택시"><span class="material-symbols-rounded" style="font-size:18px;">directions_car</span> 자동차/택시</div>
-                        <div class="ai-chip transport-chip" data-val="대중교통"><span class="material-symbols-rounded" style="font-size:18px;">directions_bus</span> 대중교통</div>
-                        <div class="ai-chip transport-chip" data-val="도보"><span class="material-symbols-rounded" style="font-size:18px;">directions_walk</span> 도보</div>
-                        <div class="ai-chip transport-chip" data-val="비행기"><span class="material-symbols-rounded" style="font-size:18px;">flight</span> 비행기</div>
-                        <div class="ai-chip transport-chip" data-val="기차"><span class="material-symbols-rounded" style="font-size:18px;">train</span> 기차 (KTX 등)</div>
-                    </div>
+            <div class="ai-chip transport-chip" data-val="자동차"><span class="material-symbols-rounded" style="font-size:18px;">directions_car</span> 자동차</div>
+            <div class="ai-chip transport-chip" data-val="택시"><span class="material-symbols-rounded" style="font-size:18px;">local_taxi</span> 택시</div>
+            <div class="ai-chip transport-chip" data-val="대중교통"><span class="material-symbols-rounded" style="font-size:18px;">directions_bus</span> 대중교통</div>
+            <div class="ai-chip transport-chip" data-val="도보"><span class="material-symbols-rounded" style="font-size:18px;">directions_walk</span> 도보</div>
+            <div class="ai-chip transport-chip" data-val="비행기"><span class="material-symbols-rounded" style="font-size:18px;">flight</span> 비행기</div>
+            <div class="ai-chip transport-chip" data-val="기차"><span class="material-symbols-rounded" style="font-size:18px;">train</span> 기차 (KTX 등)</div>
+        </div>
                 </div>
 
                 <div class="ai-step" id="ai-step-4"><h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
@@ -317,7 +318,8 @@
                 
                 <div id="map-info-card" class="map-info-card">
                     <div class="map-info-img" id="map-info-img"></div>
-                    <div class="map-info-texts">
+                    <!-- 🌟 클릭할 수 있게 id 추가 및 커서 포인터 추가 -->
+                    <div class="map-info-texts" id="map-info-texts-wrap" style="cursor: pointer;">
                         <div class="map-info-badge" id="map-info-badge">관광</div>
                         <h4 id="map-info-title">장소 이름</h4>
                         <p id="map-info-desc">여기에 간단한 설명이 들어갑니다.</p>
@@ -343,3 +345,12 @@
     </div>
 </body>
 </html>
+
+<!-- 🌟 장소 상세 & 리뷰 모달 -->
+        <div id="place-detail-modal" class="bottom-sheet" style="z-index: 1000;">
+            <div class="sheet-header">
+                <h3>장소 상세정보</h3>
+                <button class="icon-btn" onclick="document.getElementById('place-detail-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display = 'none';"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="sheet-content" id="detail-modal-content"></div>
+        </div>
