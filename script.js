@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }; 
     document.getElementById('btn-close-map')?.addEventListener('click', closeMap); 
 
-    // 🌟 빠져있던 '이 위치로 설정' 버튼 클릭 로직 부활!
+    // 🌟 빠져있던 '이 위치로 설정' 버튼 클릭 로직 부활! (이제 딱 1번만 선언됩니다)
     const btnConfirmMap = document.getElementById('btn-confirm-map');
     if (btnConfirmMap) {
         btnConfirmMap.addEventListener('click', () => {
@@ -522,52 +522,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             closeMap();
-        });
-    }
-
-    // 🌟 빠져있던 '이 위치로 설정' 버튼 클릭 로직 부활!
-    const btnConfirmMap = document.getElementById('btn-confirm-map');
-    if (btnConfirmMap) {
-        btnConfirmMap.addEventListener('click', () => {
-            if (tempSelectedPlace) {
-                if (currentMapTarget.type === 'accom') { 
-                    document.getElementById('ai-input-accom').value = tempSelectedPlace; 
-                    aiData.accom = tempSelectedPlace; 
-                    aiData.isAccomVerified = true; 
-                    validateAiStep(); 
-                } 
-                else if (currentMapTarget.type === 'city') { 
-                    aiData.destinations[currentMapTarget.index].city = tempSelectedPlace; 
-                    aiData.destinations[currentMapTarget.index].isVerified = true; 
-                    renderDestinations(); 
-                    validateAiStep(); 
-                }
-            }
-            closeMap();
-        });
-    }
-    
-    const btnConfirmMap = document.getElementById('btn-confirm-map');
-    if (btnConfirmMap) {
-        btnConfirmMap.addEventListener('click', () => {
-            if (tempSelectedPlace) {
-                if (currentMapTarget.type === 'accom') { 
-                    document.getElementById('ai-input-accom').value = tempSelectedPlace; 
-                    aiData.accom = tempSelectedPlace; 
-                    aiData.isAccomVerified = true; 
-                    validateAiStep(); 
-                } 
-                else if (currentMapTarget.type === 'city') { 
-                    aiData.destinations[currentMapTarget.index].city = tempSelectedPlace; 
-                    aiData.destinations[currentMapTarget.index].isVerified = true; 
-                    renderDestinations(); 
-                    validateAiStep(); 
-                }
-            }
-            // 맵 닫고, 뒤에 까만 배경 상태 초기화 확실히 하기
-            document.getElementById('map-modal').classList.remove('active'); 
-            document.getElementById('calendar-overlay').style.zIndex = '';
-            document.getElementById('calendar-overlay').style.display = 'none';
         });
     }
 
