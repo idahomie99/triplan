@@ -495,12 +495,35 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
     };
 
+    // 🌟 배경 까매짐 꼬임 방지를 위해 zIndex 초기화 추가
     const closeMap = () => { 
         document.getElementById('map-modal').classList.remove('active'); 
-        document.getElementById('calendar-overlay').style.zIndex = ''; // 까만 배경 초기화
-        setTimeout(() => document.getElementById('calendar-overlay').style.display = 'none', 300); 
+        document.getElementById('calendar-overlay').style.zIndex = ''; 
+        document.getElementById('calendar-overlay').style.display = 'none'; 
     }; 
     document.getElementById('btn-close-map')?.addEventListener('click', closeMap); 
+
+    // 🌟 빠져있던 '이 위치로 설정' 버튼 클릭 로직 부활!
+    const btnConfirmMap = document.getElementById('btn-confirm-map');
+    if (btnConfirmMap) {
+        btnConfirmMap.addEventListener('click', () => {
+            if (tempSelectedPlace) {
+                if (currentMapTarget.type === 'accom') { 
+                    document.getElementById('ai-input-accom').value = tempSelectedPlace; 
+                    aiData.accom = tempSelectedPlace; 
+                    aiData.isAccomVerified = true; 
+                    validateAiStep(); 
+                } 
+                else if (currentMapTarget.type === 'city') { 
+                    aiData.destinations[currentMapTarget.index].city = tempSelectedPlace; 
+                    aiData.destinations[currentMapTarget.index].isVerified = true; 
+                    renderDestinations(); 
+                    validateAiStep(); 
+                }
+            }
+            closeMap();
+        });
+    }
 
     // 🌟 빠져있던 '이 위치로 설정' 버튼 클릭 로직 부활!
     const btnConfirmMap = document.getElementById('btn-confirm-map');
@@ -1215,6 +1238,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const diff = currentY - startY; 
             if (diff > 0) {
                 e.preventDefault(); // 🌟 모바일 브라우저의 고무줄 스크롤 현상 차단!
+                e.stopPropagation();
                 sheet.style.transform = `translateY(${diff}px)`; 
             }
         }, {passive: false}); 
