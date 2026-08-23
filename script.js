@@ -318,38 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    document.getElementById('btn-add-dest')?.addEventListener('click', () => { 
-        aiData.destinations.push({ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }); 
-        renderDestinations(); 
-        validateAiStep(); 
-    });
-
-            // 🛡️ 사용자가 자동완성을 안 고치고 그냥 키보드로 오타를 치거나 생으로 입력하고 포커스를 뺄 때의 방어막!
-            inputEl.addEventListener('blur', (e) => {
-                setTimeout(() => {
-                    // 자동완성을 안 골랐는데 텍스트가 적혀있다면? -> 가짜 입력이므로 경고하고 리셋!
-                    if (inputEl.value.trim() !== '' && !aiData.destinations[index].isVerified) {
-                        showCustomAlert({
-                            icon: 'warning', 
-                            title: '도시 선택 확인', 
-                            desc: '정확한 위치 인식을 위해 반드시 아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!'
-                        });
-                        inputEl.value = '';
-                        aiData.destinations[index].city = '';
-                        validateAiStep();
-                    }
-                }, 200);
-            });
-
-            // 타이핑을 다시 시작하면 검증 해제
-            inputEl.addEventListener('input', () => {
-                aiData.destinations[index].isVerified = false;
-                aiData.destinations[index].city = inputEl.value.trim();
-                validateAiStep();
-            });
-        });
-    };
-
     document.getElementById('btn-add-dest')?.addEventListener('click', () => { aiData.destinations.push({ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }); renderDestinations(); validateAiStep(); });
     document.getElementById('chk-optimize-route')?.addEventListener('change', (e) => { aiData.isOptimizeRoute = e.target.checked; renderDestinations(); });
 
@@ -368,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = e.target.closest('.open-city-map-btn');
             if(btn.disabled) return;
             
-            // 👇 선택된 국가 정보(country)를 target 객체에 추가해서 넘겨줌!
             const selectedCountry = aiData.destinations[index].country;
             currentMapTarget = { type: 'city', index: index, country: selectedCountry };
 
