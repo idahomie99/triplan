@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="dest-inputs">
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         
-                        <!-- 🌟 안내 문구 (자동완성에 가리지 않게 위로 올림, 빨간색 강조) -->
+                        <!-- 🌟 힌트를 입력창 위로 올리고 빨간색으로 변경! -->
                         <div class="autocomplete-hint" style="display: none; font-size: 12px; color: #DC2626; margin-bottom: 6px; padding-left: 4px; font-weight: 700; align-items: center; gap: 4px; animation: fadeIn 0.2s ease-out;">
                             <span class="material-symbols-rounded" style="font-size: 16px;">error</span> 아래 자동완성 목록을 눌러야 선택 완료됩니다!
                         </div>
@@ -1056,7 +1056,6 @@ document.addEventListener('DOMContentLoaded', () => {
         accomInput.addEventListener('input', () => { aiData.isAccomVerified = false; aiData.accom = accomInput.value.trim(); validateAiStep(); });
     }
 
-    let map = null; let marker = null; let geocoder = null; let currentMapTarget = { type: 'accom', index: -1 }; let tempSelectedPlace = ''; 
     document.getElementById('btn-open-map')?.addEventListener('click', () => { 
         currentMapTarget = { type: 'accom', index: -1 }; document.getElementById('map-modal-title').innerText = '지도에서 숙소 찾기'; document.getElementById('map-search-input').placeholder = '호텔이나 랜드마크 이름 검색';
         document.getElementById('calendar-overlay').style.zIndex = '1000'; document.getElementById('calendar-overlay').style.display = 'block'; setTimeout(() => document.getElementById('map-modal').classList.add('active'), 10);

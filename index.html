@@ -121,14 +121,42 @@
         <div id="calendar-overlay"></div>
 
 <!-- 🌟 새로 추가되는 모달들 시작 -->
-        <div id="theme-info-modal" class="bottom-sheet" style="z-index: 1001;">
+        <div id="theme-info-modal" class="bottom-sheet" style="z-index: 1005;">
             <div class="sheet-header"><h3>여행 테마 안내</h3><button class="icon-btn" onclick="document.getElementById('theme-info-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" style="padding-bottom: 40px;">
+            <div class="sheet-content" style="padding-bottom: 40px; max-height: 60vh; overflow-y: auto;">
                 <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:20px;">
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#2563EB; font-size:24px;">diversity_1</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">우정여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">친구들과 함께 즐길 수 있는 트렌디한 핫플과 액티비티 위주의 텐션 높은 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#DC2626; font-size:24px;">favorite</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">커플/신혼여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">분위기 좋은 레스토랑, 야경 명소 등 로맨틱하고 오붓한 시간을 보낼 수 있는 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#F59E0B; font-size:24px;">family_restroom</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">가족/효도여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">동선이 꼬이지 않고 쾌적하며, 부모님이나 아이와 함께 가도 무리 없는 편안한 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#10B981; font-size:24px;">flight_takeoff</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">자유/배낭여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">발길 닿는 대로 골목을 탐험하고 현지의 찐 로컬 감성을 느낄 수 있는 가성비 일정입니다.</span></div></li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#2563EB; font-size:24px;">diversity_1</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">우정여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">트렌디한 핫플, 포토존, 액티비티 위주로 짜인 텐션 높은 일정입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#F43F5E; font-size:24px;">volunteer_activism</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">커플여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">분위기 좋은 식당과 감성 카페 등 데이트하기 좋은 로맨틱한 동선입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#E11D48; font-size:24px;">favorite</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">신혼여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">평생 한 번뿐인 허니문을 위해 고급스럽고 프라이빗한 럭셔리 일정입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#F59E0B; font-size:24px;">family_restroom</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">가족여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">아이부터 어른까지 호불호 없는 대중적인 명소와 무난하고 편안한 동선입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#8B5CF6; font-size:24px;">elderly</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">효도여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">부모님 체력을 최우선으로 하여 걷기를 최소화하고 뷰와 식사에 집중한 일정입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#10B981; font-size:24px;">flight_takeoff</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">자유여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">뻔한 패키지를 벗어나 발길 닿는 대로 골목과 문화를 탐험하는 일정입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#06B6D4; font-size:24px;">backpack</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">배낭여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">대중교통과 로컬 찐 맛집을 적극 활용하는 가성비 좋고 활동적인 일정입니다.</span></div>
+                    </li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;">
+                        <span class="material-symbols-rounded" style="color:#F97316; font-size:24px;">restaurant</span>
+                        <div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">식도락여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">오직 맛을 위해! 웨이팅이 아깝지 않은 로컬 맛집과 미슐랭 위주의 일정입니다.</span></div>
+                    </li>
                 </ul>
             </div>
         </div>
