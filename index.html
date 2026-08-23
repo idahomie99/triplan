@@ -161,13 +161,22 @@
             </div>
         </div>
 
-        <div id="confirm-replace-modal" class="bottom-sheet" style="z-index: 1002;">
-            <div class="sheet-header"><h3>일정 동선 확인</h3><button class="icon-btn" onclick="document.getElementById('confirm-replace-modal').classList.remove('active');"><span class="material-symbols-rounded">close</span></button></div>
+        <div id="confirm-replace-modal" class="bottom-sheet" style="z-index: 1005;">
+            <!-- 🌟 X 버튼에 까만 배경 없애는 로직 추가 -->
+            <div class="sheet-header"><h3>일정 동선 확인</h3><button class="icon-btn" onclick="document.getElementById('confirm-replace-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.zIndex=''; document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
             <div class="sheet-content">
+                
+                <!-- 🌟 기존 동선 / 변경 동선 비교 버튼 -->
+                <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;">
+                    <button id="btn-show-before" class="ripple-btn" style="padding:6px 16px; border-radius:20px; border:1px solid #CBD5E1; background:white; color:var(--text-sub); font-size:13px; font-weight:700;">기존 동선</button>
+                    <button id="btn-show-after" class="ripple-btn" style="padding:6px 16px; border-radius:20px; border:none; background:#2563EB; color:white; font-size:13px; font-weight:700;">변경 동선</button>
+                </div>
+
                 <div id="mini-map-container" style="width:100%; height:220px; border-radius:12px; background:#E2E8F0; margin-bottom:20px; overflow:hidden;"></div>
                 <p style="font-size:15px; color:var(--text-main); font-weight:800; text-align:center;">이대로 일정을 교체하시겠습니까?</p>
                 <div style="display:flex; gap:12px; margin-top:20px;">
-                    <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:var(--card-border); color:var(--text-main); font-weight:800; font-size:15px;" onclick="document.getElementById('confirm-replace-modal').classList.remove('active');">아니오</button>
+                    <!-- 🌟 아니오 버튼에 까만 배경 없애는 로직 추가 -->
+                    <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:var(--card-border); color:var(--text-main); font-weight:800; font-size:15px;" onclick="document.getElementById('confirm-replace-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.zIndex=''; document.getElementById('calendar-overlay').style.display='none';">아니오</button>
                     <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:#2563EB; color:white; font-weight:800; font-size:15px;" id="btn-do-replace">예, 교체할래요</button>
                 </div>
             </div>
@@ -425,4 +434,3 @@
     </div> <!-- app-container 끝 -->
 </body>
 </html>
-

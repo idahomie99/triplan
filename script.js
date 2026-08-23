@@ -245,7 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="dest-inputs">
                         <button class="country-select-btn ripple-btn"><span style="color:${countryColor};">${countryStr}</span><span class="material-symbols-rounded">expand_more</span></button>
                         
-                        <!-- 🌟 힌트를 입력창 위로 올리고 빨간색으로 변경! -->
                         <div class="autocomplete-hint" style="display: none; font-size: 12px; color: #DC2626; margin-bottom: 6px; padding-left: 4px; font-weight: 700; align-items: center; gap: 4px; animation: fadeIn 0.2s ease-out;">
                             <span class="material-symbols-rounded" style="font-size: 16px;">error</span> 아래 자동완성 목록을 눌러서 선택해 주세요.
                         </div>
@@ -258,6 +257,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         
                         <button class="stay-date-btn ripple-btn" style="${isMulti && aiData.totalTripDays > 0 && !aiData.isOptimizeRoute ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">calendar_month</span><span class="stay-date-val">${dateStr}</span></button>
+                        
+                        <!-- 🌟 누락됐던 핀 설정/AI 자동 배치 UI 완벽 복구! -->
+                        <div class="custom-pin-select" style="${isMulti && aiData.isOptimizeRoute ? 'display:block;' : 'display:none;'}">
+                            <div class="pin-selected"><span class="material-symbols-rounded icon">${pinIcon}</span> <span class="text">${pinText}</span> <span class="material-symbols-rounded arrow">unfold_more</span></div>
+                            <div class="pin-options">
+                                <div class="pin-option" data-val="auto"><span class="material-symbols-rounded">auto_awesome</span> AI가 순서 자동 배치</div>
+                                <div class="pin-option" data-val="start"><span class="material-symbols-rounded">flight_takeoff</span> 출발지로 지정</div>
+                                <div class="pin-option" data-val="end"><span class="material-symbols-rounded">flight_land</span> 도착지로 지정</div>
+                                <div class="pin-option" data-val="start_end"><span class="material-symbols-rounded">sync_alt</span> 출발 및 도착지로 지정</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="remove-dest-btn" style="${isMulti ? 'display:flex;' : 'display:none;'}"><span class="material-symbols-rounded" style="font-size:16px;">close</span></div>
                 </div>
@@ -318,8 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.target.closest('.country-select-btn')) { openCountryModal(index); }
         else if(e.target.closest('.remove-dest-btn')) { if(aiData.destinations.length > 1) { aiData.destinations.splice(index, 1); renderDestinations(); validateAiStep(); } }
         else if(e.target.closest('.stay-date-btn')) {
+            else if(e.target.closest('.stay-date-btn')) {
             calendarTargetIndex = index; tempStartDate = aiData.destinations[index].startDate || aiData.startDate; tempEndDate = aiData.destinations[index].endDate || aiData.endDate;
-            calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
+            // 👇 zIndex 부분 추가!
+            calendarOverlay.style.zIndex = '1000'; calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
+        }
         }
         else if(e.target.closest('.open-city-map-btn')) {
             const btn = e.target.closest('.open-city-map-btn');
@@ -358,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openCountryModal = (index) => {
         activeDestIndex = index; countryModalTitle.innerText = '대륙 선택'; btnCountryBack.style.display = 'none';
         let html = ''; Object.keys(countryData).forEach(continent => { html += `<div class="country-list-item" data-continent="${continent}">${continent}<span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span></div>`; });
-        countryListContainer.innerHTML = html; calendarOverlay.style.display = 'block'; setTimeout(() => countryModal.classList.add('active'), 10);
+        countryListContainer.innerHTML = html; calendarOverlay.style.zIndex = '1000'; calendarOverlay.style.display = 'block'; setTimeout(() => countryModal.classList.add('active'), 10);
         document.querySelectorAll('.country-list-item').forEach(el => {
             el.addEventListener('click', () => {
                 const cont = el.getAttribute('data-continent'); countryModalTitle.innerText = cont; btnCountryBack.style.display = 'flex';
@@ -906,10 +919,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let routeMap = null; let pathPolyline = null; let routeMarkers = []; let movingMarker = null;
     let isMapView = false; let currentMarkerIndex = -1; let isPlayingRoute = false; let routeAnimationAbort = false; let isAnimationPaused = false; let playedDays = {}; 
 
+    // 🌟 지하철역, 불필요한 마커를 꺼서 지도를 엄청 깔끔하게 만드는 스타일!
+    const cleanMapStyle = [
+        { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
+        { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }
+    ];
+
     function initMapForResult(mainDest) {
         const resultMapEl = document.getElementById('ai-result-map');
         if(!routeMap && resultMapEl) {
-            routeMap = new google.maps.Map(resultMapEl, { center: {lat: 37.5665, lng: 126.9780}, zoom: 13, disableDefaultUI: true, padding: { top: 80, bottom: 0, left: 0, right: 0 } });
+            // 🌟 메인 지도에도 깔끔한 스타일 적용
+            routeMap = new google.maps.Map(resultMapEl, { center: {lat: 37.5665, lng: 126.9780}, zoom: 13, disableDefaultUI: true, padding: { top: 80, bottom: 0, left: 0, right: 0 }, styles: cleanMapStyle });
         }
         if(mainDest !== '미지의 여행지' && routeMap) {
             const tempGeocoder = new google.maps.Geocoder();
@@ -921,7 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.explore-chip').forEach(c => c?.classList.remove('active')); document.querySelector('.explore-chip[data-type="timeline"]')?.classList.add('active');
     }
 
-    const animateMovementAsync = (startPos, endPos, duration, mIconStr) => {
+    const animateMovementAsync = (startPos, endPos, duration, mIconStr) => { ... // 이 부분은 그대로 두셔도 됩니다. 기존과 동일한 애니메이션 로직. (길이상 생략하지 말고 기존 파일에 있는 거 그대로 쓰시거나, 덮어쓰기 편하게 아래 합쳐드릴게요.)
         return new Promise(resolve => {
             if(movingMarker) movingMarker.setMap(null);
             movingMarker = new google.maps.Marker({ position: startPos, map: routeMap, label: { text: mIconStr, fontFamily: 'Material Symbols Rounded', color: 'white', fontSize: '14px' }, icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#10B981', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 12 }, zIndex: 999 });
@@ -1036,7 +1056,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     results.slice(0, 5).forEach((place) => {
                         const photoUrl = place.photos && place.photos.length > 0 ? place.photos[0].getUrl({ maxWidth: 400 }) : `https://images.unsplash.com/photo-${fallbackImages[type][0]}?q=80&w=200&auto=format&fit=crop`;
                         const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '\\"'); const safePhotoUrl = photoUrl.replace(/'/g, "\\'");
-                        // 🌟 교체 버튼에 좌표(lat, lng) 추가
                         const lat = place.geometry.location.lat(); const lng = place.geometry.location.lng();
                         html += `
                         <div class="explore-card" onclick="window.openPlaceDetail('${place.place_id}')" style="cursor:pointer;">
@@ -1064,7 +1083,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const place = accomAutocomplete.getPlace();
             if (place && place.name) { accomInput.value = place.name; aiData.accom = place.name; aiData.isAccomVerified = true; validateAiStep(); }
         });
-        // 🌟 숙소도 텍스트 날리지 않고 버튼 제어만
         accomInput.addEventListener('input', () => { aiData.isAccomVerified = false; aiData.accom = accomInput.value.trim(); validateAiStep(); });
     }
 
@@ -1085,28 +1103,77 @@ document.addEventListener('DOMContentLoaded', () => {
         listContainer.innerHTML = html; overlay.style.zIndex = '1000'; overlay.style.display = 'block'; setTimeout(() => modal.classList.add('active'), 10);
     };
 
-    // 🌟 1. 미니맵 그리기 및 교체 준비
-    let miniMap = null; let miniPolyline = null; let miniMarkers = []; let pendingReplaceData = null; 
+    // 🌟 미니맵 그리기 (Before/After 처리 완벽 적용)
+    let miniMap = null; let miniPolylines = []; let miniMarkers = []; let pendingReplaceData = null; 
+    
+    const drawMiniMap = (showAfter) => {
+        miniPolylines.forEach(p => p.setMap(null)); miniPolylines = [];
+        miniMarkers.forEach(m => m.setMap(null)); miniMarkers = [];
+
+        const { index, newLat, newLng } = pendingReplaceData;
+        const currentSpots = dailyPlans[currentSelectedDay].spots;
+
+        const pathCoords = currentSpots.map((s, i) => {
+            if (showAfter && i === index) return { lat: parseFloat(newLat), lng: parseFloat(newLng) };
+            return { lat: parseFloat(s.lat), lng: parseFloat(s.lng) };
+        });
+
+        // 선 그리기 (변경된 부분은 빨강, 나머지는 연보라 또는 기본 보라색)
+        for(let i=0; i<pathCoords.length - 1; i++) {
+            let lineColor = showAfter ? '#C4B5FD' : '#8B5CF6'; 
+            let lineZ = 1;
+            if (showAfter && (i === index || i + 1 === index)) {
+                lineColor = '#DC2626'; // 빨간색 강조!
+                lineZ = 2;
+            }
+            const poly = new google.maps.Polyline({
+                path: [pathCoords[i], pathCoords[i+1]], strokeColor: lineColor, strokeOpacity: 1.0, strokeWeight: showAfter && lineZ === 2 ? 4 : 3, zIndex: lineZ
+            });
+            poly.setMap(miniMap);
+            miniPolylines.push(poly);
+        }
+
+        const bounds = new google.maps.LatLngBounds();
+        pathCoords.forEach((p, i) => {
+            bounds.extend(p);
+            let markerColor = showAfter ? '#C4B5FD' : '#8B5CF6';
+            let scale = 6; let zIdx = 1;
+            if (showAfter && i === index) { markerColor = '#DC2626'; scale = 10; zIdx = 10; } // 새로운 장소 핀을 크고 강렬하게!
+            
+            const marker = new google.maps.Marker({ position: p, map: miniMap, zIndex: zIdx, icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: markerColor, fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: scale } });
+            miniMarkers.push(marker);
+        });
+        miniMap.fitBounds(bounds, 30);
+    };
+
     window.replaceSpot = (index, newName, newType, newPhotoUrl, newLat, newLng) => {
         pendingReplaceData = { index, newName, newType, newPhotoUrl, newLat, newLng };
         document.getElementById('customize-modal').classList.remove('active');
+        
+        // 버튼 색상 초기화 (디폴트를 '변경 동선'으로)
+        document.getElementById('btn-show-after').style.background = '#2563EB'; document.getElementById('btn-show-after').style.color = 'white'; document.getElementById('btn-show-after').style.border = 'none';
+        document.getElementById('btn-show-before').style.background = 'white'; document.getElementById('btn-show-before').style.color = 'var(--text-sub)'; document.getElementById('btn-show-before').style.border = '1px solid #CBD5E1';
+
         document.getElementById('confirm-replace-modal').classList.add('active');
         
         setTimeout(() => {
-            if(!miniMap) { miniMap = new google.maps.Map(document.getElementById('mini-map-container'), { zoom: 13, disableDefaultUI: true, gestureHandling: 'none' }); }
-            if(miniPolyline) miniPolyline.setMap(null); miniMarkers.forEach(m => m.setMap(null)); miniMarkers = [];
-            const pathCoordinates = dailyPlans[currentSelectedDay].spots.map((s, i) => { if(i === index) return { lat: parseFloat(newLat), lng: parseFloat(newLng) }; return { lat: parseFloat(s.lat), lng: parseFloat(s.lng) }; });
-            miniPolyline = new google.maps.Polyline({ path: pathCoordinates, strokeColor: '#94A3B8', strokeOpacity: 0.8, strokeWeight: 3 }); miniPolyline.setMap(miniMap);
-            const bounds = new google.maps.LatLngBounds();
-            pathCoordinates.forEach((p, i) => {
-                bounds.extend(p); const isNew = (i === index);
-                const marker = new google.maps.Marker({ position: p, map: miniMap, icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: isNew ? '#DC2626' : '#94A3B8', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: isNew ? 10 : 6 } });
-                miniMarkers.push(marker);
-            });
-            miniMap.fitBounds(bounds, 30);
+            if(!miniMap) { miniMap = new google.maps.Map(document.getElementById('mini-map-container'), { zoom: 13, disableDefaultUI: true, gestureHandling: 'none', styles: cleanMapStyle }); } // 미니맵도 지하철 숨김 적용
+            drawMiniMap(true); 
         }, 300);
     };
 
+    document.getElementById('btn-show-before')?.addEventListener('click', () => {
+        document.getElementById('btn-show-before').style.background = '#2563EB'; document.getElementById('btn-show-before').style.color = 'white'; document.getElementById('btn-show-before').style.border = 'none';
+        document.getElementById('btn-show-after').style.background = 'white'; document.getElementById('btn-show-after').style.color = 'var(--text-sub)'; document.getElementById('btn-show-after').style.border = '1px solid #CBD5E1';
+        drawMiniMap(false);
+    });
+    
+    document.getElementById('btn-show-after')?.addEventListener('click', () => {
+        document.getElementById('btn-show-after').style.background = '#2563EB'; document.getElementById('btn-show-after').style.color = 'white'; document.getElementById('btn-show-after').style.border = 'none';
+        document.getElementById('btn-show-before').style.background = 'white'; document.getElementById('btn-show-before').style.color = 'var(--text-sub)'; document.getElementById('btn-show-before').style.border = '1px solid #CBD5E1';
+        drawMiniMap(true);
+    });
+    
     // 🌟 2. 진짜 교체 발동
     document.getElementById('btn-do-replace')?.addEventListener('click', () => {
         if(!pendingReplaceData) return;
