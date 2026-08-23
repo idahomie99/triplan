@@ -120,6 +120,43 @@
         </div>
         <div id="calendar-overlay"></div>
 
+<!-- 🌟 새로 추가되는 모달들 시작 -->
+        <div id="theme-info-modal" class="bottom-sheet" style="z-index: 1001;">
+            <div class="sheet-header"><h3>여행 테마 안내</h3><button class="icon-btn" onclick="document.getElementById('theme-info-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content" style="padding-bottom: 40px;">
+                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:20px;">
+                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#2563EB; font-size:24px;">diversity_1</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">우정여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">친구들과 함께 즐길 수 있는 트렌디한 핫플과 액티비티 위주의 텐션 높은 일정입니다.</span></div></li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#DC2626; font-size:24px;">favorite</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">커플/신혼여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">분위기 좋은 레스토랑, 야경 명소 등 로맨틱하고 오붓한 시간을 보낼 수 있는 일정입니다.</span></div></li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#F59E0B; font-size:24px;">family_restroom</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">가족/효도여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">동선이 꼬이지 않고 쾌적하며, 부모님이나 아이와 함께 가도 무리 없는 편안한 일정입니다.</span></div></li>
+                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#10B981; font-size:24px;">flight_takeoff</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">자유/배낭여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">발길 닿는 대로 골목을 탐험하고 현지의 찐 로컬 감성을 느낄 수 있는 가성비 일정입니다.</span></div></li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="confirm-replace-modal" class="bottom-sheet" style="z-index: 1002;">
+            <div class="sheet-header"><h3>일정 동선 확인</h3><button class="icon-btn" onclick="document.getElementById('confirm-replace-modal').classList.remove('active');"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content">
+                <div id="mini-map-container" style="width:100%; height:220px; border-radius:12px; background:#E2E8F0; margin-bottom:20px; overflow:hidden;"></div>
+                <p style="font-size:15px; color:var(--text-main); font-weight:800; text-align:center;">이대로 일정을 교체하시겠습니까?</p>
+                <div style="display:flex; gap:12px; margin-top:20px;">
+                    <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:var(--card-border); color:var(--text-main); font-weight:800; font-size:15px;" onclick="document.getElementById('confirm-replace-modal').classList.remove('active');">아니오</button>
+                    <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:#2563EB; color:white; font-weight:800; font-size:15px;" id="btn-do-replace">예, 교체할래요</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="replace-success-modal" class="bottom-sheet" style="z-index: 1003;">
+            <div class="sheet-content" style="text-align:center; padding: 40px 20px 20px 20px;">
+                <span class="material-symbols-rounded" style="font-size:56px; color:#10B981; margin-bottom:16px;">check_circle</span>
+                <h3 style="font-size:22px; font-weight:800; margin-bottom:30px; color:var(--text-main);">일정 교체 완료!</h3>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <button class="ripple-btn" style="width:100%; padding:16px; border-radius:12px; border:none; background:#2563EB; color:white; font-weight:800; font-size:15px;" id="btn-success-timeline">변경된 일정표 확인하기</button>
+                    <button class="ripple-btn" style="width:100%; padding:16px; border-radius:12px; border:none; background:var(--card-border); color:var(--text-main); font-weight:800; font-size:15px;" id="btn-success-stay">여기서 계속 탐색하기</button>
+                </div>
+            </div>
+        </div>
+        <!-- 🌟 새로 추가되는 모달들 끝 -->
+
         <div id="ai-screen" class="sub-screen">
             <header class="sub-header">
                 <div class="header-left">
@@ -207,7 +244,12 @@
                 </div>
 
                 <div class="ai-step" id="ai-step-9">
-                    <h2 class="ai-question">이번 여행의 테마를<br>골라주세요</h2><p class="ai-desc">최대 2개까지 선택할 수 있어요.</p>
+                    <!-- 👇 물음표 버튼 추가 및 가로 정렬 -->
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                        <h2 class="ai-question">이번 여행의 테마를<br>골라주세요</h2>
+                        <button class="icon-btn ripple-btn" style="background: var(--card-border); color: var(--text-sub); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-top: 4px;" onclick="document.getElementById('calendar-overlay').style.zIndex='1000'; document.getElementById('calendar-overlay').style.display='block'; document.getElementById('theme-info-modal').classList.add('active');"><span class="material-symbols-rounded" style="font-size: 18px;">question_mark</span></button>
+                    </div>
+                    <p class="ai-desc" style="margin-top: 4px;">최대 2개까지 선택할 수 있어요.</p>
                     <div class="ai-chips-container" id="theme-chips-container">
                         <div class="ai-chip theme-chip" data-val="우정여행"><span class="material-symbols-rounded" style="font-size:18px;">diversity_1</span> 우정여행</div>
                         <div class="ai-chip theme-chip" data-val="커플여행"><span class="material-symbols-rounded" style="font-size:18px;">volunteer_activism</span> 커플여행</div>
@@ -255,7 +297,7 @@
                 </div>
             </div>
             <div class="sheet-footer">
-                <button class="search-btn ripple-btn" id="btn-confirm-map">이 위치로 설정</button>
+                <button class="search-btn ripple-btn" id="btn-confirm-map" disabled style="transition: all 0.3s;">이 위치로 설정</button>
             </div>
         </div>
 
