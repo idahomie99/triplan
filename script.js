@@ -271,53 +271,20 @@ document.addEventListener('DOMContentLoaded', () => {
             destContainer.insertAdjacentHTML('beforeend', html);
         });
 
-        // 👇 도시 검색 구글 자동완성 (Autocomplete) 붙이기 및 강제 선택 방어막 (중복 제거된 깔끔한 버전)
-        document.querySelectorAll('.city-input').forEach((inputEl, index) => {
-            const dest = aiData.destinations[index];
-            
-            dest.isVerified = dest.isVerified !== undefined ? dest.isVerified : (dest.city ? true : false);
-
-            if (window.google && window.google.maps && window.google.maps.places) {
-                const isoCode = countryIsoMap[dest.country];
-                
-                const autocomplete = new google.maps.places.Autocomplete(inputEl, {
-                    types: ['(cities)'], 
-                    componentRestrictions: isoCode ? { country: isoCode } : undefined 
-                });
-
-                autocomplete.addListener('place_changed', () => {
-                    const place = autocomplete.getPlace();
-                    if (place && place.name) {
-                        aiData.destinations[index].city = place.name;
-                        aiData.destinations[index].isVerified = true; 
-                        validateAiStep(); 
-                    }
-                });
-            }
-
-            // 🛡️ 자동완성을 안 고치고 생으로 입력 후 포커스를 뺄 때의 방어막 (단 한 번만 실행되도록 정리!)
-            inputEl.addEventListener('blur', () => {
-                setTimeout(() => {
-                    if (inputEl.value.trim() !== '' && !aiData.destinations[index].isVerified) {
-                        showCustomAlert({
-                            icon: 'warning', 
-                            title: '도시 선택 확인', 
-                            desc: '정확한 위치 인식을 위해 반드시 아래에 뜨는 자동완성 목록에서 도시를 선택해주세요!'
-                        });
-                        inputEl.value = '';
-                        aiData.destinations[index].city = '';
-                        validateAiStep();
-                    }
-                }, 200);
-            });
-
-            // 타이핑을 다시 시작하면 검증 해제
+        // 타이핑을 다시 시작하면 검증 해제
             inputEl.addEventListener('input', () => {
                 aiData.destinations[index].isVerified = false;
                 aiData.destinations[index].city = inputEl.value.trim();
                 validateAiStep();
             });
-        });
+        }); // forEach 끝
+    }; // renderDestinations 함수 끝
+
+    document.getElementById('btn-add-dest')?.addEventListener('click', () => { 
+        aiData.destinations.push({ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }); 
+        renderDestinations(); 
+        validateAiStep(); 
+    });
 
             // 🛡️ 사용자가 자동완성을 안 고치고 그냥 키보드로 오타를 치거나 생으로 입력하고 포커스를 뺄 때의 방어막!
             inputEl.addEventListener('blur', (e) => {
