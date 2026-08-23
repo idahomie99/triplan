@@ -1051,8 +1051,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.getElementById('ai-timeline-container').innerHTML = timelineHtml;
 
-        const timelineContainer = document.getElementById('ai-timeline-container');
-        if(timelineContainer) timelineContainer.scrollTo({ top: 0, behavior: 'smooth' });
+        const timelineEl = document.getElementById('ai-timeline-container');
+        if(timelineEl) timelineEl.scrollTo({ top: 0, behavior: 'smooth' });
         
         document.getElementById('btn-plan-a')?.addEventListener('click', () => { if(isPlanB) renderDayPlan(day, false); });
         document.getElementById('btn-plan-b')?.addEventListener('click', () => { 
