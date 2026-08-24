@@ -1,5 +1,5 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged, db } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 // 🚀 Gemini AI API 키
 const GEMINI_API_KEY = 'AQ.Ab8RN6Kz9AQPUJVDnJBwEtopgto_BHGbahhbYIsG7U4qPssg9w';
 
@@ -1498,6 +1498,7 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         
         const savedScreen = document.getElementById('saved-plans-screen');
         const listContainer = document.getElementById('saved-plans-list');
+        listContainer.style.gap = '0'; // 스와이프 마진 충돌 방지
         
         savedScreen.classList.add('active');
         listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">일정을 불러오는 중입니다...</div>';
@@ -1516,26 +1517,33 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
                 return;
             }
             
-            loadedSavedPlans = []; // 메모리 초기화
+            loadedSavedPlans = []; 
             let html = '';
             
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const docId = docSnap.id; // 🌟 DB 문서의 진짜 고유 ID
                 const index = loadedSavedPlans.length;
-                loadedSavedPlans.push(data); // 배열에 데이터 통째로 보관
+                loadedSavedPlans.push({ ...data, docId: docId });
                 
+                // 🌟 스와이프 전용 HTML 뼈대 (바닥엔 휴지통, 위엔 카드)
                 html += `
-                <div class="saved-plan-card ripple-btn" data-index="${index}" style="background:var(--card-bg); padding:20px; border-radius:20px; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); cursor:pointer; position:relative; overflow:hidden; transition:transform 0.2s;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                        <div>
-                            <h3 style="font-size:18px; font-weight:800; color:var(--text-main); margin-bottom:4px;">${data.title}</h3>
-                            <p style="font-size:13px; color:var(--text-sub); font-weight:600; line-height:1.4;">${data.subtitle}</p>
-                        </div>
-                        <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
+                <div class="swipe-wrapper" id="plan-wrapper-${docId}">
+                    <div class="swipe-delete-bg ripple-btn btn-delete-plan" data-id="${docId}">
+                        <span class="material-symbols-rounded" style="font-size:28px;">delete</span>
                     </div>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                        <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; font-size:11px; background:rgba(37,99,235,0.1); color:#2563EB; padding:0 8px; border-radius:6px; font-weight:800; line-height:1;">${data.themes[0] || '여행'}</span>
-                        <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; font-size:11px; background:rgba(139,92,246,0.1); color:#8B5CF6; padding:0 8px; border-radius:6px; font-weight:800; line-height:1;">${data.totalTripDays}일 일정</span>
+                    <div class="swipe-card-front ripple-btn" data-index="${index}" style="cursor:pointer;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                            <div>
+                                <h3 style="font-size:18px; font-weight:800; color:var(--text-main); margin-bottom:4px;">${data.title}</h3>
+                                <p style="font-size:13px; color:var(--text-sub); font-weight:600; line-height:1.4;">${data.subtitle}</p>
+                            </div>
+                            <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                            <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; font-size:11px; background:rgba(37,99,235,0.1); color:#2563EB; padding:0 8px; border-radius:6px; font-weight:800; line-height:1;">${data.themes[0] || '여행'}</span>
+                            <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; font-size:11px; background:rgba(139,92,246,0.1); color:#8B5CF6; padding:0 8px; border-radius:6px; font-weight:800; line-height:1;">${data.totalTripDays}일 일정</span>
+                        </div>
                     </div>
                 </div>`;
             });
@@ -1550,16 +1558,113 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         }
     });
 
-    // 🌟 저장된 플랜 카드 클릭 시, 결과창 복구해서 띄우기
-    document.getElementById('saved-plans-list')?.addEventListener('click', (e) => {
-        const card = e.target.closest('.saved-plan-card');
+    // ==========================================
+    // 🌟 네이티브 앱 UX 3: 스와이프 삭제 & 터치 로직
+    // ==========================================
+    const listContainer = document.getElementById('saved-plans-list');
+    let cardStartX = 0;
+    let cardStartY = 0;
+    let currentSwipedCard = null; // 현재 열려있는 카드 추적
+
+    // 1. 손가락 닿을 때 (시작)
+    listContainer?.addEventListener('touchstart', (e) => {
+        const card = e.target.closest('.swipe-card-front');
+        if(!card) return;
+        
+        // 다른 카드가 열려있으면 닫아줌
+        if(currentSwipedCard && currentSwipedCard !== card) {
+            currentSwipedCard.style.transform = 'translateX(0px)';
+            currentSwipedCard.classList.remove('swiped');
+            currentSwipedCard = null;
+        }
+        
+        card.style.transition = 'none'; // 드래그 중엔 부드러운 애니메이션 끄기
+        cardStartX = e.touches[0].clientX;
+        cardStartY = e.touches[0].clientY;
+    }, {passive: true});
+
+    // 2. 손가락 드래그 중 (이동)
+    listContainer?.addEventListener('touchmove', (e) => {
+        const card = e.target.closest('.swipe-card-front');
+        if(!card || cardStartX === 0) return;
+        
+        const diffX = e.touches[0].clientX - cardStartX;
+        const diffY = e.touches[0].clientY - cardStartY;
+        
+        // 상하 스크롤이 더 크면 스와이프 무시 (리스트 스크롤 허용)
+        if (Math.abs(diffY) > Math.abs(diffX)) return;
+        
+        // 왼쪽으로만 밀리게 처리 (오른쪽으로 밀면 0까지만)
+        if (diffX < 0) {
+            const moveX = Math.max(diffX, -100); // 최대 -100px 까지만 저항감 있게
+            card.style.transform = `translateX(${moveX}px)`;
+            if(e.cancelable) e.preventDefault(); // 스와이프 중 화면 꿀렁임 방어
+        }
+    }, {passive: false});
+
+    // 3. 손가락 뗐을 때 (결정)
+    listContainer?.addEventListener('touchend', (e) => {
+        const card = e.target.closest('.swipe-card-front');
+        if(!card || cardStartX === 0) return;
+        
+        const diffX = e.changedTouches[0].clientX - cardStartX;
+        card.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; // 튕기는 애니메이션 온!
+        
+        if (diffX < -40) {
+            // -40px 이상 밀었으면 휴지통 찰칵! 열림
+            card.style.transform = 'translateX(-80px)';
+            card.classList.add('swiped');
+            currentSwipedCard = card;
+        } else {
+            // 찔끔 밀었으면 다시 스르륵 원상복구
+            card.style.transform = 'translateX(0px)';
+            card.classList.remove('swiped');
+            if(currentSwipedCard === card) currentSwipedCard = null;
+        }
+        cardStartX = 0; cardStartY = 0;
+    });
+
+    // 4. 클릭 감지기 (카드 열기 vs 휴지통 삭제)
+    listContainer?.addEventListener('click', async (e) => {
+        // [삭제 버튼]을 눌렀을 때
+        const deleteBtn = e.target.closest('.btn-delete-plan');
+        if (deleteBtn) {
+            const docId = deleteBtn.getAttribute('data-id');
+            showCustomAlert({
+                icon: 'delete', title: '일정 삭제', desc: '정말로 이 일정을 삭제하시겠습니까?\n삭제 후에는 복원할 수 없습니다.', 
+                showCancel: true, confirmText: '삭제하기', isDanger: true,
+                onConfirm: async () => {
+                    try {
+                        const wrapper = document.getElementById(`plan-wrapper-${docId}`);
+                        wrapper.classList.add('deleting'); // 스르륵 사라지는 CSS 마법
+                        await deleteDoc(doc(db, "triplans", docId)); // 🔥 DB에서 영구 삭제
+                        setTimeout(() => wrapper.remove(), 300); // 0.3초 뒤 화면에서 삭제
+                    } catch(err) {
+                        console.error(err);
+                        showCustomAlert({ icon:'error', title:'오류', desc:'삭제에 실패했습니다.' });
+                    }
+                }
+            });
+            return; // 휴지통 눌렀으면 여기서 종료
+        }
+
+        // [카드 뚜껑]을 눌렀을 때
+        const card = e.target.closest('.swipe-card-front');
         if (!card) return;
         
+        // 카드가 스와이프된 상태로 뚜껑을 누르면? -> 닫아주기만 하고 안으로 안 들어감! (iOS 국룰)
+        if (card.classList.contains('swiped')) {
+            card.style.transform = 'translateX(0px)';
+            card.classList.remove('swiped');
+            currentSwipedCard = null;
+            return;
+        }
+        
+        // 🌟 안 열려있을 때 누르면 정상적으로 일정표 복구!
         const index = card.getAttribute('data-index');
         const planData = loadedSavedPlans[index];
         if (!planData) return;
 
-        // 1. 기존 데이터 덮어쓰기 (그래야 탭, 지도, 동선이 정상 작동함)
         aiData.startDate = planData.startDate ? new Date(planData.startDate) : null;
         aiData.endDate = planData.endDate ? new Date(planData.endDate) : null;
         aiData.totalTripDays = planData.totalTripDays;
@@ -1567,11 +1672,9 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         aiData.themes = planData.themes || [];
         dailyPlans = planData.dailyPlans;
         
-        // 2. 제목 복구
         document.getElementById('ai-result-title').innerText = planData.title;
         document.getElementById('ai-result-subtitle').innerText = planData.subtitle;
         
-        // 3. 상단 Day 탭 다시 그리기
         let tabsHtml = '';
         for(let i=1; i<=aiData.totalTripDays; i++) {
             let tempDate = aiData.startDate ? new Date(aiData.startDate) : new Date();
@@ -1588,21 +1691,18 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
             });
         });
 
-        // 4. 화면 세팅 및 지도 렌더링
         renderDayPlan(1, false);
         const mainDest = aiData.destinations[0]?.city || '여행지';
         initMapForResult(mainDest); 
 
-        // 5. 버튼 '저장 완료' 상태로 굳히기 (중복 저장 방지)
         isCurrentPlanSaved = true; 
         const saveBtn = document.querySelector('.floating-save-btn');
         if(saveBtn) { 
             saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!'; 
             saveBtn.style.background = '#10B981'; 
-            saveBtn.style.pointerEvents = 'none'; // 버튼 터치 막기
+            saveBtn.style.pointerEvents = 'none'; 
         }
 
-        // 6. 결과창 스르륵 열기!
         document.getElementById('ai-result-screen').classList.add('active');
     });
 
