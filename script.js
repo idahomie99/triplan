@@ -1,5 +1,5 @@
-import { auth, provider, signInWithPopup, signOut, onAuthStateChanged } from './firebase-config.js';
-
+import { auth, provider, signInWithPopup, signOut, onAuthStateChanged, db } from './firebase-config.js';
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 // 🚀 Gemini AI API 키
 const GEMINI_API_KEY = 'AQ.Ab8RN6Kz9AQPUJVDnJBwEtopgto_BHGbahhbYIsG7U4qPssg9w';
 
@@ -904,15 +904,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderDayPlan = (day, isPlanB) => {
         currentSelectedDay = day; const plan = dailyPlans[day]; if(!plan) return;
         
+        // 🌟 날씨 아이콘 에러 완벽 방어 (AI가 없는 아이콘 이름을 뱉으면 안전한 아이콘으로 강제 변환)
+        let safeIcon = plan.weather.mIcon || 'sunny';
+        if (safeIcon.toLowerCase().includes('partly')) safeIcon = 'partly_cloudy_day';
+        else if (safeIcon.toLowerCase().includes('rain')) safeIcon = 'rainy';
+        
         let weatherColor = '#F59E0B'; 
-        if(plan.weather.mIcon === 'rainy' || plan.weather.mIcon === 'water_drop') weatherColor = '#3B82F6';
-        if(plan.weather.mIcon === 'cloudy' || plan.weather.mIcon === 'partly_cloudy') weatherColor = '#94A3B8';
-        if(plan.weather.mIcon === 'ac_unit' || plan.weather.mIcon === 'snowing') weatherColor = '#06B6D4';
+        if(safeIcon === 'rainy' || safeIcon === 'water_drop') weatherColor = '#3B82F6';
+        if(safeIcon === 'cloudy' || safeIcon === 'partly_cloudy_day') weatherColor = '#94A3B8';
+        if(safeIcon === 'ac_unit' || safeIcon === 'snowing') weatherColor = '#06B6D4';
 
         let timelineHtml = `
             <div style="display:flex; align-items:center; gap:16px; background:var(--card-bg); padding:16px 20px; border-radius:16px; border:1px solid var(--card-border); margin-bottom:20px;">
                 <div style="width:46px; height:46px; border-radius:50%; background:var(--icon-bg); display:flex; justify-content:center; align-items:center;">
-                    <span class="material-symbols-rounded" style="font-size:26px; color:${weatherColor};">${plan.weather.mIcon}</span>
+                    <span class="material-symbols-rounded" style="font-size:26px; color:${weatherColor};">${safeIcon}</span>
                 </div>
                 <div style="flex:1;">
                     <div style="font-size:15px; font-weight:800; color:var(--text-main); margin-bottom:2px;">${plan.weather.temp} · ${plan.weather.text}</div>
@@ -1375,4 +1380,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     updateThemeColor();
+
+    // ==========================================
+    // 🌟 1단계 백엔드: AI 일정 Firebase DB에 완벽 저장하기
+    // ==========================================
+    const saveBtn = document.querySelector('.floating-save-btn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            // 1. 튕김 방지: 로그인이 안 되어 있다면?
+            if (!auth.currentUser) {
+                showCustomAlert({ 
+                    icon: 'lock', 
+                    title: '로그인 필요', 
+                    desc: '일정을 저장하려면 로그인이 필요합니다.\n마이페이지에서 먼저 로그인해주세요.',
+                    confirmText: '로그인하러 가기',
+                    showCancel: true,
+                    onConfirm: () => {
+                        document.getElementById('account-screen').classList.add('active');
+                    }
+                });
+                return;
+            }
+
+            // 2. 중복 저장 방지: 버튼 상태를 '저장 중'으로 변경하고 터치 막기
+            const originalHtml = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="material-symbols-rounded" style="animation: rotateRing 1s linear infinite;">sync</span> 안전하게 저장 중...';
+            saveBtn.style.pointerEvents = 'none';
+
+            try {
+                // 3. DB에 넣을 데이터 예쁘게 포장하기 (에러 날 수 있는 Date 객체는 타임스탬프 숫자로 안전하게 변환)
+                const planData = {
+                    uid: auth.currentUser.uid, // 누구의 일정인지 식별
+                    title: document.getElementById('ai-result-title').innerText,
+                    subtitle: document.getElementById('ai-result-subtitle').innerText,
+                    startDate: aiData.startDate ? aiData.startDate.getTime() : null,
+                    endDate: aiData.endDate ? aiData.endDate.getTime() : null,
+                    totalTripDays: aiData.totalTripDays,
+                    destinations: aiData.destinations,
+                    themes: aiData.themes,
+                    styles: aiMode === 'standard' ? aiData.styles : [...aiData.myStyles, ...aiData.ptStyles],
+                    dailyPlans: dailyPlans, // AI가 짜준 핵심 일정표 전체
+                    createdAt: serverTimestamp() // 저장한 시간 기록
+                };
+
+                // 4. Firestore 'triplans' 컬렉션에 밀어넣기!
+                await addDoc(collection(db, "triplans"), planData);
+                
+                // 5. 성공 시 버튼 색상과 텍스트 기분 좋게 변경
+                saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!';
+                saveBtn.style.background = '#10B981'; // 성공의 상징 에메랄드 초록색
+                showCustomAlert({ icon: 'check_circle', title: '저장 완료', desc: '마이페이지에서 저장된 일정을 언제든 다시 볼 수 있습니다.' });
+
+            } catch (error) {
+                // 에러 발생 시 원래대로 복구
+                console.error("저장 에러:", error);
+                showCustomAlert({ icon: 'error', title: '저장 실패', desc: '서버와 연결이 끊겼습니다. 다시 시도해주세요.' });
+                saveBtn.innerHTML = originalHtml; 
+                saveBtn.style.pointerEvents = 'auto';
+            }
+        });
+    }
 }); // 👈 파일의 맨 마지막 줄
