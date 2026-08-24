@@ -1111,9 +1111,13 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         if (isCurrentPlanSaved) {
             // 이미 저장했으니 쿨하게 보내줌
             document.getElementById('ai-result-screen').classList.remove('active');
-            // '저장 완료' 버튼도 원래대로 리셋
+            // '저장 완료' 버튼도 원래대로 완벽 리셋
             const saveBtn = document.querySelector('.floating-save-btn');
-            if(saveBtn) { saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark</span> 내 일정에 저장하기'; saveBtn.style.background = ''; }
+            if(saveBtn) { 
+                saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark</span> 내 일정에 저장하기'; 
+                saveBtn.style.background = ''; 
+                saveBtn.style.pointerEvents = 'auto'; // 🌟 터치 마비 풀어주기
+            }
         } else {
             // 저장 안 했으니 경고창 띄움
             showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } }); 
@@ -1474,6 +1478,9 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         });
     }
 
+    // 🌟 불러온 데이터를 기억할 메모리 공간
+    let loadedSavedPlans = [];
+
     // ==========================================
     // 🌟 2단계 백엔드: 저장된 플랜 목록 불러오기 (토스/에어비앤비 스타일 카드)
     // ==========================================
@@ -1490,7 +1497,6 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">일정을 불러오는 중입니다...</div>';
         
         try {
-            // 현재 로그인한 유저(uid)의 일정만, 최신순(내림차순)으로 찾아오기
             const q = query(collection(db, "triplans"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
             const querySnapshot = await getDocs(q);
             
@@ -1504,12 +1510,16 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
                 return;
             }
             
+            loadedSavedPlans = []; // 메모리 초기화
             let html = '';
+            
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                // 토스 감성의 깔끔하고 세련된 카드 UI
+                const index = loadedSavedPlans.length;
+                loadedSavedPlans.push(data); // 배열에 데이터 통째로 보관
+                
                 html += `
-                <div class="saved-plan-card ripple-btn" style="background:var(--card-bg); padding:20px; border-radius:20px; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); cursor:pointer; position:relative; overflow:hidden; transition:transform 0.2s;">
+                <div class="saved-plan-card ripple-btn" data-index="${index}" style="background:var(--card-bg); padding:20px; border-radius:20px; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); cursor:pointer; position:relative; overflow:hidden; transition:transform 0.2s;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
                         <div>
                             <h3 style="font-size:18px; font-weight:800; color:var(--text-main); margin-bottom:4px;">${data.title}</h3>
@@ -1517,22 +1527,77 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
                         </div>
                         <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
                     </div>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <span style="font-size:11px; background:rgba(37,99,235,0.1); color:#2563EB; padding:4px 8px; border-radius:6px; font-weight:800;">${data.themes[0] || '여행'}</span>
-                        <span style="font-size:11px; background:rgba(139,92,246,0.1); color:#8B5CF6; padding:4px 8px; border-radius:6px; font-weight:800;">${data.totalTripDays}일 일정</span>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                        <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; font-size:11px; background:rgba(37,99,235,0.1); color:#2563EB; padding:0 8px; border-radius:6px; font-weight:800; line-height:1;">${data.themes[0] || '여행'}</span>
+                        <span style="display:inline-flex; align-items:center; justify-content:center; height:24px; font-size:11px; background:rgba(139,92,246,0.1); color:#8B5CF6; padding:0 8px; border-radius:6px; font-weight:800; line-height:1;">${data.totalTripDays}일 일정</span>
                     </div>
                 </div>`;
             });
             listContainer.innerHTML = html;
         } catch(e) {
             console.error("불러오기 에러:", e);
-            // Firebase Index (색인) 에러 처리 안내
             if(e.message.includes("indexes")) {
-                listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub); line-height:1.5;"><b>[개발자 안내]</b><br>데이터 정렬을 위해 Firebase Index 설정이 필요합니다.<br>콘솔창(F12)의 빨간 에러 메시지에 있는 링크를 클릭해서 Index를 생성해주세요! (약 3분 소요)</div>';
+                listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub); line-height:1.5;"><b>[개발자 안내]</b><br>데이터 정렬을 위해 Firebase Index 설정이 필요합니다. 콘솔창을 확인해주세요.</div>';
             } else {
                 listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:#EF4444;">데이터를 불러오지 못했습니다.</div>';
             }
         }
+    });
+
+    // 🌟 저장된 플랜 카드 클릭 시, 결과창 복구해서 띄우기
+    document.getElementById('saved-plans-list')?.addEventListener('click', (e) => {
+        const card = e.target.closest('.saved-plan-card');
+        if (!card) return;
+        
+        const index = card.getAttribute('data-index');
+        const planData = loadedSavedPlans[index];
+        if (!planData) return;
+
+        // 1. 기존 데이터 덮어쓰기 (그래야 탭, 지도, 동선이 정상 작동함)
+        aiData.startDate = planData.startDate ? new Date(planData.startDate) : null;
+        aiData.endDate = planData.endDate ? new Date(planData.endDate) : null;
+        aiData.totalTripDays = planData.totalTripDays;
+        aiData.destinations = planData.destinations || [{city: '여행지'}];
+        aiData.themes = planData.themes || [];
+        dailyPlans = planData.dailyPlans;
+        
+        // 2. 제목 복구
+        document.getElementById('ai-result-title').innerText = planData.title;
+        document.getElementById('ai-result-subtitle').innerText = planData.subtitle;
+        
+        // 3. 상단 Day 탭 다시 그리기
+        let tabsHtml = '';
+        for(let i=1; i<=aiData.totalTripDays; i++) {
+            let tempDate = aiData.startDate ? new Date(aiData.startDate) : new Date();
+            tempDate.setDate(tempDate.getDate() + (i - 1));
+            tabsHtml += `<div class="day-tab ${i===1?'active':''}" data-day="${i}"><div class="d-day">Day ${i}</div><div class="d-date">${tempDate.getMonth()+1}.${tempDate.getDate()}</div></div>`;
+        }
+        document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
+
+        document.querySelectorAll('.day-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active')); 
+                tab.classList.add('active');
+                renderDayPlan(parseInt(tab.getAttribute('data-day')), false);
+            });
+        });
+
+        // 4. 화면 세팅 및 지도 렌더링
+        renderDayPlan(1, false);
+        const mainDest = aiData.destinations[0]?.city || '여행지';
+        initMapForResult(mainDest); 
+
+        // 5. 버튼 '저장 완료' 상태로 굳히기 (중복 저장 방지)
+        isCurrentPlanSaved = true; 
+        const saveBtn = document.querySelector('.floating-save-btn');
+        if(saveBtn) { 
+            saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!'; 
+            saveBtn.style.background = '#10B981'; 
+            saveBtn.style.pointerEvents = 'none'; // 버튼 터치 막기
+        }
+
+        // 6. 결과창 스르륵 열기!
+        document.getElementById('ai-result-screen').classList.add('active');
     });
 
     // 뒤로가기 버튼 로직
