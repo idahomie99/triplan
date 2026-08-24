@@ -761,6 +761,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const themeText = aiData.themes.join(', ');
             const styleText = aiMode === 'standard' ? aiData.styles.join(', ') : `내 스타일(${aiData.myStyles.join(',')}), 동행(${aiData.ptStyles.join(',')})`;
 
+            // 🌟 우리가 화면에 띄운 설명 그대로 AI에게 '절대 규칙'으로 주입하기 위한 딕셔너리!
+            const themeGuidelines = {
+                '우정여행': '트렌디한 핫플, 포토존, 액티비티 위주로 텐션 높게 일정을 구성할 것.',
+                '커플여행': '분위기 좋은 식당과 감성 카페 등 데이트하기 좋은 로맨틱한 동선으로 짤 것.',
+                '신혼여행': '평생 한 번뿐인 허니문을 위해 고급스럽고 프라이빗한 럭셔리 일정 위주로 짤 것.',
+                '가족여행': '아이부터 어른까지 호불호 없는 대중적인 명소와 무난하고 편안한 동선을 유지할 것.',
+                '효도여행': '부모님 체력을 최우선으로 하여 걷는 동선을 최소화하고, 고급스러운 뷰와 식사(한식/현지식 조화)에 집중할 것.',
+                '자유여행': '뻔한 패키지를 벗어나 발길 닿는 대로 골목과 문화를 탐험하는 현지 밀착형 일정으로 짤 것.',
+                '배낭여행': '대중교통과 로컬 찐 맛집을 적극 활용하는 가성비 좋고 활동적인 일정으로 짤 것.',
+                '식도락여행': '오직 맛을 위해! 웨이팅이 아깝지 않은 로컬 맛집과 미슐랭 위주의 일정으로 식사 비중을 높일 것.'
+            };
+
+            // 사용자가 선택한 테마의 가이드라인만 뽑아서 프롬프트에 넣을 문자열로 만들기
+            let themeRules = aiData.themes.map(t => `- [${t} 테마 규칙]: ${themeGuidelines[t]}`).join('\n            ');
+
             const prompt = `너는 세계 최고의 맞춤형 여행 플래너 AI야. 실존하는 장소로 구성된 완벽한 여행 일정을 JSON 형식으로 짜줘.
             [사용자 정보]
             - 여행지: ${destText}
@@ -777,7 +792,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             [응답 JSON 구조 - 반드시 지킬 것]
             { "dailyPlans": [ { "day": 1, "city": "도시 이름", "hp": 80, "weather": { "mIcon": "sunny", "temp": "28°C", "text": "맑음" }, "spots": [ { "time": "10:00", "type": "tour", "catName": "관광", "mIcon": "photo_camera", "name": "실존 장소 이름", "lat": 35.6895, "lng": 139.6917, "desc": "장소 설명 및 이동 수단", "tip": "꿀팁" } ] } ] }
-            조건: 1. 무조건 JSON 응답 2. 특별요청 최우선 3. 위경도 필수 4. 날씨 mIcon 필수, text에 깔끔하게 기재. 5. 비오면 실내 적극배치.`;
+            
+            [AI 제약 조건 및 필수 규칙]
+            1. 무조건 JSON 응답.
+            2. 특별요청 최우선 반영.
+            3. 위경도 필수 기재.
+            4. 날씨 mIcon 필수, text에 깔끔하게 기재. 비가 오면 실내 액티비티 적극 배치.
+            5. 사용자가 선택한 테마에 맞춰 아래 규칙을 반드시 일정에 강하게 반영할 것!
+            ${themeRules}
+            `;
 
             let data = null; let maxRetries = 2; let attempt = 0;
             while (attempt <= maxRetries) {
@@ -796,7 +819,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             let aiResponseText = data.candidates[0].content.parts[0].text;
-            aiResponseText = aiResponseText.replace(/```json/gi, '').replace(/```/g, '').trim();
             const parsedData = JSON.parse(aiResponseText);
 
             if (statusInterval) clearInterval(statusInterval);
