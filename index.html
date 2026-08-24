@@ -22,6 +22,36 @@
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAt_ZABfNumgwj1Tb2dR9wK2fj5C6CFbFU&libraries=places,geometry"></script>
     
     <link rel="stylesheet" href="style.css">
+    
+    <!-- 👇 여기서부터 복사해서 붙여넣기 👇 -->
+    <style>
+        /* 1. 하단에 깔린 촌스러운 시커먼 그림자/그라데이션 원천 차단 */
+        body::after, #app-container::after, .sub-screen::after { 
+            display: none !important; 
+            background: none !important;
+            box-shadow: none !important;
+        }
+
+        /* 2. 토스/에어비앤비 감성의 하단 버튼 영역 (투명 블러 + 아주 연한 그림자) */
+        .ai-footer, .sheet-footer, .result-action-area {
+            background: rgba(255, 255, 255, 0.85) !important; /* 반투명 화이트 */
+            backdrop-filter: blur(16px) !important; /* 트렌디한 유리 질감 블러 */
+            -webkit-backdrop-filter: blur(16px) !important;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.04) !important; /* 엄청 옅고 부드러운 그림자 */
+            border-top: 1px solid rgba(0, 0, 0, 0.04) !important; /* 깔끔한 경계선 */
+            padding-bottom: calc(env(safe-area-inset-bottom) + 16px) !important; /* 아이폰 하단 둥근 띠 여백 완벽 대응 */
+        }
+
+        /* 3. 다크모드일 때도 고급스럽게 유지되도록 세팅 */
+        @media (prefers-color-scheme: dark) {
+            .ai-footer, .sheet-footer, .result-action-area {
+                background: rgba(15, 23, 42, 0.85) !important;
+                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2) !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+            }
+        }
+    </style>
+    <!-- 👆 여기까지 👆 -->
 </head>
 <body>
     <div id="app-container">
