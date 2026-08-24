@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiScreen = document.getElementById('ai-screen'); 
     
 let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기억하는 변수
+let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기억하기
 
     let aiData = { 
         startDate: null, endDate: null, totalTripDays: 0,
@@ -826,6 +827,7 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
             if (statusInterval) clearInterval(statusInterval);
             loadingOverlay.classList.remove('active'); 
             isCurrentPlanSaved = false; // 🌟 새 일정이 나왔으니 리셋!
+            currentDocId = null; // 🌟 기존 문서 ID도 리셋!
             renderAiTimeline(parsedData); aiScreen.classList.remove('active');
         } catch(e) {
             if (statusInterval) clearInterval(statusInterval);
@@ -1467,8 +1469,9 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
                 };
 
                 // 4. Firestore 'triplans' 컬렉션에 밀어넣기!
-                await addDoc(collection(db, "triplans"), planData);
+                const docRef = await addDoc(collection(db, "triplans"), planData);
                 isCurrentPlanSaved = true; // 🌟 DB 저장 성공했으니 저장됨으로 도장 쾅!
+                currentDocId = docRef.id; // 🌟 방금 서버가 발급해준 DB 고유 ID 훔쳐오기!
                 
                 // 5. 성공 시 버튼 색상과 텍스트 기분 좋게 변경
                 saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!';
@@ -1667,6 +1670,8 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         const planData = loadedSavedPlans[index];
         if (!planData) return;
 
+        currentDocId = planData.docId; // 🌟 불러온 카드의 DB 고유 ID 장착!
+
         aiData.startDate = planData.startDate ? new Date(planData.startDate) : null;
         aiData.endDate = planData.endDate ? new Date(planData.endDate) : null;
         aiData.totalTripDays = planData.totalTripDays;
@@ -1711,5 +1716,46 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
     // 뒤로가기 버튼 로직
     document.getElementById('btn-back-saved-plans')?.addEventListener('click', () => {
         document.getElementById('saved-plans-screen').classList.remove('active');
+    });
+
+    // ==========================================
+    // 🌟 3단계 백엔드: Web Share API로 일정 공유하기 (내보내기)
+    // ==========================================
+    document.getElementById('btn-share-plan')?.addEventListener('click', async () => {
+        // 저장 안 한 일정은 공유 금지!
+        if (!isCurrentPlanSaved || !currentDocId) {
+            showCustomAlert({
+                icon: 'share',
+                title: '저장 먼저!',
+                desc: '친구에게 일정을 공유하려면\n먼저 하단의 [내 일정에 저장하기]를 눌러주세요!'
+            });
+            return;
+        }
+
+        // 나만의 고유 링크 생성 (예: https://내주소.com/?plan=Qwe123Asd456)
+        const shareUrl = window.location.origin + window.location.pathname + '?plan=' + currentDocId;
+        const shareTitle = document.getElementById('ai-result-title').innerText;
+        const shareText = `[Triplan] ${shareTitle}\n단 1분만에 AI가 짜준 완벽한 여행 일정을 확인해보세요!`;
+
+        // 스마트폰 기본 공유창 띄우기 (Web Share API)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: shareTitle,
+                    text: shareText,
+                    url: shareUrl
+                });
+            } catch (err) {
+                console.log('공유 창 닫음 또는 에러'); // 유저가 공유창을 취소하고 닫았을 때
+            }
+        } else {
+            // 데스크탑 PC 등 Web Share 미지원 브라우저용 (자동 클립보드 복사)
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                showCustomAlert({ icon: 'content_copy', title: '링크 복사됨', desc: '공유 링크가 복사되었습니다.\n카톡이나 문자 등에 붙여넣기 해주세요!' });
+            } catch(e) {
+                showCustomAlert({ icon: 'error', title: '복사 실패', desc: '이 기기에서는 링크 복사를 지원하지 않습니다.' });
+            }
+        }
     });
 }); // 👈 파일의 맨 마지막 줄
