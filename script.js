@@ -1350,8 +1350,14 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
                 // 🌟 추가된 방어막: 바텀시트(팝업)가 하나라도 떠있으면 스와이프 무시!!
                 if (document.querySelector('.bottom-sheet.active')) return;
 
-                const resultScreen = document.getElementById('ai-result-screen'); const aiScreen = document.getElementById('ai-screen'); const accountScreen = document.getElementById('account-screen');
+                const resultScreen = document.getElementById('ai-result-screen'); 
+                const savedPlansScreen = document.getElementById('saved-plans-screen'); // 🌟 추가
+                const aiScreen = document.getElementById('ai-screen'); 
+                const accountScreen = document.getElementById('account-screen');
+
+                // 제일 위에 떠있는 화면부터 순서대로 체크해서 닫아줍니다!
                 if (resultScreen && resultScreen.classList.contains('active')) document.getElementById('btn-back-ai-result')?.click();
+                else if (savedPlansScreen && savedPlansScreen.classList.contains('active')) document.getElementById('btn-back-saved-plans')?.click(); // 🌟 추가
                 else if (aiScreen && aiScreen.classList.contains('active')) document.getElementById('btn-back-ai')?.click();
                 else if (accountScreen && accountScreen.classList.contains('active')) document.getElementById('btn-back-account')?.click();
             }
