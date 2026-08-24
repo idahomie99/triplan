@@ -56,7 +56,42 @@
         /* 삭제될 때 카드가 스르륵 사라지는 마법 */
         .swipe-wrapper.deleting { animation: shrinkHeight 0.3s ease forwards; }
         @keyframes shrinkHeight { to { height: 0; margin-bottom: 0; opacity: 0; transform: scale(0.9); } }
-    
+
+        /* 🌟 세련된 토스/iOS 감성 플로팅 버튼 (알약 모양 + 유리 질감) */
+        .result-action-area { 
+            position: absolute !important; 
+            bottom: 32px !important; 
+            left: 0 !important; 
+            width: 100% !important; 
+            display: flex !important; 
+            justify-content: center !important; 
+            pointer-events: none !important; /* 빈 공간 터치 시 뒤쪽 일정표가 눌리게 함 */
+            background: transparent !important;
+            border: none !important;
+            padding: 0 20px !important;
+            z-index: 100 !important;
+        }
+        .floating-save-btn { 
+            pointer-events: auto !important; 
+            display: inline-flex !important; 
+            align-items: center !important; 
+            justify-content: center !important; 
+            gap: 6px !important; 
+            background: rgba(37, 99, 235, 0.85) !important; /* 반투명 블루 */
+            -webkit-backdrop-filter: blur(12px) !important; /* iOS 유리 블러 효과 */
+            backdrop-filter: blur(12px) !important; 
+            color: white !important; 
+            border: none !important; 
+            padding: 14px 28px !important; 
+            border-radius: 100px !important; /* 완벽한 둥근 알약 모양 */
+            font-size: 15px !important; 
+            font-weight: 800 !important; 
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3) !important; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; 
+            width: auto !important;
+            min-width: 160px !important;
+        }
+        .floating-save-btn:active { transform: scale(0.94) !important; }
     </style>
     <!-- 👆 여기까지 👆 -->
 </head>

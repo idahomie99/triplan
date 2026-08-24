@@ -1118,6 +1118,7 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             if(saveBtn) { 
                 saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark</span> 내 일정에 저장하기'; 
                 saveBtn.style.background = ''; 
+                saveBtn.style.boxShadow = ''; // 🌟 섀도우(그림자)도 잊지 않고 리셋!
                 saveBtn.style.pointerEvents = 'auto'; // 🌟 터치 마비 풀어주기
             }
         } else {
@@ -1475,7 +1476,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 
                 // 5. 성공 시 버튼 색상과 텍스트 기분 좋게 변경
                 saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!';
-                saveBtn.style.background = '#10B981'; // 성공의 상징 에메랄드 초록색
+                saveBtn.style.background = 'rgba(16, 185, 129, 0.85)'; // 반투명 에메랄드
+            saveBtn.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.3)';
 
             } catch (error) {
                 // 에러 발생 시 원래대로 복구
@@ -1706,7 +1708,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         const saveBtn = document.querySelector('.floating-save-btn');
         if(saveBtn) { 
             saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!'; 
-            saveBtn.style.background = '#10B981'; 
+            saveBtn.style.background = 'rgba(16, 185, 129, 0.85)'; // 반투명 에메랄드
+            saveBtn.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.3)';
             saveBtn.style.pointerEvents = 'none'; 
         }
 
@@ -1818,7 +1821,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                     const saveBtn = document.querySelector('.floating-save-btn');
                     if(saveBtn) { 
                         saveBtn.innerHTML = '<span class="material-symbols-rounded">visibility</span> 공유받은 일정'; 
-                        saveBtn.style.background = '#64748B'; 
+                        saveBtn.style.background = 'rgba(15, 23, 42, 0.75)'; // 반투명 다크네이비
+            saveBtn.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.2)';
                         saveBtn.style.pointerEvents = 'none'; 
                     }
 
