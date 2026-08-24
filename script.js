@@ -1318,57 +1318,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 // ==========================================
-    // 🌟 네이티브 앱 UX 2: 폰 상단 상태표시줄(시간/배터리) 색상 자동 동기화
+    // 🌟 네이티브 앱 UX 2: 폰 상단 상태표시줄 색상 자동 동기화 (완벽 수정본)
     // ==========================================
-    const updateStatusBarColor = () => {
-        // HTML에 있는 theme-color 태그들을 찾습니다.
-        const metaLight = document.querySelector('meta[name="theme-color"][media*="light"]');
-        const metaDark = document.querySelector('meta[name="theme-color"][media*="dark"]');
-        
-        // 현재 까만 배경(오버레이)이 하나라도 덮여 있는지 확인
-        const isDimmed = 
-            document.getElementById('calendar-overlay')?.style.display === 'block' ||
-            document.getElementById('custom-alert-overlay')?.classList.contains('active') ||
-            document.getElementById('ai-loading-overlay')?.classList.contains('active');
-            
-        // 현재 로비가 아닌 다른 서브 화면(질문 섹션, 결과창 등)에 들어와 있는지 확인
+    const updateThemeColor = () => {
+        // 현재 하얀색 배경이어야 하는 화면들이 켜져 있는지 확인
         const isSubScreen = 
             document.getElementById('ai-screen')?.classList.contains('active') ||
             document.getElementById('ai-result-screen')?.classList.contains('active') ||
             document.getElementById('account-screen')?.classList.contains('active');
             
-        let lightColor = '#F8FAFC'; // 기본 로비 배경색
-        let darkColor = '#0F172A';  // 다크모드 로비 배경색
+        const metaLight = document.querySelector('meta[name="theme-color"][media*="light"]');
+        const metaDark = document.querySelector('meta[name="theme-color"][media*="dark"]');
         
-        if (isDimmed) {
-            // 까만 배경(Dim)이 덮였을 때 렌더링되는 어두운 색상 근사치
-            lightColor = '#7A818C'; 
-            darkColor = '#070B15';
-        } else if (isSubScreen) {
-            // 질문 섹션 등 서브 화면일 때 (흰색 톤)
-            lightColor = '#FFFFFF';
-            darkColor = '#1E293B';
+        // 💡 어두워지는 효과(Dim)는 뺐습니다! (iOS 하단 안전영역 시커멓게 깨짐 완벽 방지)
+        if (isSubScreen) {
+            // 질문 섹션, 결과창 등 하얀 화면일 때
+            if (metaLight) metaLight.setAttribute('content', '#FFFFFF');
+            if (metaDark) metaDark.setAttribute('content', '#1E293B');
+        } else {
+            // 로비 화면일 때
+            if (metaLight) metaLight.setAttribute('content', '#F8FAFC');
+            if (metaDark) metaDark.setAttribute('content', '#0F172A');
         }
-        
-        // 폰 상단 배터리/시간 띠의 색상을 강제로 실시간 교체!
-        if (metaLight) metaLight.setAttribute('content', lightColor);
-        if (metaDark) metaDark.setAttribute('content', darkColor);
     };
 
-    // 🌟 돌연변이 감시자(MutationObserver) 생성
-    // 특정 버튼을 누를 때마다 코드를 넣을 필요 없이, 화면이 열리고 닫히는 걸 감지해서 알아서 색을 바꿉니다.
-    const observer = new MutationObserver(updateStatusBarColor);
-    
-    // 감시할 화면과 오버레이 목록
-    const watchList = ['calendar-overlay', 'custom-alert-overlay', 'ai-loading-overlay', 'ai-screen', 'ai-result-screen', 'account-screen'];
-    
-    watchList.forEach(id => {
+    // 🌟 화면이 열리고 닫히는 걸 100% 꼬임 없이 감지하는 강력한 감시자
+    const screenObserver = new MutationObserver(updateThemeColor);
+    ['ai-screen', 'ai-result-screen', 'account-screen'].forEach(id => {
         const el = document.getElementById(id);
-        // 화면의 class나 style(display)이 변할 때마다 색상 업데이트 함수를 실행!
-        if (el) observer.observe(el, { attributes: true, attributeFilter: ['style', 'class'] });
+        if(el) screenObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
     });
     
-    // 앱을 처음 켰을 때 한 번 톤 맞춰주기
-    updateStatusBarColor();
-
+    // 앱 처음 켤 때 색상 동기화 1회 실행
+    updateThemeColor();
 }); // 👈 파일의 맨 마지막 줄
