@@ -1318,36 +1318,67 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 // ==========================================
-    // 🌟 네이티브 앱 UX 2: 폰 상단 상태표시줄 색상 자동 동기화 (완벽 수정본)
+    // 🌟 네이티브 앱 UX 2: 폰 상단/하단 색상 자동 동기화 (최종 완벽본)
     // ==========================================
     const updateThemeColor = () => {
-        // 현재 하얀색 배경이어야 하는 화면들이 켜져 있는지 확인
+        // 1. 현재 까만 배경이 덮여 있는지 확인 (우선순위 1위)
+        const isDimmed = 
+            document.getElementById('calendar-overlay')?.style.display === 'block' ||
+            document.getElementById('custom-alert-overlay')?.classList.contains('active') ||
+            document.getElementById('ai-loading-overlay')?.classList.contains('active');
+            
+        // 2. 질문 섹션이나 서브 화면에 들어와 있는지 확인
         const isSubScreen = 
             document.getElementById('ai-screen')?.classList.contains('active') ||
             document.getElementById('ai-result-screen')?.classList.contains('active') ||
             document.getElementById('account-screen')?.classList.contains('active');
             
-        const metaLight = document.querySelector('meta[name="theme-color"][media*="light"]');
-        const metaDark = document.querySelector('meta[name="theme-color"][media*="dark"]');
+        let lightColor = '#F8FAFC'; // 기본 로비 배경색
+        let darkColor = '#0F172A';  // 다크모드 기본색
         
-        // 💡 어두워지는 효과(Dim)는 뺐습니다! (iOS 하단 안전영역 시커멓게 깨짐 완벽 방지)
-        if (isSubScreen) {
-            // 질문 섹션, 결과창 등 하얀 화면일 때
-            if (metaLight) metaLight.setAttribute('content', '#FFFFFF');
-            if (metaDark) metaDark.setAttribute('content', '#1E293B');
-        } else {
-            // 로비 화면일 때
-            if (metaLight) metaLight.setAttribute('content', '#F8FAFC');
-            if (metaDark) metaDark.setAttribute('content', '#0F172A');
+        if (isDimmed) {
+            // 어두워질 때의 톤 (이질감 없이 화면 덮개와 비슷한 색상)
+            lightColor = '#94A3B8'; 
+            darkColor = '#020617';
+        } else if (isSubScreen) {
+            // 질문 섹션 등 하얀 화면일 때
+            lightColor = '#FFFFFF';
+            darkColor = '#1E293B';
         }
+        
+        // 🌟 Meta Theme Color 업데이트 (상단 상태표시줄용)
+        document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+            if (meta.getAttribute('media')?.includes('dark')) {
+                meta.setAttribute('content', darkColor);
+            } else {
+                meta.setAttribute('content', lightColor);
+            }
+        });
+
+        // 🌟 Body 배경색 업데이트 (iOS Safari 하단 시커먼 그림자 해결용 핵심 꼼수!)
+        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const targetColor = isDarkMode ? darkColor : lightColor;
+        document.documentElement.style.backgroundColor = targetColor;
+        document.body.style.backgroundColor = targetColor;
     };
 
-    // 🌟 화면이 열리고 닫히는 걸 100% 꼬임 없이 감지하는 강력한 감시자
+    // 🌟 화면 감시자 (꼬임 없이 확실하게 감지)
     const screenObserver = new MutationObserver(updateThemeColor);
-    ['ai-screen', 'ai-result-screen', 'account-screen'].forEach(id => {
+    
+    // 클래스(active) 변화를 감시할 화면들
+    ['ai-screen', 'ai-result-screen', 'account-screen', 'custom-alert-overlay', 'ai-loading-overlay'].forEach(id => {
         const el = document.getElementById(id);
         if(el) screenObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
     });
+    
+    // 스타일(display) 변화를 감시할 까만 배경
+    const calOverlay = document.getElementById('calendar-overlay');
+    if (calOverlay) screenObserver.observe(calOverlay, { attributes: true, attributeFilter: ['style'] });
+
+    // 시스템 다크모드/라이트모드 변경 시에도 즉각 반응
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateThemeColor);
+    }
     
     // 앱 처음 켤 때 색상 동기화 1회 실행
     updateThemeColor();
