@@ -89,6 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnAiNext = document.getElementById('btn-ai-next'); const btnPrevAiStep = document.getElementById('btn-prev-ai-step');
     const aiScreen = document.getElementById('ai-screen'); 
     
+let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기억하는 변수
+
     let aiData = { 
         startDate: null, endDate: null, totalTripDays: 0,
         destinations: [{ country: '', city: '', startDate: null, endDate: null, stayDays: 0, pin: 'auto' }], 
@@ -822,7 +824,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const parsedData = JSON.parse(aiResponseText);
 
             if (statusInterval) clearInterval(statusInterval);
-            loadingOverlay.classList.remove('active'); renderAiTimeline(parsedData); aiScreen.classList.remove('active');
+            loadingOverlay.classList.remove('active'); 
+            isCurrentPlanSaved = false; // 🌟 새 일정이 나왔으니 리셋!
+            renderAiTimeline(parsedData); aiScreen.classList.remove('active');
         } catch(e) {
             if (statusInterval) clearInterval(statusInterval);
             document.getElementById('ai-loading-overlay').classList.remove('active');
@@ -927,13 +931,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="hp-bar-container"><div class="hp-title"><span>오늘의 체력 소모</span><span>${plan.hp}%</span></div><div class="hp-track"><div class="hp-fill" style="width: ${plan.hp}%;"></div></div></div>
         `;
 
-        plan.spots.forEach(spot => {
+        plan.spots.forEach((spot, sIndex) => { // 👈 sIndex 추가
             let currentCat = spot.catName; if(isPlanB && spot.type === 'tour') currentCat = '실내 대체'; 
             let imgHtml = spot.img ? `<div class="tc-img" id="${spot.imgId}" style="background-image: url('${spot.img}');"></div>` : '';
             timelineHtml += `
             <div class="timeline-item">
                 <div class="timeline-time">${spot.time}</div><div class="timeline-line-container"><div class="timeline-dot"></div><div class="timeline-line"></div></div>
-                <div class="timeline-card">
+                <!-- 🌟 클릭 기능과 파동 효과 추가 -->
+                <div class="timeline-card ripple-btn" data-day="${day}" data-index="${sIndex}" style="cursor:pointer;">
                     <div class="timeline-card-header"><h3 class="tc-title">${spot.name}</h3><span class="tc-category" style="color:${spot.color}; background:${spot.bg};"><span class="material-symbols-rounded" style="font-size:14px; margin-top:1px;">${spot.mIcon}</span>${currentCat}</span></div>
                     <p class="tc-desc">${spot.desc}</p>${imgHtml}${spot.tip}
                 </div>
@@ -1101,7 +1106,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } }); });
+    // 🌟 똑똑해진 뒤로가기 로직 (저장했으면 바로 보내주고, 안 했으면 경고 띄우기)
+    document.getElementById('btn-back-ai-result')?.addEventListener('click', () => { 
+        if (isCurrentPlanSaved) {
+            // 이미 저장했으니 쿨하게 보내줌
+            document.getElementById('ai-result-screen').classList.remove('active');
+            // '저장 완료' 버튼도 원래대로 리셋
+            const saveBtn = document.querySelector('.floating-save-btn');
+            if(saveBtn) { saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark</span> 내 일정에 저장하기'; saveBtn.style.background = ''; }
+        } else {
+            // 저장 안 했으니 경고창 띄움
+            showCustomAlert({ icon: 'warning', title: '저장하지 않고 나가기', desc: '작성된 일정이 모두 사라집니다. 정말로 돌아가시겠습니까?', showCancel: true, confirmText: '네, 나갈래요', isDanger: true, onConfirm: () => { document.getElementById('ai-result-screen').classList.remove('active'); } }); 
+        }
+    });
 
     const accomInput = document.getElementById('ai-input-accom');
     if (accomInput && window.google && window.google.maps && window.google.maps.places) {
@@ -1256,6 +1273,21 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('map-info-texts-wrap')?.addEventListener('click', () => { const spot = dailyPlans[currentSelectedDay]?.spots[currentMarkerIndex]; if(spot) window.openPlaceDetail(spot.place_id); });
+
+    // 🌟 일정표 카드 클릭 시 상세 리뷰창 띄우기
+    document.getElementById('ai-timeline-container')?.addEventListener('click', (e) => {
+        const card = e.target.closest('.timeline-card');
+        if (!card) return;
+        const day = card.getAttribute('data-day');
+        const sIndex = card.getAttribute('data-index');
+        const spot = dailyPlans[day]?.spots[sIndex];
+        
+        if (spot && spot.place_id) {
+            window.openPlaceDetail(spot.place_id);
+        } else {
+            showCustomAlert({icon:'info', title:'안내', desc:'상세 정보를 불러오는 중이거나 구글 리뷰가 없는 장소입니다.'});
+        }
+    });
 
     // 🌟 모달 닫기 시 공통 처리 (검은화면 제거 & 애니메이션 재개)
     const closeBottomSheet = (modalId) => {
@@ -1426,11 +1458,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 4. Firestore 'triplans' 컬렉션에 밀어넣기!
                 await addDoc(collection(db, "triplans"), planData);
+                isCurrentPlanSaved = true; // 🌟 DB 저장 성공했으니 저장됨으로 도장 쾅!
                 
                 // 5. 성공 시 버튼 색상과 텍스트 기분 좋게 변경
                 saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!';
                 saveBtn.style.background = '#10B981'; // 성공의 상징 에메랄드 초록색
-                showCustomAlert({ icon: 'check_circle', title: '저장 완료', desc: '마이페이지에서 저장된 일정을 언제든 다시 볼 수 있습니다.' });
 
             } catch (error) {
                 // 에러 발생 시 원래대로 복구

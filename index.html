@@ -39,9 +39,10 @@
             box-shadow: 0 -10px 40px rgba(0,0,0,0.15) !important;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, visibility 0s 0s !important;
         }
-        /* 🌟 카테고리 뱃지 줄바꿈 방지 및 디자인 고정 */
-        .timeline-card-header { gap: 8px !important; }
-        .tc-category { white-space: nowrap !important; flex-shrink: 0 !important; }
+        /* 🌟 카테고리 뱃지 무적 방어 (절대 안 찌그러짐) */
+        .timeline-card-header { display: flex; flex-wrap: nowrap !important; gap: 12px !important; align-items: flex-start !important; }
+        .tc-title { flex: 1; word-break: keep-all; margin: 0 !important; }
+        .tc-category { white-space: nowrap !important; flex-shrink: 0 !important; min-width: max-content !important; display: inline-flex !important; align-items: center; justify-content: center; }
     </style>
     <!-- 👆 여기까지 👆 -->
 </head>
