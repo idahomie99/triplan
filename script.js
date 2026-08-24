@@ -1526,11 +1526,13 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
                 const index = loadedSavedPlans.length;
                 loadedSavedPlans.push({ ...data, docId: docId });
                 
-                // 🌟 스와이프 전용 HTML 뼈대 (바닥엔 휴지통, 위엔 카드)
+                // 🌟 스와이프 전용 HTML 뼈대 (바닥엔 둥근 휴지통, 위엔 카드)
                 html += `
                 <div class="swipe-wrapper" id="plan-wrapper-${docId}">
-                    <div class="swipe-delete-bg ripple-btn btn-delete-plan" data-id="${docId}">
-                        <span class="material-symbols-rounded" style="font-size:28px;">delete</span>
+                    <div class="swipe-action-container">
+                        <button class="swipe-circle-btn btn-delete-plan ripple-btn" data-id="${docId}">
+                            <span class="material-symbols-rounded" style="font-size:24px;">delete</span>
+                        </button>
                     </div>
                     <div class="swipe-card-front ripple-btn" data-index="${index}" style="cursor:pointer;">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
@@ -1611,8 +1613,8 @@ let isCurrentPlanSaved = false; // 🌟 현재 일정이 저장되었는지 기�
         card.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; // 튕기는 애니메이션 온!
         
         if (diffX < -40) {
-            // -40px 이상 밀었으면 휴지통 찰칵! 열림
-            card.style.transform = 'translateX(-80px)';
+            // -40px 이상 밀었으면 둥근 휴지통 공간만큼 찰칵! 열림
+            card.style.transform = 'translateX(-72px)';
             card.classList.add('swiped');
             currentSwipedCard = card;
         } else {
