@@ -1,5 +1,5 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged, db } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 // 🚀 Gemini AI API 키
 const GEMINI_API_KEY = 'AQ.Ab8RN6Kz9AQPUJVDnJBwEtopgto_BHGbahhbYIsG7U4qPssg9w';
 
@@ -1758,4 +1758,87 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             }
         }
     });
+
+    // ==========================================
+    // 🌟 4단계 백엔드: 공유된 링크(딥링크)로 들어왔을 때 자동 렌더링
+    // ==========================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedPlanId = urlParams.get('plan');
+
+    if (sharedPlanId) {
+        // 1. 로딩 화면부터 띄우기
+        const loadingOverlay = document.getElementById('ai-loading-overlay');
+        const statusText = document.getElementById('ai-loading-status');
+        if (statusText) statusText.innerText = "친구가 공유한 일정을 불러오는 중입니다...";
+        loadingOverlay.classList.add('active');
+
+        // 2. DB에서 해당 ID의 일정 훔쳐오기
+        const fetchSharedPlan = async () => {
+            try {
+                const docRef = doc(db, "triplans", sharedPlanId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const planData = docSnap.data();
+
+                    // 데이터 복구 (마이페이지 불러오기와 동일한 원리)
+                    currentDocId = sharedPlanId;
+                    aiData.startDate = planData.startDate ? new Date(planData.startDate) : null;
+                    aiData.endDate = planData.endDate ? new Date(planData.endDate) : null;
+                    aiData.totalTripDays = planData.totalTripDays;
+                    aiData.destinations = planData.destinations || [{city: '여행지'}];
+                    aiData.themes = planData.themes || [];
+                    dailyPlans = planData.dailyPlans;
+                    
+                    document.getElementById('ai-result-title').innerText = planData.title;
+                    document.getElementById('ai-result-subtitle').innerText = planData.subtitle;
+                    
+                    let tabsHtml = '';
+                    for(let i=1; i<=aiData.totalTripDays; i++) {
+                        let tempDate = aiData.startDate ? new Date(aiData.startDate) : new Date();
+                        tempDate.setDate(tempDate.getDate() + (i - 1));
+                        tabsHtml += `<div class="day-tab ${i===1?'active':''}" data-day="${i}"><div class="d-day">Day ${i}</div><div class="d-date">${tempDate.getMonth()+1}.${tempDate.getDate()}</div></div>`;
+                    }
+                    document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
+
+                    document.querySelectorAll('.day-tab').forEach(tab => {
+                        tab.addEventListener('click', () => {
+                            document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active')); 
+                            tab.classList.add('active');
+                            renderDayPlan(parseInt(tab.getAttribute('data-day')), false);
+                        });
+                    });
+
+                    renderDayPlan(1, false);
+                    const mainDest = aiData.destinations[0]?.city || '여행지';
+                    initMapForResult(mainDest); 
+
+                    // 🌟 타인의 일정이므로 '저장 완료' 대신 '공유받은 일정'으로 버튼 잠금 처리
+                    isCurrentPlanSaved = true; 
+                    const saveBtn = document.querySelector('.floating-save-btn');
+                    if(saveBtn) { 
+                        saveBtn.innerHTML = '<span class="material-symbols-rounded">visibility</span> 공유받은 일정'; 
+                        saveBtn.style.background = '#64748B'; 
+                        saveBtn.style.pointerEvents = 'none'; 
+                    }
+
+                    // 3. 로딩 끄고 결과창 짠! 보여주기
+                    loadingOverlay.classList.remove('active');
+                    document.getElementById('ai-result-screen').classList.add('active');
+                    
+                    // (선택) 주소창을 깔끔하게 원상복구 시켜줌
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } else {
+                    loadingOverlay.classList.remove('active');
+                    showCustomAlert({ icon:'error', title:'일정 없음', desc:'삭제되었거나 존재하지 않는 일정입니다.' });
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            } catch (e) {
+                console.error(e);
+                loadingOverlay.classList.remove('active');
+                showCustomAlert({ icon:'error', title:'오류', desc:'일정을 불러오지 못했습니다.' });
+            }
+        };
+        fetchSharedPlan();
+    }
 }); // 👈 파일의 맨 마지막 줄
