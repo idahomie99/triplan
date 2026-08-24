@@ -1,5 +1,5 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged, db } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 // 🚀 Gemini AI API 키
 const GEMINI_API_KEY = 'AQ.Ab8RN6Kz9AQPUJVDnJBwEtopgto_BHGbahhbYIsG7U4qPssg9w';
 
@@ -1336,7 +1336,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const isSubScreen = 
             document.getElementById('ai-screen')?.classList.contains('active') ||
             document.getElementById('ai-result-screen')?.classList.contains('active') ||
-            document.getElementById('account-screen')?.classList.contains('active');
+            document.getElementById('account-screen')?.classList.contains('active') ||
+            document.getElementById('saved-plans-screen')?.classList.contains('active');
             
         let lightColor = '#F8FAFC'; // 로비 기본 배경색
         let darkColor = '#0F172A';  // 다크모드 로비 배경색
@@ -1367,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 화면 감시자
     const screenObserver = new MutationObserver(updateThemeColor);
     
-    ['ai-screen', 'ai-result-screen', 'account-screen', 'custom-alert-overlay', 'ai-loading-overlay'].forEach(id => {
+    ['ai-screen', 'ai-result-screen', 'account-screen', 'saved-plans-screen', 'custom-alert-overlay', 'ai-loading-overlay'].forEach(id => {
         const el = document.getElementById(id);
         if(el) screenObserver.observe(el, { attributes: true, attributeFilter: ['class'] });
     });
@@ -1440,4 +1441,70 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ==========================================
+    // 🌟 2단계 백엔드: 저장된 플랜 목록 불러오기 (토스/에어비앤비 스타일 카드)
+    // ==========================================
+    document.getElementById('btn-my-saved-plans')?.addEventListener('click', async () => {
+        if (!auth.currentUser) {
+            showCustomAlert({ icon: 'lock', title: '로그인 필요', desc: '저장된 일정을 보려면 먼저 로그인해주세요.' });
+            return;
+        }
+        
+        const savedScreen = document.getElementById('saved-plans-screen');
+        const listContainer = document.getElementById('saved-plans-list');
+        
+        savedScreen.classList.add('active');
+        listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">일정을 불러오는 중입니다...</div>';
+        
+        try {
+            // 현재 로그인한 유저(uid)의 일정만, 최신순(내림차순)으로 찾아오기
+            const q = query(collection(db, "triplans"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            
+            if (querySnapshot.empty) {
+                listContainer.innerHTML = `
+                    <div style="text-align:center; padding:60px 20px; color:var(--text-sub);">
+                        <span class="material-symbols-rounded" style="font-size:48px; color:#CBD5E1; margin-bottom:16px;">luggage</span>
+                        <h3 style="font-size:16px; font-weight:800; color:var(--text-main); margin-bottom:8px;">저장된 여행이 없습니다</h3>
+                        <p style="font-size:14px; font-weight:600;">AI와 함께 새로운 여행을 계획해 보세요!</p>
+                    </div>`;
+                return;
+            }
+            
+            let html = '';
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                // 토스 감성의 깔끔하고 세련된 카드 UI
+                html += `
+                <div class="saved-plan-card ripple-btn" style="background:var(--card-bg); padding:20px; border-radius:20px; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); cursor:pointer; position:relative; overflow:hidden; transition:transform 0.2s;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                        <div>
+                            <h3 style="font-size:18px; font-weight:800; color:var(--text-main); margin-bottom:4px;">${data.title}</h3>
+                            <p style="font-size:13px; color:var(--text-sub); font-weight:600; line-height:1.4;">${data.subtitle}</p>
+                        </div>
+                        <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <span style="font-size:11px; background:rgba(37,99,235,0.1); color:#2563EB; padding:4px 8px; border-radius:6px; font-weight:800;">${data.themes[0] || '여행'}</span>
+                        <span style="font-size:11px; background:rgba(139,92,246,0.1); color:#8B5CF6; padding:4px 8px; border-radius:6px; font-weight:800;">${data.totalTripDays}일 일정</span>
+                    </div>
+                </div>`;
+            });
+            listContainer.innerHTML = html;
+        } catch(e) {
+            console.error("불러오기 에러:", e);
+            // Firebase Index (색인) 에러 처리 안내
+            if(e.message.includes("indexes")) {
+                listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub); line-height:1.5;"><b>[개발자 안내]</b><br>데이터 정렬을 위해 Firebase Index 설정이 필요합니다.<br>콘솔창(F12)의 빨간 에러 메시지에 있는 링크를 클릭해서 Index를 생성해주세요! (약 3분 소요)</div>';
+            } else {
+                listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:#EF4444;">데이터를 불러오지 못했습니다.</div>';
+            }
+        }
+    });
+
+    // 뒤로가기 버튼 로직
+    document.getElementById('btn-back-saved-plans')?.addEventListener('click', () => {
+        document.getElementById('saved-plans-screen').classList.remove('active');
+    });
 }); // 👈 파일의 맨 마지막 줄
