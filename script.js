@@ -311,10 +311,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
     
-    // 🌟 검은 화면(z-index) 꼬임 버그 해결
+   // 🌟 날짜 선택 시 뒤에 화면 확실히 까매지도록 z-index 상향!
     document.getElementById('btn-open-calendar-ai')?.addEventListener('click', () => {
         calendarTargetIndex = -1; tempStartDate = aiData.startDate; tempEndDate = aiData.endDate;
-        calendarOverlay.style.zIndex = '100'; // 👈 까매짐 방지
+        calendarOverlay.style.zIndex = '1000'; // 👈 100을 1000으로 수정!
         calendarOverlay.style.display = 'block'; setTimeout(() => calendarModal.classList.add('active'), 10); renderCalendar();
     });
 
@@ -1284,6 +1284,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (edgeStartX < 30) {
             const endX = e.changedTouches[0].clientX; const endY = e.changedTouches[0].clientY;
             if (endX - edgeStartX > 50 && Math.abs(endY - edgeStartY) < 50) {
+                // 🌟 추가된 방어막: 바텀시트(팝업)가 하나라도 떠있으면 스와이프 무시!!
+                if (document.querySelector('.bottom-sheet.active')) return;
+
                 const resultScreen = document.getElementById('ai-result-screen'); const aiScreen = document.getElementById('ai-screen'); const accountScreen = document.getElementById('account-screen');
                 if (resultScreen && resultScreen.classList.contains('active')) document.getElementById('btn-back-ai-result')?.click();
                 else if (aiScreen && aiScreen.classList.contains('active')) document.getElementById('btn-back-ai')?.click();
