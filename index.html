@@ -124,6 +124,19 @@
             --icon-bg: #F1F5F9 !important;
             --shadow-color: rgba(15, 23, 42, 0.03) !important;
         }
+
+        /* 🌟 인스타 스타일 하트 둥둥 애니메이션 */
+        @keyframes floatUpAndFade {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+            50% { transform: translate(-50%, -150%) scale(1.5); opacity: 1; }
+            100% { transform: translate(-50%, -250%) scale(1); opacity: 0; }
+        }
+        .floating-heart-anim {
+            position: absolute; top: 50%; left: 50%; pointer-events: none;
+            color: #EF4444; z-index: 100;
+            animation: floatUpAndFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            font-variation-settings: 'FILL' 1; /* 속이 꽉 찬 하트 */
+        }
     </style>
     <!-- 👆 여기까지 👆 -->
 </head>
@@ -200,13 +213,54 @@
         </div>
 
         <!-- [수정 후 (새 모달 추가 + 리프레시 버튼 추가)] -->
-        <div id="month-country-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3>맞춤 여행지 찾기</h3><button class="icon-btn" onclick="document.getElementById('month-country-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content">
-                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px; font-weight:700;">원하시는 조건(월, 국가, 테마 등)을 자유롭게 적어주세요.</p>
-                <input type="text" id="month-country-input" class="ai-text-input" placeholder="예: 11월 일본, 겨울 동남아, 유럽 야경" style="width: 100%; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <button class="search-btn ripple-btn" id="btn-search-month-country" style="width: 100%;">이 조건으로 추천받기</button>
+        <div id="insp-filter-modal" class="bottom-sheet" style="z-index: 1005;">
+            <div class="sheet-header">
+                <h3 id="insp-filter-title">추천 설정</h3>
+                <button class="icon-btn" onclick="document.getElementById('insp-filter-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button>
             </div>
+            <div class="sheet-content">
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 8px;">방문할 월 (Month)</label>
+                    <div class="custom-select-wrap" style="position:relative;">
+                        <select id="insp-month-select" class="ai-text-input" style="width:100%; appearance:none; padding-right:40px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); font-weight:700;">
+                            <option value="전체">전체 (시기 상관없음)</option>
+                            <option value="1월">1월</option>
+                            <option value="2월">2월</option>
+                            <option value="3월">3월</option>
+                            <option value="4월">4월</option>
+                            <option value="5월">5월</option>
+                            <option value="6월">6월</option>
+                            <option value="7월">7월</option>
+                            <option value="8월">8월</option>
+                            <option value="9월">9월</option>
+                            <option value="10월">10월</option>
+                            <option value="11월">11월</option>
+                            <option value="12월">12월</option>
+                        </select>
+                        <span class="material-symbols-rounded" style="position:absolute; right:12px; top:12px; color:var(--text-sub); pointer-events:none;">expand_more</span>
+                    </div>
+                </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="font-size: 13px; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 8px;">원하는 지역 (Location)</label>
+                    <button class="ai-text-input ripple-btn" id="btn-open-insp-region" style="width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); color:var(--text-main); font-weight:700; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                        <span id="insp-location-text">전세계</span>
+                        <span class="material-symbols-rounded" style="color:var(--text-sub);">chevron_right</span>
+                    </button>
+                </div>
+                <button class="search-btn ripple-btn" id="btn-exec-insp" style="width: 100%;">이 조건으로 추천받기</button>
+            </div>
+        </div>
+
+        <!-- 🌟 새롭게 띄울 국가/대륙 트리 선택 모달 -->
+        <div id="insp-region-modal" class="bottom-sheet" style="z-index: 1010;">
+            <div class="sheet-header">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button class="icon-btn" id="btn-insp-region-back" style="display:none;"><span class="material-symbols-rounded">arrow_back</span></button>
+                    <h3 id="insp-region-title">지역 선택</h3>
+                </div>
+                <button class="icon-btn" onclick="document.getElementById('insp-region-modal').classList.remove('active');"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="sheet-content" id="insp-region-list" style="padding-top: 10px;"></div>
         </div>
 
         <div id="inspiration-modal" class="bottom-sheet" style="z-index: 1005; max-height: 85vh;">
