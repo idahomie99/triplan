@@ -1,5 +1,5 @@
 import { auth, provider, signInWithPopup, signOut, onAuthStateChanged, db } from './firebase-config.js';
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, deleteDoc, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 // 🚀 Gemini AI API 키
 const GEMINI_API_KEY = 'AQ.Ab8RN6Kz9AQPUJVDnJBwEtopgto_BHGbahhbYIsG7U4qPssg9w';
 
@@ -2185,56 +2185,205 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             setTimeout(() => floatingHeart.remove(), 800); // 0.8초 뒤 청소
 
             const newDoc = await addDoc(collection(db, "savedSpots"), { 
-                uid: auth.currentUser.uid, placeId, name, photoUrl, lat, lng, createdAt: serverTimestamp() 
+                uid: auth.currentUser.uid, placeId, name, photoUrl, lat, lng, folder: '기본 폴더', createdAt: serverTimestamp() 
             });
             window.mySavedSpots[placeId] = newDoc.id;
         }
     };
 
-    // 3. 마이페이지 '찜한 스팟' 목록 열기
+    // ==========================================
+    // 🌟 3. 마이페이지 '찜한 스팟' 폴더 및 지도 시스템
+    // ==========================================
+    let mySavedSpotsData = [];
+    let myFolders = ['기본 폴더'];
+    let currentFolderFilter = 'all';
+    let currentMoveSpotId = null;
+    let savedMapInstance = null;
+    let savedMapMarkers = [];
+
+    const renderSavedFolders = () => {
+        let html = `<div class="explore-chip ${currentFolderFilter === 'all' ? 'active' : ''}" onclick="setFolderFilter('all')">전체보기</div>`;
+        myFolders.forEach(f => {
+            html += `<div class="explore-chip ${currentFolderFilter === f ? 'active' : ''}" onclick="setFolderFilter('${f}')">${f}</div>`;
+        });
+        document.getElementById('saved-folder-tabs').innerHTML = html;
+    };
+
+    window.setFolderFilter = (folderName) => {
+        currentFolderFilter = folderName;
+        renderSavedFolders();
+        renderSavedSpotsList();
+    };
+
+    const renderSavedSpotsList = () => {
+        const list = document.getElementById('saved-spots-list');
+        const filtered = currentFolderFilter === 'all' ? mySavedSpotsData : mySavedSpotsData.filter(s => (s.folder || '기본 폴더') === currentFolderFilter);
+        
+        if (filtered.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-sub);"><span class="material-symbols-rounded" style="font-size:48px; color:#CBD5E1; margin-bottom:16px;">folder_open</span><h3 style="font-size:16px; font-weight:800; color:var(--text-main); margin-bottom:8px;">이 폴더는 비어있습니다</h3><p style="font-size:14px; font-weight:600;">새로운 장소를 찜해보세요!</p></div>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(data => {
+            const defaultImg = "https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400";
+            const folderName = data.folder || '기본 폴더';
+            html += `
+            <div class="swipe-wrapper" id="spot-wrapper-${data.docId}" style="margin-bottom:16px;">
+                <div class="swipe-action-container">
+                    <button class="swipe-circle-btn btn-delete-spot ripple-btn" data-id="${data.docId}" data-placeid="${data.placeId}">
+                        <span class="material-symbols-rounded" style="font-size:24px;">delete</span>
+                    </button>
+                </div>
+                <div class="swipe-card-front ripple-btn" onclick="window.openPlaceDetail('${data.placeId}')" style="background:var(--card-bg); border-radius:16px; overflow:hidden; border:1px solid var(--card-border); display:flex; align-items:center; gap:16px; padding:12px; cursor:pointer; width:100%; box-sizing:border-box;">
+                    <div style="width:72px; height:72px; border-radius:12px; background:url('${data.photoUrl || defaultImg}') center/cover; flex-shrink:0;"></div>
+                    <div style="flex:1;">
+                        <h4 style="font-size:16px; font-weight:800; color:var(--text-main); line-height:1.3; margin-bottom:6px;">${data.name}</h4>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <span style="font-size:11px; font-weight:700; color:#EF4444; background:rgba(239,68,68,0.1); padding:4px 8px; border-radius:6px;">저장된 스팟</span>
+                            <span class="ripple-btn" onclick="event.stopPropagation(); window.openFolderMoveModal('${data.docId}')" style="font-size:11px; font-weight:700; color:#8B5CF6; background:rgba(139,92,246,0.1); padding:4px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:2px;"><span class="material-symbols-rounded" style="font-size:12px;">folder</span>${folderName}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        list.innerHTML = html;
+    };
+
     document.getElementById('btn-my-saved-spots')?.addEventListener('click', async () => {
         if (!auth.currentUser) { showCustomAlert({icon:'lock', title:'로그인 필요', desc:'로그인 후 이용 가능합니다.'}); return; }
-        
         const screen = document.getElementById('saved-spots-screen');
         const list = document.getElementById('saved-spots-list');
         screen.classList.add('active');
         list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">불러오는 중...</div>';
         
         try {
+            // 사용자 폴더 목록 불러오기 (인덱스 에러 방지를 위해 로컬에서 날짜 정렬)
+            const fq = query(collection(db, "savedFolders"), where("uid", "==", auth.currentUser.uid));
+            const fSnap = await getDocs(fq);
+            let tempFolders = [];
+            fSnap.forEach(d => tempFolders.push(d.data()));
+            tempFolders.sort((a,b) => a.createdAt?.toMillis() - b.createdAt?.toMillis());
+            
+            myFolders = ['기본 폴더'];
+            tempFolders.forEach(d => { if(!myFolders.includes(d.name)) myFolders.push(d.name); });
+
+            // 스팟 불러오기
             const q = query(collection(db, "savedSpots"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
             const snap = await getDocs(q);
             
-            if (snap.empty) {
-                list.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-sub);"><span class="material-symbols-rounded" style="font-size:48px; color:#CBD5E1; margin-bottom:16px;">heart_broken</span><h3 style="font-size:16px; font-weight:800; color:var(--text-main); margin-bottom:8px;">아직 찜한 스팟이 없어요</h3><p style="font-size:14px; font-weight:600;">마음에 드는 장소에 하트를 눌러보세요!</p></div>`;
-                return;
-            }
+            mySavedSpotsData = [];
+            snap.forEach(docSnap => { mySavedSpotsData.push({ ...docSnap.data(), docId: docSnap.id }); });
             
-            let html = '';
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                const defaultImg = "https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400";
-                html += `
-                <div class="swipe-wrapper" id="spot-wrapper-${docSnap.id}" style="margin-bottom:16px;">
-                    <div class="swipe-action-container">
-                        <button class="swipe-circle-btn btn-delete-spot ripple-btn" data-id="${docSnap.id}" data-placeid="${data.placeId}">
-                            <span class="material-symbols-rounded" style="font-size:24px;">delete</span>
-                        </button>
-                    </div>
-                    <div class="swipe-card-front ripple-btn" onclick="window.openPlaceDetail('${data.placeId}')" style="background:var(--card-bg); border-radius:16px; overflow:hidden; border:1px solid var(--card-border); display:flex; align-items:center; gap:16px; padding:12px; cursor:pointer; width:100%; box-sizing:border-box;">
-                        <div style="width:72px; height:72px; border-radius:12px; background:url('${data.photoUrl || defaultImg}') center/cover; flex-shrink:0;"></div>
-                        <div style="flex:1;">
-                            <h4 style="font-size:16px; font-weight:800; color:var(--text-main); line-height:1.3; margin-bottom:4px;">${data.name}</h4>
-                            <span style="font-size:12px; font-weight:700; color:#EF4444; background:rgba(239,68,68,0.1); padding:4px 8px; border-radius:6px;">저장된 스팟</span>
-                        </div>
-                        <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
-                    </div>
-                </div>`;
-            });
-            list.innerHTML = html;
+            renderSavedFolders();
+            renderSavedSpotsList();
         } catch(e) {
             console.error(e);
-            list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);"><b>[개발자 안내]</b><br>Firebase Index(색인) 설정이 필요합니다. 콘솔 에러를 확인해주세요.</div>';
+            list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">데이터를 불러오지 못했습니다.</div>';
         }
+    });
+
+    // 폴더 생성 로직
+    document.getElementById('btn-create-folder')?.addEventListener('click', () => {
+        document.getElementById('calendar-overlay').style.zIndex = '1020';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        document.getElementById('folder-create-modal').classList.add('active');
+        document.getElementById('new-folder-input').value = '';
+    });
+
+    document.getElementById('btn-confirm-create-folder')?.addEventListener('click', async () => {
+        const val = document.getElementById('new-folder-input').value.trim();
+        if(!val) return;
+        if(myFolders.includes(val)) { showCustomAlert({icon:'error', title:'중복', desc:'이미 존재하는 폴더 이름입니다.'}); return; }
+        
+        await addDoc(collection(db, "savedFolders"), { uid: auth.currentUser.uid, name: val, createdAt: serverTimestamp() });
+        myFolders.push(val);
+        
+        document.getElementById('folder-create-modal').classList.remove('active');
+        document.getElementById('calendar-overlay').style.display = 'none';
+        
+        currentFolderFilter = val; // 방금 만든 폴더로 바로 이동!
+        renderSavedFolders();
+        renderSavedSpotsList();
+        showCustomAlert({icon:'check_circle', title:'폴더 생성', desc:`'${val}' 폴더가 만들어졌습니다.`});
+    });
+
+    // 폴더 이동 로직
+    window.openFolderMoveModal = (docId) => {
+        currentMoveSpotId = docId;
+        let html = '';
+        myFolders.forEach(f => {
+            html += `<div class="ripple-btn" style="padding:16px; border-radius:12px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-weight:800; cursor:pointer; display:flex; align-items:center;" onclick="moveSpotToFolder('${f}')"><span class="material-symbols-rounded" style="color:#8B5CF6; margin-right:12px;">folder</span>${f}</div>`;
+        });
+        document.getElementById('folder-move-list').innerHTML = html;
+        document.getElementById('calendar-overlay').style.zIndex = '1020';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        document.getElementById('folder-move-modal').classList.add('active');
+    };
+
+    window.moveSpotToFolder = async (folderName) => {
+        if(!currentMoveSpotId) return;
+        
+        await updateDoc(doc(db, "savedSpots", currentMoveSpotId), { folder: folderName });
+        const spot = mySavedSpotsData.find(s => s.docId === currentMoveSpotId);
+        if(spot) spot.folder = folderName;
+        
+        document.getElementById('folder-move-modal').classList.remove('active');
+        document.getElementById('calendar-overlay').style.display = 'none';
+        
+        renderSavedSpotsList();
+        showCustomAlert({icon:'folder_moved', title:'이동 완료', desc:`스팟이 '${folderName}'(으)로 이동되었습니다.`});
+    };
+
+    // 찜한 스팟 '지도로 보기' 로직
+    document.getElementById('btn-open-saved-map')?.addEventListener('click', () => {
+        const filtered = currentFolderFilter === 'all' ? mySavedSpotsData : mySavedSpotsData.filter(s => (s.folder || '기본 폴더') === currentFolderFilter);
+        
+        if(filtered.length === 0) {
+            showCustomAlert({icon:'info', title:'스팟 없음', desc:'현재 폴더에 지도에 표시할 스팟이 없습니다.'});
+            return;
+        }
+        
+        document.getElementById('saved-map-screen').classList.add('active');
+        
+        // 애니메이션 대기 후 지도 렌더링
+        setTimeout(() => {
+            if(!savedMapInstance) {
+                savedMapInstance = new google.maps.Map(document.getElementById('saved-map-full-container'), {
+                    zoom: 12, disableDefaultUI: true, styles: cleanMapStyle
+                });
+            }
+            
+            // 기존 마커 청소
+            savedMapMarkers.forEach(m => m.setMap(null));
+            savedMapMarkers = [];
+            
+            const bounds = new google.maps.LatLngBounds();
+            let hasValidCoords = false;
+
+            filtered.forEach((spot, i) => {
+                if(spot.lat && spot.lng) {
+                    hasValidCoords = true;
+                    const pos = {lat: spot.lat, lng: spot.lng};
+                    bounds.extend(pos);
+                    
+                    const m = new google.maps.Marker({
+                        position: pos, map: savedMapInstance,
+                        label: { text: String(i+1), color: 'white', fontWeight: 'bold' },
+                        icon: { path: google.maps.SymbolPath.CIRCLE, fillColor: '#EF4444', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2, scale: 14 },
+                        zIndex: 100
+                    });
+                    
+                    // 마커 클릭 시 리뷰 상세창 바로 띄우기
+                    m.addListener('click', () => { window.openPlaceDetail(spot.placeId); });
+                    savedMapMarkers.push(m);
+                }
+            });
+
+            if (hasValidCoords) savedMapInstance.fitBounds(bounds, 50);
+            else showCustomAlert({icon:'warning', title:'위치 정보 없음', desc:'저장된 스팟들의 정확한 좌표 데이터가 없어 지도에 표시할 수 없습니다.'});
+            
+        }, 300);
     });
 
     // 4. 앱 설정창 열람 및 회원 탈퇴 로직

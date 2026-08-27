@@ -570,7 +570,7 @@
             </div>
         </div>
 
-        <!-- 🌟 새로 추가: 찜한 스팟 화면 -->
+        <!-- 🌟 새로 추가: 찜한 스팟 화면 (폴더 탭 추가) -->
         <div id="saved-spots-screen" class="sub-screen" style="z-index: 120; background: var(--bg-body);">
             <header class="sub-header">
                 <div class="header-left"><button class="icon-btn" onclick="document.getElementById('saved-spots-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
@@ -578,13 +578,43 @@
                 <div class="header-right"></div>
             </header>
             
-            <!-- 🌟 지도로 보기 & 폴더 추가 영역 -->
             <div style="display:flex; justify-content:space-between; padding:16px 24px 0 24px;">
-                <button class="ripple-btn" style="flex:1; margin-right:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="showCustomAlert({icon:'map', title:'준비 중', desc:'지도로 보기 기능을 위해\\n데이터베이스를 업그레이드하고 있습니다!\\n조금만 기다려주세요.'})"><span class="material-symbols-rounded" style="font-size:18px; color:#2563EB;">map</span>지도로 보기</button>
-                <button class="ripple-btn" style="flex:1; margin-left:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="showCustomAlert({icon:'folder', title:'준비 중', desc:'폴더 관리 기능을 위해\\n데이터베이스를 업그레이드하고 있습니다!\\n조금만 기다려주세요.'})"><span class="material-symbols-rounded" style="font-size:18px; color:#F59E0B;">create_new_folder</span>새 폴더</button>
+                <button class="ripple-btn" id="btn-open-saved-map" style="flex:1; margin-right:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:18px; color:#2563EB;">map</span>지도로 보기</button>
+                <button class="ripple-btn" id="btn-create-folder" style="flex:1; margin-left:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:18px; color:#F59E0B;">create_new_folder</span>새 폴더</button>
             </div>
 
+            <!-- 🌟 동적 폴더 탭 영역 -->
+            <div id="saved-folder-tabs" style="display:flex; gap:8px; overflow-x:auto; padding:16px 24px 0 24px; scrollbar-width:none; -webkit-overflow-scrolling:touch;"></div>
+
             <div id="saved-spots-list" style="flex: 1; padding: 16px 24px 24px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 0;"></div>
+        </div>
+
+        <!-- 🌟 찜한 스팟 지도 화면 -->
+        <div id="saved-map-screen" class="sub-screen" style="z-index: 125; background: var(--bg-body); display: flex; flex-direction: column;">
+            <header class="sub-header" style="background: var(--bg-app); border-bottom: 1px solid var(--card-border); z-index: 10;">
+                <div class="header-left"><button class="icon-btn" onclick="document.getElementById('saved-map-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
+                <h2>스팟 모아보기</h2>
+                <div class="header-right"></div>
+            </header>
+            <div id="saved-map-full-container" style="flex: 1; width: 100%;"></div>
+        </div>
+
+        <!-- 🌟 새 폴더 만들기 모달 -->
+        <div id="folder-create-modal" class="bottom-sheet" style="z-index: 1030;">
+            <div class="sheet-header"><h3>새 폴더 만들기</h3><button class="icon-btn" onclick="document.getElementById('folder-create-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content">
+                <input type="text" id="new-folder-input" class="ai-text-input" placeholder="폴더 이름 (예: 제주도 맛집)" style="width:100%; margin-bottom:16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <button class="search-btn ripple-btn" id="btn-confirm-create-folder" style="width:100%;">폴더 추가하기</button>
+            </div>
+        </div>
+
+        <!-- 🌟 폴더 이동 모달 -->
+        <div id="folder-move-modal" class="bottom-sheet" style="z-index: 1030;">
+            <div class="sheet-header"><h3>폴더 이동</h3><button class="icon-btn" onclick="document.getElementById('folder-move-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content">
+                <p style="font-size:13px; color:var(--text-sub); font-weight:700; margin-bottom:12px;">이동할 폴더를 선택해주세요.</p>
+                <div id="folder-move-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
         </div>
 
         <!-- 🌟 새로 추가: 앱 설정 화면 -->
