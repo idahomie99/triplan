@@ -1416,14 +1416,19 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 // 🌟 추가된 방어막: 바텀시트(팝업)가 하나라도 떠있으면 스와이프 무시!!
                 if (document.querySelector('.bottom-sheet.active')) return;
 
+                // [✨ 수정 후 (설정창, 찜한스팟창 모두 추가 완료!)]
                 const resultScreen = document.getElementById('ai-result-screen'); 
-                const savedPlansScreen = document.getElementById('saved-plans-screen'); // 🌟 추가
+                const savedPlansScreen = document.getElementById('saved-plans-screen');
+                const savedSpotsScreen = document.getElementById('saved-spots-screen');
+                const settingsScreen = document.getElementById('settings-screen');
                 const aiScreen = document.getElementById('ai-screen'); 
                 const accountScreen = document.getElementById('account-screen');
 
                 // 제일 위에 떠있는 화면부터 순서대로 체크해서 닫아줍니다!
                 if (resultScreen && resultScreen.classList.contains('active')) document.getElementById('btn-back-ai-result')?.click();
-                else if (savedPlansScreen && savedPlansScreen.classList.contains('active')) document.getElementById('btn-back-saved-plans')?.click(); // 🌟 추가
+                else if (savedPlansScreen && savedPlansScreen.classList.contains('active')) document.getElementById('btn-back-saved-plans')?.click();
+                else if (savedSpotsScreen && savedSpotsScreen.classList.contains('active')) document.querySelector('#saved-spots-screen .icon-btn')?.click();
+                else if (settingsScreen && settingsScreen.classList.contains('active')) document.querySelector('#settings-screen .icon-btn')?.click();
                 else if (aiScreen && aiScreen.classList.contains('active')) document.getElementById('btn-back-ai')?.click();
                 else if (accountScreen && accountScreen.classList.contains('active')) document.getElementById('btn-back-account')?.click();
             }
@@ -1464,9 +1469,17 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         // 기존 meta 태그를 다 지우고, 현재 모드에 맞는 딱 1개의 태그만 강제로 쑤셔 넣습니다.
         document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
         
+       // [✨ 수정 후]
         const savedTheme = localStorage.getItem('triplan_theme') || 'system';
         const isDarkMode = (savedTheme === 'dark') || (savedTheme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         const targetColor = isDarkMode ? darkColor : lightColor;
+        
+        // 🌟 로고 이미지 다크모드 실시간 동기화
+        const logoSrc = isDarkMode ? 'image/triplaninappimg_dark.png' : 'image/triplaninappimg.png';
+        const mainLogo = document.getElementById('main-logo-img');
+        const splashLogo = document.getElementById('splash-logo-img');
+        if(mainLogo) mainLogo.src = logoSrc;
+        if(splashLogo) splashLogo.src = logoSrc;
         
         const newMeta = document.createElement('meta');
         newMeta.name = 'theme-color';

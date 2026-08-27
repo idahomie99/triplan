@@ -137,6 +137,13 @@
             animation: floatUpAndFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
             font-variation-settings: 'FILL' 1; /* 속이 꽉 찬 하트 */
         }
+
+        /* 🌟 하단 네비게이션 & 설정창 다크모드 완벽 대응 */
+        :root[data-theme="dark"] #bottom-nav { background: #1E293B !important; box-shadow: 0 -4px 20px rgba(0,0,0,0.5) !important; }
+        :root[data-theme="dark"] #bottom-nav .nav-item { color: #94A3B8 !important; }
+        :root[data-theme="dark"] #bottom-nav .nav-item.active { color: #8B5CF6 !important; }
+        :root[data-theme="dark"] #btn-theme-setting span:not(.material-symbols-rounded),
+        :root[data-theme="dark"] .theme-option span:not(.material-symbols-rounded) { color: #F8FAFC !important; }
     </style>
     <!-- 👆 여기까지 👆 -->
 </head>
@@ -156,24 +163,12 @@
 
         <div id="splash-screen">
         <div class="splash-logo">
-            <!-- 🌟 다크모드/라이트모드 자동 스위칭 로고 -->
-            <picture>
-                <!-- 폰이 다크 모드일 때 띄울 이미지 (텍스트가 밝은색) -->
-                <source srcset="image/triplaninappimg_dark.png" media="(prefers-color-scheme: dark)">
-                <!-- 폰이 라이트 모드일 때 띄울 기본 이미지 (텍스트가 어두운색) -->
-                <img src="image/triplaninappimg.png" alt="Triplan" style="width: 190px; height: auto; object-fit: contain; animation: pulse 1s infinite;">
-            </picture>
+            <img id="splash-logo-img" src="image/triplaninappimg.png" alt="Triplan" style="width: 190px; height: auto; object-fit: contain; animation: pulse 1s infinite;">
         </div>
     </div>
 
         <header class="top-header" id="top-header">
-            <!-- 🌟 다크모드/라이트모드 자동 스위칭 로고 -->
-            <picture>
-                <!-- 다크 모드용 로고 -->
-                <source srcset="image/triplaninappimg_dark.png" media="(prefers-color-scheme: dark)">
-                <!-- 기본(라이트 모드) 로고 -->
-                <img src="image/triplaninappimg.png" alt="Triplan" style="height: 32px; width: auto; object-fit: contain; margin-left: 4px; cursor: pointer;">
-            </picture>
+            <img id="main-logo-img" src="image/triplaninappimg.png" alt="Triplan" style="height: 32px; width: auto; object-fit: contain; margin-left: 4px; cursor: pointer;">
             <div class="profile-pic" id="btn-top-profile"></div>
         </header>
 
