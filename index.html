@@ -160,7 +160,7 @@
                     <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
                 </button>
                 <!-- 🌟 1. 새로 추가된 데이트 코스 버튼 -->
-                <button class="pill-btn ripple-btn" id="btn-ai-date" style="margin-top: 12px;">
+                <button class="pill-btn ripple-btn" id="btn-ai-date">
                     <div class="pill-icon" style="color: #EC4899; background: rgba(236, 72, 153, 0.1);"><span class="material-symbols-rounded">favorite</span></div>
                     <div class="pill-text"><h3>일상 데이트 코스 찾기</h3><p>평범한 일상을 여행처럼! 핫플 큐레이션</p></div>
                     <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
@@ -177,8 +177,24 @@
             </div>
         </div>
 
+        <!-- [수정 후 (새 모달 추가 + 리프레시 버튼 추가)] -->
+        <div id="month-country-modal" class="bottom-sheet" style="z-index: 1005;">
+            <div class="sheet-header"><h3>맞춤 여행지 찾기</h3><button class="icon-btn" onclick="document.getElementById('month-country-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content">
+                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px; font-weight:700;">원하시는 조건(월, 국가, 테마 등)을 자유롭게 적어주세요.</p>
+                <input type="text" id="month-country-input" class="ai-text-input" placeholder="예: 11월 일본, 겨울 동남아, 유럽 야경" style="width: 100%; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <button class="search-btn ripple-btn" id="btn-search-month-country" style="width: 100%;">이 조건으로 추천받기</button>
+            </div>
+        </div>
+
         <div id="inspiration-modal" class="bottom-sheet" style="z-index: 1005; max-height: 85vh;">
-            <div class="sheet-header"><h3 id="inspiration-title">추천 여행지</h3><button class="icon-btn" onclick="document.getElementById('inspiration-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-header">
+                <h3 id="inspiration-title">추천 여행지</h3>
+                <div style="display:flex; gap:4px;">
+                    <button class="icon-btn" id="btn-refresh-insp" style="display:none;"><span class="material-symbols-rounded">refresh</span></button>
+                    <button class="icon-btn" onclick="document.getElementById('inspiration-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button>
+                </div>
+            </div>
             <div class="sheet-content" id="inspiration-content" style="padding-bottom: 40px; overflow-y: auto; height: 100%;">
                 <!-- AI가 찾아온 핫플 카드들이 꽂힐 자리 -->
             </div>
@@ -462,7 +478,7 @@
                     <span class="material-symbols-rounded">auto_awesome</span>
                 </div>
             </div>
-            <h3 class="magic-text">AI가 여행 플랜을<br>설계하고 있어요✨</h3>
+            <h3 class="magic-text">AI가 여행 플랜을<br>설계하고 있어요 <span class="material-symbols-rounded" style="color: #FCD34D; font-size: inherit; vertical-align: middle;">auto_awesome</span></h3>
             <p id="ai-loading-status">동선과 이동 시간을 계산 중입니다...</p>
         </div>
 
@@ -577,7 +593,7 @@
         </div>
 
         <!-- 🌟 장소 상세 & 리뷰 모달 (위치 정상화) -->
-        <div id="place-detail-modal" class="bottom-sheet" style="z-index: 1000;">
+        <div id="place-detail-modal" class="bottom-sheet" style="z-index: 1010;">
             <div class="sheet-header">
                 <h3>장소 상세정보</h3>
                 <button class="icon-btn" id="btn-close-place-detail"><span class="material-symbols-rounded">close</span></button>

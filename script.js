@@ -1236,7 +1236,7 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         if(newType === 'food') { iconColor = '#DC2626'; iconBg = 'rgba(220,38,38,0.1)'; mIcon = 'restaurant'; catName = '식당'; }
         if(newType === 'tour') { iconColor = '#2563EB'; iconBg = 'rgba(37,99,235,0.1)'; mIcon = 'photo_camera'; catName = '명소'; }
         if(newType === 'cafe') { iconColor = '#F59E0B'; iconBg = 'rgba(245,158,11,0.1)'; mIcon = 'local_cafe'; catName = '카페'; }
-        spot.type = newType; spot.color = iconColor; spot.bg = iconBg; spot.mIcon = mIcon; spot.catName = catName; spot.desc = '나의 취향에 맞춰 직접 커스터마이징한 특별한 일정입니다 ✨'; spot.tip = ''; 
+        spot.type = newType; spot.color = iconColor; spot.bg = iconBg; spot.mIcon = mIcon; spot.catName = catName; spot.desc = '나의 취향에 맞춰 직접 커스터마이징한 특별한 일정입니다 <span class="material-symbols-rounded" style="font-size:14px; vertical-align:middle; color:#FCD34D;">auto_awesome</span>'; spot.tip = '';
 
         document.getElementById('confirm-replace-modal').classList.remove('active');
         renderDayPlan(currentSelectedDay, false); 
@@ -1280,8 +1280,14 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                         </div>
                     </div>`;
                 if(place.reviews && place.reviews.length > 0) { place.reviews.slice(0, 3).forEach(rev => { html += `<div style="background:var(--icon-bg); padding:16px; border-radius:16px; margin-bottom:12px;"><div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-sub); display:flex; align-items:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">account_circle</span> ${rev.author_name}</div><div style="font-size:14px; color:var(--text-main); line-height:1.5;">"${rev.text}"</div></div>`; }); } 
+                // [수정 후 (네이버 지도 연동 버튼 듀얼 배치)]
                 else { html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`; }
-                html += `<button class="search-btn ripple-btn" style="margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="window.open('${place.url}', '_blank')"><span class="material-symbols-rounded">map</span>구글 맵에서 크게 보기</button>`;
+                
+                html += `
+                <div style="display:flex; gap:8px; margin-top:16px;">
+                    <button class="search-btn ripple-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:#2563EB; font-size:14px; padding:12px;" onclick="window.open('${place.url}', '_blank')"><span class="material-symbols-rounded" style="font-size:18px;">map</span>구글 맵</button>
+                    <button class="search-btn ripple-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:#03C75A; font-size:14px; padding:12px; color:white;" onclick="window.open('https://map.naver.com/v5/search/${encodeURIComponent(place.name)}', '_blank')"><span class="material-symbols-rounded" style="font-size:18px;">navigation</span>네이버 길찾기</button>
+                </div>`;
                 document.getElementById('detail-modal-content').innerHTML = html;
             } else { document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 20px;">리뷰 정보를 불러오지 못했습니다.</div>'; }
         });
@@ -1855,15 +1861,18 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     }
 
     // ==========================================
-    // 🌟 5단계 보너스: 일상 데이트 & 영감 큐레이션 엔진
+    // 🌟 5단계 보너스: 일상 데이트 & 영감 큐레이션 엔진 (업그레이드)
     // ==========================================
+
+    let lastInspType = '';
+    let lastInspKeyword = '';
 
     // 1. 데이트 코스 모달 열기
     document.getElementById('btn-ai-date')?.addEventListener('click', () => {
         document.getElementById('calendar-overlay').style.zIndex = '1000';
         document.getElementById('calendar-overlay').style.display = 'block';
         document.getElementById('date-course-modal').classList.add('active');
-        document.getElementById('date-location-input').value = ''; // 입력창 비워주기
+        document.getElementById('date-location-input').value = ''; 
     });
 
     // 2. 데이트 검색 실행
@@ -1874,12 +1883,33 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         showInspiration('date', keyword);
     });
 
-    // 3. 영감 찾기 메뉴(월별/SNS) 실행
-    document.getElementById('rec-month')?.addEventListener('click', () => showInspiration('month'));
+    // 3. 추천 여행지 (월별/국가 검색)
+    document.getElementById('rec-month')?.addEventListener('click', () => {
+        document.getElementById('calendar-overlay').style.zIndex = '1000';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        document.getElementById('month-country-modal').classList.add('active');
+        document.getElementById('month-country-input').value = '';
+    });
+    
+    document.getElementById('btn-search-month-country')?.addEventListener('click', () => {
+        const keyword = document.getElementById('month-country-input').value.trim() || '이번 달 전세계';
+        document.getElementById('month-country-modal').classList.remove('active');
+        showInspiration('month', keyword);
+    });
+
+    // 4. SNS 글로벌 명소 실행
     document.getElementById('rec-sns')?.addEventListener('click', () => showInspiration('sns'));
 
-    // 🌟 핵심 AI 엔진 (버튼 3개가 모두 이 엔진을 씁니다)
+    // 5. 리프레시 (다시 찾기) 버튼 실행
+    document.getElementById('btn-refresh-insp')?.addEventListener('click', () => {
+        if(lastInspType) showInspiration(lastInspType, lastInspKeyword);
+    });
+
+    // 🌟 핵심 AI 엔진 (장소 8곳으로 확장, 카테고리 세분화)
     async function showInspiration(type, keyword = '') {
+        lastInspType = type;
+        lastInspKeyword = keyword;
+        
         const modal = document.getElementById('inspiration-modal');
         const content = document.getElementById('inspiration-content');
         const titleEl = document.getElementById('inspiration-title');
@@ -1887,32 +1917,32 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         document.getElementById('calendar-overlay').style.zIndex = '1000';
         document.getElementById('calendar-overlay').style.display = 'block';
         modal.classList.add('active');
+        document.getElementById('btn-refresh-insp').style.display = 'block'; // 리프레시 활성화
         
         // 예쁜 로딩 화면 띄우기
         content.innerHTML = `
             <div style="padding:60px 20px; text-align:center;">
                 <span class="material-symbols-rounded" style="font-size:48px; color:#8B5CF6; animation: rotateRing 2s linear infinite;">auto_awesome</span>
-                <div style="font-size:16px; font-weight:800; color:var(--text-main); margin-top:16px;">AI가 핫플을 수집하고 있어요✨</div>
+                <div style="font-size:16px; font-weight:800; color:var(--text-main); margin-top:16px;">AI가 핫플을 큐레이션하고 있어요 <span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; color:#FCD34D;">auto_awesome</span></div>
                 <div style="font-size:13px; font-weight:600; color:var(--text-sub); margin-top:8px;">약 3~5초 정도 소요됩니다.</div>
             </div>`;
 
         let prompt = '';
         if (type === 'date') {
             titleEl.innerText = `'${keyword}' 데이트 코스`;
-            prompt = `너는 데이트 코스 큐레이터야. '${keyword}' 지역의 핫한 데이트 장소 4곳(맛집 1, 카페 1, 놀거리 1, 포토존 1)을 추천해. 반드시 실존 장소여야 해. JSON 형식: { "spots": [ { "name": "정확한 장소명", "category": "맛집", "desc": "어떤 곳인지 1줄 요약", "reason": "추천 이유 1줄" } ] }`;
+            prompt = `너는 데이트 코스 큐레이터야. '${keyword}' 지역의 핫한 데이트 장소 8곳을 추천해. 반드시 [점심 맛집 -> 예쁜 카페 -> 이색 놀거리/문화 -> 산책/포토존 -> 저녁 맛집 -> 야경/칵테일] 등 실제 동선이 이어지는 흐름으로 구성해. 실존 장소여야 해. JSON 형식: { "spots": [ { "name": "정확한 장소명", "category": "카테고리(예: 맛집, 카페 등)", "desc": "어떤 곳인지 1줄 요약", "reason": "추천 이유 1줄" } ] }`;
         } else if (type === 'month') {
-            titleEl.innerText = `이달의 추천 여행지`;
-            const month = new Date().getMonth() + 1;
-            prompt = `너는 여행 전문가야. ${month}월에 가기 가장 좋은 세계 여행지 4곳을 추천해. 날씨가 좋거나 축제가 있는 곳 위주로. JSON 형식: { "spots": [ { "name": "도시명, 국가명", "category": "해외여행", "desc": "1줄 요약", "reason": "추천 이유 1줄" } ] }`;
+            titleEl.innerText = `'${keyword}' 추천 여행지`;
+            prompt = `너는 글로벌 여행 전문가야. '${keyword}' 조건에 가장 가기 좋은 전 세계 여행 명소 또는 지역 8곳을 무작위성을 줘서 추천해. 축제, 날씨, 핫플 위주로. JSON 형식: { "spots": [ { "name": "도시명, 국가명", "category": "테마명(예: 휴양, 관광)", "desc": "1줄 요약", "reason": "추천 이유 1줄" } ] }`;
         } else if (type === 'sns') {
             titleEl.innerText = `SNS 핫플 글로벌 명소`;
-            prompt = `인스타그램 등 SNS에서 가장 핫한 세계 여행 명소 4곳을 추천해. 인생샷 성지 위주로. JSON 형식: { "spots": [ { "name": "명소 이름, 국가명", "category": "인생샷", "desc": "1줄 요약", "reason": "추천 이유 1줄" } ] }`;
+            prompt = `인스타그램 등 SNS에서 가장 핫한 세계 여행 명소 8곳을 추천해. 인생샷 성지 위주로. 뻔하지 않은 곳들을 섞어줘. JSON 형식: { "spots": [ { "name": "명소 이름, 국가명", "category": "인생샷", "desc": "1줄 요약", "reason": "추천 이유 1줄" } ] }`;
         }
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, responseMimeType: "application/json" } })
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, responseMimeType: "application/json" } }) // 다양성을 위해 temperature 0.8로 상승
             });
             const data = await response.json();
             const parsedData = JSON.parse(data.candidates[0].content.parts[0].text);
@@ -1924,12 +1954,11 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 const uniqueId = `insp-img-${Date.now()}-${i}`;
                 
                 let icon = 'place'; let color = '#3B82F6'; let bg = 'rgba(59,130,246,0.1)';
-                if(spot.category.includes('맛집')) { icon = 'restaurant'; color = '#DC2626'; bg = 'rgba(220,38,38,0.1)'; }
-                else if(spot.category.includes('카페')) { icon = 'local_cafe'; color = '#F59E0B'; bg = 'rgba(245,158,11,0.1)'; }
-                else if(spot.category.includes('놀거리') || spot.category.includes('문화')) { icon = 'attractions'; color = '#10B981'; bg = 'rgba(16,185,129,0.1)'; }
+                if(spot.category.includes('맛집') || spot.category.includes('식당') || spot.category.includes('저녁') || spot.category.includes('점심')) { icon = 'restaurant'; color = '#DC2626'; bg = 'rgba(220,38,38,0.1)'; }
+                else if(spot.category.includes('카페') || spot.category.includes('디저트')) { icon = 'local_cafe'; color = '#F59E0B'; bg = 'rgba(245,158,11,0.1)'; }
+                else if(spot.category.includes('놀거리') || spot.category.includes('문화') || spot.category.includes('액티비티')) { icon = 'attractions'; color = '#10B981'; bg = 'rgba(16,185,129,0.1)'; }
                 else { icon = 'photo_camera'; color = '#8B5CF6'; bg = 'rgba(139,92,246,0.1)'; }
                 
-                // 🌟 예쁜 큐레이션 카드 UI (누르면 구글 맵 리뷰 뜸!)
                 html += `
                 <div class="explore-card ripple-btn insp-card" data-name="${safeName}" style="background:var(--card-bg); border-radius:20px; overflow:hidden; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); display:flex; flex-direction:column; cursor:pointer;">
                     <div id="${uniqueId}" style="width:100%; height:180px; background: #E2E8F0 url('https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400') center/cover; position:relative;">
@@ -1945,10 +1974,9 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                     </div>
                 </div>`;
                 
-                // 구글 지도 API로 실제 장소 사진 & place_id 찾아오기
                 setTimeout(() => {
                     if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
-                    let searchQuery = type === 'date' ? `${keyword} ${spot.name}` : spot.name;
+                    let searchQuery = (type === 'date' && !spot.name.includes(keyword)) ? `${keyword} ${spot.name}` : spot.name;
                     
                     placesService.textSearch({ query: searchQuery }, (results, status) => {
                         if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
@@ -1961,7 +1989,7 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                             }
                         }
                     });
-                }, i * 400); // API 호출 겹치지 않게 시차 부여
+                }, i * 400); 
             });
             html += '</div>';
             content.innerHTML = html;
@@ -1970,19 +1998,6 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             content.innerHTML = `<div style="padding:60px 20px; text-align:center; color:#EF4444;"><span class="material-symbols-rounded" style="font-size:40px; margin-bottom:12px;">error</span><br><b style="font-size:16px;">데이터를 불러오지 못했습니다.</b><br><span style="font-size:13px; margin-top:8px; display:block;">잠시 후 다시 시도해주세요.</span></div>`;
         }
     }
-
-    // 🌟 추천 카드 클릭 시 구글 상세 정보창 띄우기
-    document.getElementById('inspiration-content')?.addEventListener('click', (e) => {
-        const card = e.target.closest('.insp-card');
-        if(!card) return;
-        const placeId = card.getAttribute('data-placeid');
-        
-        if(placeId) {
-            window.openPlaceDetail(placeId); // 기존에 만들어둔 완벽한 리뷰창 재활용!
-        } else {
-            showCustomAlert({icon:'info', title:'불러오는 중', desc:'지도 데이터를 가져오고 있습니다.\n1~2초 뒤에 다시 눌러주세요.'});
-        }
-    });
 
     // ==========================================
     // 🌟 6단계: 찜한 스팟 및 앱 설정 백엔드
