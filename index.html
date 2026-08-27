@@ -144,6 +144,23 @@
         :root[data-theme="dark"] #bottom-nav .nav-item.active { color: #8B5CF6 !important; }
         :root[data-theme="dark"] #btn-theme-setting span:not(.material-symbols-rounded),
         :root[data-theme="dark"] .theme-option span:not(.material-symbols-rounded) { color: #F8FAFC !important; }
+
+        /* 🌟 스켈레톤 UI (Shimmer) 애니메이션 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton-box {
+            background: linear-gradient(90deg, var(--card-border) 25%, var(--icon-bg) 50%, var(--card-border) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        /* 다크모드 스켈레톤 전용 색상 */
+        :root[data-theme="dark"] .skeleton-box {
+            background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%);
+            background-size: 200% 100%;
+        }
     </style>
     <!-- 👆 여기까지 👆 -->
 </head>

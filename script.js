@@ -1583,8 +1583,22 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         const listContainer = document.getElementById('saved-plans-list');
         listContainer.style.gap = '0'; // 스와이프 마진 충돌 방지
         
+        // [✨ 수정 후 (스켈레톤 UI 적용)]
         savedScreen.classList.add('active');
-        listContainer.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">일정을 불러오는 중입니다...</div>';
+        listContainer.innerHTML = Array(4).fill(`
+            <div style="background:var(--card-bg); padding:20px; border-radius:20px; border:1px solid var(--card-border); margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                    <div style="flex:1;">
+                        <div class="skeleton-box" style="width:60%; height:20px; margin-bottom:8px;"></div>
+                        <div class="skeleton-box" style="width:40%; height:14px;"></div>
+                    </div>
+                    <div class="skeleton-box" style="width:24px; height:24px; border-radius:50%;"></div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <div class="skeleton-box" style="width:50px; height:24px; border-radius:6px;"></div>
+                    <div class="skeleton-box" style="width:60px; height:24px; border-radius:6px;"></div>
+                </div>
+            </div>`).join('');
         
         try {
             const q = query(collection(db, "triplans"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
@@ -2019,11 +2033,23 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         modal.classList.add('active');
         document.getElementById('btn-refresh-insp').style.display = 'block'; 
         
+        // [✨ 수정 후 (스켈레톤 UI 적용)]
         content.innerHTML = `
-            <div style="padding:60px 20px; text-align:center;">
-                <span class="material-symbols-rounded" style="font-size:48px; color:#8B5CF6; animation: rotateRing 2s linear infinite;">auto_awesome</span>
-                <div style="font-size:16px; font-weight:800; color:var(--text-main); margin-top:16px;">AI가 핫플을 큐레이션하고 있어요 <span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; color:#FCD34D;">auto_awesome</span></div>
-                <div style="font-size:13px; font-weight:600; color:var(--text-sub); margin-top:8px;">약 3~5초 정도 소요됩니다.</div>
+            <div style="padding:20px; text-align:center; margin-bottom:8px;">
+                <div style="font-size:16px; font-weight:800; color:var(--text-main);">AI가 핫플을 큐레이션하고 있어요 <span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; color:#FCD34D;">auto_awesome</span></div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-sub); margin-top:4px;">약 3~5초 정도 소요됩니다.</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:16px; padding:0 20px;">
+                ${Array(3).fill(`
+                <div style="background:var(--card-bg); border-radius:20px; overflow:hidden; border:1px solid var(--card-border); display:flex; flex-direction:column;">
+                    <div class="skeleton-box" style="width:100%; height:180px; border-radius:0;"></div>
+                    <div style="padding:20px;">
+                        <div class="skeleton-box" style="width:70px; height:24px; border-radius:6px; margin-bottom:12px;"></div>
+                        <div class="skeleton-box" style="width:80%; height:24px; margin-bottom:8px;"></div>
+                        <div class="skeleton-box" style="width:100%; height:16px; margin-bottom:6px;"></div>
+                        <div class="skeleton-box" style="width:90%; height:16px;"></div>
+                    </div>
+                </div>`).join('')}
             </div>`;
 
         let prompt = '';
@@ -2254,9 +2280,17 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     document.getElementById('btn-my-saved-spots')?.addEventListener('click', async () => {
         if (!auth.currentUser) { showCustomAlert({icon:'lock', title:'로그인 필요', desc:'로그인 후 이용 가능합니다.'}); return; }
         const screen = document.getElementById('saved-spots-screen');
+        // [✨ 수정 후 (스켈레톤 UI 적용)]
         const list = document.getElementById('saved-spots-list');
         screen.classList.add('active');
-        list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">불러오는 중...</div>';
+        list.innerHTML = Array(5).fill(`
+            <div style="background:var(--card-bg); border-radius:16px; border:1px solid var(--card-border); display:flex; align-items:center; gap:16px; padding:12px; margin-bottom:16px;">
+                <div class="skeleton-box" style="width:72px; height:72px; border-radius:12px; flex-shrink:0;"></div>
+                <div style="flex:1;">
+                    <div class="skeleton-box" style="width:70%; height:18px; margin-bottom:8px;"></div>
+                    <div class="skeleton-box" style="width:30%; height:20px; border-radius:6px;"></div>
+                </div>
+            </div>`).join('');
         
         try {
             // 사용자 폴더 목록 불러오기 (인덱스 에러 방지를 위해 로컬에서 날짜 정렬)
