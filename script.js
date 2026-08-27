@@ -1341,25 +1341,27 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     document.querySelector('#customize-modal .icon-btn')?.addEventListener('click', () => closeBottomSheet('customize-modal'));
 
    // ==========================================
-    // 🌟 네이티브 앱 UX 1: 바텀시트 스와이프 (뒷배경 끌려감 완벽 방어)
+    // 🌟 네이티브 앱 UX 1: 바텀시트 스와이프 (상단 바 터치 완벽 호환)
     // ==========================================
     document.querySelectorAll('.bottom-sheet').forEach(sheet => {
-        let startY = 0; let currentY = 0;
+        let startY = 0; let currentY = 0; let isHeaderTouch = false;
         
         sheet.addEventListener('touchstart', (e) => { 
+            // 🌟 터치한 곳이 상단 바(헤더)인지 확인
+            isHeaderTouch = !!e.target.closest('.sheet-header'); 
             const content = sheet.querySelector('.sheet-content'); 
-            // 스크롤이 내려가 있을 땐 스와이프 동작 안 함
-            if (content && content.scrollTop > 0) return; 
+            
+            // 상단 바를 만진 게 아닌데, 내용물 스크롤이 내려가 있다면 스와이프 무시 (내용물 스크롤 허용)
+            if (!isHeaderTouch && content && content.scrollTop > 0) return; 
             startY = e.touches[0].clientY; 
         }, {passive: true});
         
-        // 👇 passive: false 로 바꾸고 e.preventDefault() 를 넣어야 배경이 안 끌려갑니다!
         sheet.addEventListener('touchmove', (e) => { 
             if (startY === 0) return; 
             currentY = e.touches[0].clientY; 
             const diff = currentY - startY; 
             if (diff > 0) {
-                e.preventDefault(); // 🌟 모바일 브라우저의 고무줄 스크롤 현상 차단!
+                e.preventDefault(); 
                 e.stopPropagation();
                 sheet.style.transform = `translateY(${diff}px)`; 
             }
@@ -1369,9 +1371,9 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             if (startY === 0) return; 
             const diff = currentY - startY;
             if (diff > 100) { 
-                // 🌟 추천 여행지 창은 내리면 경고창 띄우기!
+                // 🌟 추천 여행지 창은 내리면 경고창 띄우기
                 if (sheet.id === 'inspiration-modal') {
-                    sheet.style.transform = ''; startY = 0; currentY = 0;
+                    sheet.style.transform = ''; startY = 0; currentY = 0; isHeaderTouch = false;
                     showCustomAlert({
                         icon: 'warning', title: '창 닫기', desc: '조회한 추천 핫플 목록이 사라집니다.\n정말 닫으시겠습니까?',
                         showCancel: true, confirmText: '닫기', isDanger: true,
@@ -1389,9 +1391,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 document.getElementById('calendar-overlay').style.display = 'none'; 
                 isAnimationPaused = false; 
             }
-            sheet.style.transform = ''; startY = 0; currentY = 0;
+            sheet.style.transform = ''; startY = 0; currentY = 0; isHeaderTouch = false;
         });
-
     }); // forEach 종료괄호
 
     // 🌟 X 버튼 클릭 시에도 똑같이 경고창 띄우기
@@ -2461,6 +2462,40 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 updateThemeColor();
                 applyTheme('system'); // 강제 리렌더링
             }
+        });
+    }
+
+    // ==========================================
+    // 🌟 네이티브 앱 UX 4: 찜한 스팟 당겨서 새로고침 (Pull-to-Refresh)
+    // ==========================================
+    const savedSpotsListEl = document.getElementById('saved-spots-list');
+    if (savedSpotsListEl) {
+        let pStartY = 0; let pCurrentY = 0; let pIsPulling = false;
+        
+        savedSpotsListEl.addEventListener('touchstart', (e) => {
+            // 스크롤이 맨 위일 때만 당기기 인식 시작
+            if (savedSpotsListEl.scrollTop === 0) {
+                pStartY = e.touches[0].clientY;
+                pIsPulling = true;
+            }
+        }, {passive: true});
+        
+        savedSpotsListEl.addEventListener('touchmove', (e) => {
+            if (!pIsPulling) return;
+            pCurrentY = e.touches[0].clientY;
+        }, {passive: true});
+        
+        savedSpotsListEl.addEventListener('touchend', (e) => {
+            if (!pIsPulling) return;
+            const diff = pCurrentY - pStartY;
+            
+            // 아래로 80px 이상 훅 당겼다가 놓으면 새로고침 발동!
+            if (diff > 80 && savedSpotsListEl.scrollTop === 0) {
+                const btn = document.getElementById('btn-my-saved-spots');
+                // 마이페이지의 '찜한 스팟' 버튼을 몰래 다시 눌러서 자연스럽게 최신 DB 데이터로 리로드
+                if (btn) btn.click(); 
+            }
+            pIsPulling = false; pStartY = 0; pCurrentY = 0;
         });
     }
 }); // 👈 파일의 맨 마지막 줄
