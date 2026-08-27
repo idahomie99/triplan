@@ -1271,8 +1271,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                     place.photos.slice(0, 5).forEach(p => { html += `<div style="width:140px; height:140px; flex-shrink:0; border-radius:12px; background:url('${p.getUrl({maxWidth:400})}') center/cover; box-shadow:0 2px 8px var(--shadow-color);"></div>`; });
                     html += `</div>`;
                 }
-                // 🌟 하트 버튼 상태 체크 (위경도 수집 추가)
-                const isSaved = mySavedSpots[placeId] ? 'favorite' : 'favorite_border';
+                // 🌟 하트 버튼 상태 체크 (0이면 빈 하트, 1이면 꽉 찬 하트!)
+                const isSaved = mySavedSpots[placeId] ? 1 : 0;
                 const photoUrl = place.photos && place.photos.length > 0 ? place.photos[0].getUrl({maxWidth:400}) : '';
                 const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const lat = place.geometry && place.geometry.location ? place.geometry.location.lat() : 0;
@@ -1284,8 +1284,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                         <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
                             <!-- 🌟 네이버 길찾기 미니 이모지 버튼 -->
                             <button class="icon-btn ripple-btn" onclick="window.open('https://map.naver.com/v5/search/${encodeURIComponent(place.name)}', '_blank')" style="background:transparent; color:#03C75A; width:36px; height:36px;"><span class="material-symbols-rounded" style="font-size:24px;">navigation</span></button>
-                            <!-- 🌟 찜하기(하트) 배경 투명화 -->
-                            <button class="icon-btn ripple-btn" onclick="toggleSaveSpot(event, '${placeId}', '${safeName}', '${photoUrl}', ${lat}, ${lng})" style="background:transparent; color:#EF4444; width:36px; height:36px;"><span class="material-symbols-rounded" id="fav-icon-${placeId}" style="font-size:24px; transition:0.2s;">${isSaved}</span></button>
+                            <!-- 🌟 찜하기(하트) 배경 투명화 및 FILL 속성으로 빈 하트 조절 -->
+                            <button class="icon-btn ripple-btn" onclick="toggleSaveSpot(event, '${placeId}', '${safeName}', '${photoUrl}', ${lat}, ${lng})" style="background:transparent; color:#EF4444; width:36px; height:36px;"><span class="material-symbols-rounded" id="fav-icon-${placeId}" style="font-size:24px; transition:0.2s; font-variation-settings: 'FILL' ${isSaved};">favorite</span></button>
                             <span style="background:#FEF08A; color:#D97706; padding:4px 8px; border-radius:8px; font-weight:800; font-size:13px; display:flex; align-items:center; gap:4px; margin-left:4px;"><span class="material-symbols-rounded" style="font-size:16px;">star</span> ${place.rating || '없음'}</span>
                         </div>
                     </div>`;
@@ -2165,15 +2165,15 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         const icon = document.getElementById(`fav-icon-${placeId}`);
         
         if (window.mySavedSpots[placeId]) {
-            // 찜 해제 (알림 없음)
-            icon.innerText = 'favorite_border';
+            // 🌟 찜 해제 (FILL 값을 0으로 만들어서 빈 하트로 변경!)
+            icon.style.fontVariationSettings = "'FILL' 0";
             icon.style.transform = 'scale(0.8)'; setTimeout(() => icon.style.transform = 'scale(1)', 150); 
             const docId = window.mySavedSpots[placeId];
             delete window.mySavedSpots[placeId];
             await deleteDoc(doc(db, "savedSpots", docId));
         } else {
-            // 찜 완료 (알림 없음, 대신 하트 둥둥 애니메이션 발사!)
-            icon.innerText = 'favorite';
+            // 🌟 찜 완료 (FILL 값을 1로 만들어서 꽉 찬 하트로 변경!)
+            icon.style.fontVariationSettings = "'FILL' 1";
             icon.style.transform = 'scale(1.2)'; setTimeout(() => icon.style.transform = 'scale(1)', 150);
             
             // 버튼을 기준으로 빨간 하트 생성해서 위로 날리기
