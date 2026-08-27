@@ -1402,7 +1402,6 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             }
         });
     });
-    });
 
     let edgeStartX = 0; let edgeStartY = 0;
     document.addEventListener('touchstart', (e) => { edgeStartX = e.touches[0].clientX; edgeStartY = e.touches[0].clientY; }, {passive: true});
