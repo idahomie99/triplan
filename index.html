@@ -92,6 +92,16 @@
             min-width: 160px !important;
         }
         .floating-save-btn:active { transform: scale(0.94) !important; }
+
+        /* 🌟 다크모드 로딩 애니메이션 원 안쪽 색상 완벽 동기화 */
+        @media (prefers-color-scheme: dark) {
+            .magic-spinner-inner {
+                background: #0F172A !important; /* 다크모드 기본 배경색 */
+            }
+            #ai-loading-overlay {
+                background: #0F172A !important;
+            }
+        }
     </style>
     <!-- 👆 여기까지 👆 -->
 </head>
@@ -149,7 +159,30 @@
                     <div class="pill-text"><h3>AI 동행 믹스매치</h3><p>네 취향 반, 내 취향 반. 평화로운 일정</p></div>
                     <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
                 </button>
+                <!-- 🌟 1. 새로 추가된 데이트 코스 버튼 -->
+                <button class="pill-btn ripple-btn" id="btn-ai-date" style="margin-top: 12px;">
+                    <div class="pill-icon" style="color: #EC4899; background: rgba(236, 72, 153, 0.1);"><span class="material-symbols-rounded">favorite</span></div>
+                    <div class="pill-text"><h3>일상 데이트 코스 찾기</h3><p>평범한 일상을 여행처럼! 핫플 큐레이션</p></div>
+                    <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
+                </button>
             </section>
+
+<!-- 🌟 2. 새로 추가되는 데이트 검색 / 영감 모달창 (여기에 딱 숨겨둡니다) -->
+        <div id="date-course-modal" class="bottom-sheet" style="z-index: 1005;">
+            <div class="sheet-header"><h3>데이트 지역 검색</h3><button class="icon-btn" onclick="document.getElementById('date-course-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content">
+                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px; font-weight:700;">어디서 데이트를 하시나요? (예: 성수동, 연남동, 강남역)</p>
+                <input type="text" id="date-location-input" class="ai-text-input" placeholder="동네 또는 지역 이름 입력" style="width: 100%; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <button class="search-btn ripple-btn" id="btn-search-date-course" style="width: 100%;">이 동네 핫플 찾기</button>
+            </div>
+        </div>
+
+        <div id="inspiration-modal" class="bottom-sheet" style="z-index: 1005; max-height: 85vh;">
+            <div class="sheet-header"><h3 id="inspiration-title">추천 여행지</h3><button class="icon-btn" onclick="document.getElementById('inspiration-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
+            <div class="sheet-content" id="inspiration-content" style="padding-bottom: 40px; overflow-y: auto; height: 100%;">
+                <!-- AI가 찾아온 핫플 카드들이 꽂힐 자리 -->
+            </div>
+        </div>
 
             <section class="recommend-section">
                 <h2 class="section-title">여행 영감 찾기</h2>
@@ -435,7 +468,7 @@
 
         <div id="account-screen" class="sub-screen">
             <header class="sub-header"><div class="header-left"><button class="icon-btn" id="btn-back-account"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div><h2>내 정보</h2><div class="header-right"></div></header>
-            <div class="account-content"><div class="profile-header"><div class="profile-pic-large" id="account-profile-pic"></div><div class="profile-info"><h3 id="account-name">로그인이 필요합니다</h3><p id="account-email">이메일 정보 없음</p></div></div><div class="account-menu-section"><h4 class="menu-title">나의 여행</h4><div class="menu-list"><div class="menu-item ripple-btn" id="btn-my-saved-plans"><span class="material-symbols-rounded" style="color:#8B5CF6;">auto_awesome</span><span>저장된 플랜</span><span class="material-symbols-rounded arrow">chevron_right</span></div><div class="menu-item ripple-btn"><span class="material-symbols-rounded" style="color:#2563EB;">bookmark</span><span>찜한 스팟</span><span class="material-symbols-rounded arrow">chevron_right</span></div></div></div><div class="account-menu-section"><h4 class="menu-title">설정</h4><div class="menu-list"><div class="menu-item ripple-btn"><span class="material-symbols-rounded" style="color:#64748B;">settings</span><span>앱 설정</span><span class="material-symbols-rounded arrow">chevron_right</span></div><div class="menu-item ripple-btn" id="btn-logout"><span class="material-symbols-rounded" style="color:#64748B;">logout</span><span style="color:var(--text-sub);">로그아웃</span></div></div></div></div>
+            <div class="account-content"><div class="profile-header"><div class="profile-pic-large" id="account-profile-pic"></div><div class="profile-info"><h3 id="account-name">로그인이 필요합니다</h3><p id="account-email">이메일 정보 없음</p></div></div><div class="account-menu-section"><h4 class="menu-title">나의 여행</h4><div class="menu-list"><div class="menu-item ripple-btn" id="btn-my-saved-plans"><span class="material-symbols-rounded" style="color:#8B5CF6;">auto_awesome</span><span>저장된 플랜</span><span class="material-symbols-rounded arrow">chevron_right</span></div><div class="menu-item ripple-btn" id="btn-my-saved-spots"><span class="material-symbols-rounded" style="color:#2563EB;">bookmark</span><span>찜한 스팟</span><span class="material-symbols-rounded arrow">chevron_right</span></div></div></div><div class="account-menu-section"><h4 class="menu-title">설정</h4><div class="menu-list"><div class="menu-item ripple-btn" id="btn-app-settings"><span class="material-symbols-rounded" style="color:#64748B;">settings</span><span>앱 설정</span><span class="material-symbols-rounded arrow">chevron_right</span></div><div class="menu-item ripple-btn" id="btn-logout"><span class="material-symbols-rounded" style="color:#64748B;">logout</span><span style="color:var(--text-sub);">로그아웃</span></div></div></div></div>
         </div>
 
 <!-- 🌟 새로 추가되는 저장된 플랜 목록 화면 -->
@@ -447,6 +480,44 @@
             </header>
             <div id="saved-plans-list" style="flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg-body);">
                 <!-- DB에서 불러온 카드들이 여기에 들어갑니다 -->
+            </div>
+        </div>
+
+        <!-- 🌟 새로 추가: 찜한 스팟 화면 -->
+        <div id="saved-spots-screen" class="sub-screen" style="z-index: 120; background: var(--bg-body);">
+            <header class="sub-header">
+                <div class="header-left"><button class="icon-btn" onclick="document.getElementById('saved-spots-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
+                <h2>찜한 스팟</h2>
+                <div class="header-right"></div>
+            </header>
+            <div id="saved-spots-list" style="flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;"></div>
+        </div>
+
+        <!-- 🌟 새로 추가: 앱 설정 화면 -->
+        <div id="settings-screen" class="sub-screen" style="z-index: 120; background: var(--bg-body);">
+            <header class="sub-header">
+                <div class="header-left"><button class="icon-btn" onclick="document.getElementById('settings-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
+                <h2>앱 설정</h2>
+                <div class="header-right"></div>
+            </header>
+            <div style="padding: 24px;">
+                <div class="account-menu-section">
+                    <h4 class="menu-title">디스플레이</h4>
+                    <div class="menu-list">
+                        <div class="menu-item" style="display:flex; justify-content:space-between; cursor:default;">
+                            <div style="display:flex; gap:12px; align-items:center;"><span class="material-symbols-rounded" style="color:#8B5CF6;">dark_mode</span><span>다크모드</span></div>
+                            <span style="font-size:13px; color:var(--text-sub); font-weight:700;">기기 설정 따름</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="account-menu-section" style="margin-top:24px;">
+                    <h4 class="menu-title">계정 관리</h4>
+                    <div class="menu-list">
+                        <div class="menu-item ripple-btn" id="btn-delete-account" style="color:#EF4444;">
+                            <span class="material-symbols-rounded">person_remove</span><span>회원 탈퇴</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

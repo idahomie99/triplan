@@ -1266,10 +1266,18 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                     place.photos.slice(0, 5).forEach(p => { html += `<div style="width:140px; height:140px; flex-shrink:0; border-radius:12px; background:url('${p.getUrl({maxWidth:400})}') center/cover; box-shadow:0 2px 8px var(--shadow-color);"></div>`; });
                     html += `</div>`;
                 }
+                // 🌟 하트 버튼 상태 체크
+                const isSaved = mySavedSpots[placeId] ? 'favorite' : 'favorite_border';
+                const photoUrl = place.photos && place.photos.length > 0 ? place.photos[0].getUrl({maxWidth:400}) : '';
+                const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
                 html += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                         <h3 style="font-size:20px; font-weight:800; color:var(--text-main); line-height:1.3;">${place.name}</h3>
-                        <span style="background:#FEF08A; color:#D97706; padding:6px 10px; border-radius:8px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:4px; flex-shrink:0;"><span class="material-symbols-rounded" style="font-size:16px;">star</span> ${place.rating || '없음'}</span>
+                        <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+                            <button class="icon-btn ripple-btn" onclick="toggleSaveSpot('${placeId}', '${safeName}', '${photoUrl}')" style="background:var(--icon-bg); color:#EF4444;"><span class="material-symbols-rounded" id="fav-icon-${placeId}" style="transition:0.2s;">${isSaved}</span></button>
+                            <span style="background:#FEF08A; color:#D97706; padding:6px 10px; border-radius:8px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:16px;">star</span> ${place.rating || '없음'}</span>
+                        </div>
                     </div>`;
                 if(place.reviews && place.reviews.length > 0) { place.reviews.slice(0, 3).forEach(rev => { html += `<div style="background:var(--icon-bg); padding:16px; border-radius:16px; margin-bottom:12px;"><div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-sub); display:flex; align-items:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">account_circle</span> ${rev.author_name}</div><div style="font-size:14px; color:var(--text-main); line-height:1.5;">"${rev.text}"</div></div>`; }); } 
                 else { html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`; }
@@ -1845,4 +1853,234 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         };
         fetchSharedPlan();
     }
+
+    // ==========================================
+    // 🌟 5단계 보너스: 일상 데이트 & 영감 큐레이션 엔진
+    // ==========================================
+
+    // 1. 데이트 코스 모달 열기
+    document.getElementById('btn-ai-date')?.addEventListener('click', () => {
+        document.getElementById('calendar-overlay').style.zIndex = '1000';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        document.getElementById('date-course-modal').classList.add('active');
+        document.getElementById('date-location-input').value = ''; // 입력창 비워주기
+    });
+
+    // 2. 데이트 검색 실행
+    document.getElementById('btn-search-date-course')?.addEventListener('click', () => {
+        const keyword = document.getElementById('date-location-input').value.trim();
+        if(!keyword) { showCustomAlert({icon:'error', title:'알림', desc:'어느 지역인지 입력해주세요!'}); return; }
+        document.getElementById('date-course-modal').classList.remove('active');
+        showInspiration('date', keyword);
+    });
+
+    // 3. 영감 찾기 메뉴(월별/SNS) 실행
+    document.getElementById('rec-month')?.addEventListener('click', () => showInspiration('month'));
+    document.getElementById('rec-sns')?.addEventListener('click', () => showInspiration('sns'));
+
+    // 🌟 핵심 AI 엔진 (버튼 3개가 모두 이 엔진을 씁니다)
+    async function showInspiration(type, keyword = '') {
+        const modal = document.getElementById('inspiration-modal');
+        const content = document.getElementById('inspiration-content');
+        const titleEl = document.getElementById('inspiration-title');
+        
+        document.getElementById('calendar-overlay').style.zIndex = '1000';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        modal.classList.add('active');
+        
+        // 예쁜 로딩 화면 띄우기
+        content.innerHTML = `
+            <div style="padding:60px 20px; text-align:center;">
+                <span class="material-symbols-rounded" style="font-size:48px; color:#8B5CF6; animation: rotateRing 2s linear infinite;">auto_awesome</span>
+                <div style="font-size:16px; font-weight:800; color:var(--text-main); margin-top:16px;">AI가 핫플을 수집하고 있어요✨</div>
+                <div style="font-size:13px; font-weight:600; color:var(--text-sub); margin-top:8px;">약 3~5초 정도 소요됩니다.</div>
+            </div>`;
+
+        let prompt = '';
+        if (type === 'date') {
+            titleEl.innerText = `'${keyword}' 데이트 코스`;
+            prompt = `너는 데이트 코스 큐레이터야. '${keyword}' 지역의 핫한 데이트 장소 4곳(맛집 1, 카페 1, 놀거리 1, 포토존 1)을 추천해. 반드시 실존 장소여야 해. JSON 형식: { "spots": [ { "name": "정확한 장소명", "category": "맛집", "desc": "어떤 곳인지 1줄 요약", "reason": "추천 이유 1줄" } ] }`;
+        } else if (type === 'month') {
+            titleEl.innerText = `이달의 추천 여행지`;
+            const month = new Date().getMonth() + 1;
+            prompt = `너는 여행 전문가야. ${month}월에 가기 가장 좋은 세계 여행지 4곳을 추천해. 날씨가 좋거나 축제가 있는 곳 위주로. JSON 형식: { "spots": [ { "name": "도시명, 국가명", "category": "해외여행", "desc": "1줄 요약", "reason": "추천 이유 1줄" } ] }`;
+        } else if (type === 'sns') {
+            titleEl.innerText = `SNS 핫플 글로벌 명소`;
+            prompt = `인스타그램 등 SNS에서 가장 핫한 세계 여행 명소 4곳을 추천해. 인생샷 성지 위주로. JSON 형식: { "spots": [ { "name": "명소 이름, 국가명", "category": "인생샷", "desc": "1줄 요약", "reason": "추천 이유 1줄" } ] }`;
+        }
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, responseMimeType: "application/json" } })
+            });
+            const data = await response.json();
+            const parsedData = JSON.parse(data.candidates[0].content.parts[0].text);
+            
+            let html = '<div style="display:flex; flex-direction:column; gap:16px;">';
+            
+            parsedData.spots.forEach((spot, i) => {
+                const safeName = spot.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                const uniqueId = `insp-img-${Date.now()}-${i}`;
+                
+                let icon = 'place'; let color = '#3B82F6'; let bg = 'rgba(59,130,246,0.1)';
+                if(spot.category.includes('맛집')) { icon = 'restaurant'; color = '#DC2626'; bg = 'rgba(220,38,38,0.1)'; }
+                else if(spot.category.includes('카페')) { icon = 'local_cafe'; color = '#F59E0B'; bg = 'rgba(245,158,11,0.1)'; }
+                else if(spot.category.includes('놀거리') || spot.category.includes('문화')) { icon = 'attractions'; color = '#10B981'; bg = 'rgba(16,185,129,0.1)'; }
+                else { icon = 'photo_camera'; color = '#8B5CF6'; bg = 'rgba(139,92,246,0.1)'; }
+                
+                // 🌟 예쁜 큐레이션 카드 UI (누르면 구글 맵 리뷰 뜸!)
+                html += `
+                <div class="explore-card ripple-btn insp-card" data-name="${safeName}" style="background:var(--card-bg); border-radius:20px; overflow:hidden; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); display:flex; flex-direction:column; cursor:pointer;">
+                    <div id="${uniqueId}" style="width:100%; height:180px; background: #E2E8F0 url('https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400') center/cover; position:relative;">
+                        <div style="position:absolute; top:16px; left:16px; background:${bg}; color:${color}; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:4px; backdrop-filter:blur(4px); box-shadow:0 2px 10px rgba(0,0,0,0.1);"><span class="material-symbols-rounded" style="font-size:16px;">${icon}</span>${spot.category}</div>
+                    </div>
+                    <div style="padding:20px;">
+                        <h4 style="font-size:20px; font-weight:800; color:var(--text-main); margin-bottom:6px; line-height:1.3;">${spot.name}</h4>
+                        <p style="font-size:14px; font-weight:700; color:var(--text-sub); line-height:1.4; margin-bottom:12px;">${spot.desc}</p>
+                        <div style="background:rgba(16,185,129,0.1); padding:12px; border-radius:12px; display:flex; gap:8px; align-items:flex-start;">
+                            <span class="material-symbols-rounded" style="font-size:16px; color:#10B981; margin-top:1px;">lightbulb</span>
+                            <p style="font-size:13px; font-weight:700; color:#047857; line-height:1.4;">${spot.reason}</p>
+                        </div>
+                    </div>
+                </div>`;
+                
+                // 구글 지도 API로 실제 장소 사진 & place_id 찾아오기
+                setTimeout(() => {
+                    if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
+                    let searchQuery = type === 'date' ? `${keyword} ${spot.name}` : spot.name;
+                    
+                    placesService.textSearch({ query: searchQuery }, (results, status) => {
+                        if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
+                            const cardEl = document.querySelector(`.insp-card[data-name="${safeName}"]`);
+                            if(cardEl) cardEl.setAttribute('data-placeid', results[0].place_id);
+                            if(results[0].photos) {
+                                const url = results[0].photos[0].getUrl({maxWidth:400});
+                                const imgEl = document.getElementById(uniqueId);
+                                if(imgEl) imgEl.style.backgroundImage = `url('${url}')`;
+                            }
+                        }
+                    });
+                }, i * 400); // API 호출 겹치지 않게 시차 부여
+            });
+            html += '</div>';
+            content.innerHTML = html;
+            
+        } catch(e) {
+            content.innerHTML = `<div style="padding:60px 20px; text-align:center; color:#EF4444;"><span class="material-symbols-rounded" style="font-size:40px; margin-bottom:12px;">error</span><br><b style="font-size:16px;">데이터를 불러오지 못했습니다.</b><br><span style="font-size:13px; margin-top:8px; display:block;">잠시 후 다시 시도해주세요.</span></div>`;
+        }
+    }
+
+    // 🌟 추천 카드 클릭 시 구글 상세 정보창 띄우기
+    document.getElementById('inspiration-content')?.addEventListener('click', (e) => {
+        const card = e.target.closest('.insp-card');
+        if(!card) return;
+        const placeId = card.getAttribute('data-placeid');
+        
+        if(placeId) {
+            window.openPlaceDetail(placeId); // 기존에 만들어둔 완벽한 리뷰창 재활용!
+        } else {
+            showCustomAlert({icon:'info', title:'불러오는 중', desc:'지도 데이터를 가져오고 있습니다.\n1~2초 뒤에 다시 눌러주세요.'});
+        }
+    });
+
+    // ==========================================
+    // 🌟 6단계: 찜한 스팟 및 앱 설정 백엔드
+    // ==========================================
+    
+    window.mySavedSpots = {}; // 찜한 스팟을 기억할 글로벌 메모리
+
+    // 1. 로그인 시 내 찜목록 DB에서 미리 가져오기
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const q = query(collection(db, "savedSpots"), where("uid", "==", user.uid));
+            const snap = await getDocs(q);
+            window.mySavedSpots = {};
+            snap.forEach(doc => { window.mySavedSpots[doc.data().placeId] = doc.id; });
+        } else {
+            window.mySavedSpots = {};
+        }
+    });
+
+    // 2. 찜하기 버튼 토글 함수 (DB 추가/삭제)
+    window.toggleSaveSpot = async (placeId, name, photoUrl) => {
+        if (!auth.currentUser) { showCustomAlert({icon:'lock', title:'로그인 필요', desc:'장소를 찜하려면 로그인해주세요.'}); return; }
+        const icon = document.getElementById(`fav-icon-${placeId}`);
+        
+        // 찜 해제 (DB 삭제)
+        if (window.mySavedSpots[placeId]) {
+            icon.innerText = 'favorite_border';
+            icon.style.transform = 'scale(0.8)'; setTimeout(() => icon.style.transform = 'scale(1)', 150); // 하트 통통 애니메이션
+            const docId = window.mySavedSpots[placeId];
+            delete window.mySavedSpots[placeId];
+            await deleteDoc(doc(db, "savedSpots", docId));
+        } 
+        // 찜하기 (DB 추가)
+        else {
+            icon.innerText = 'favorite';
+            icon.style.transform = 'scale(1.2)'; setTimeout(() => icon.style.transform = 'scale(1)', 150);
+            const newDoc = await addDoc(collection(db, "savedSpots"), { uid: auth.currentUser.uid, placeId, name, photoUrl, createdAt: serverTimestamp() });
+            window.mySavedSpots[placeId] = newDoc.id;
+        }
+    };
+
+    // 3. 마이페이지 '찜한 스팟' 목록 열기
+    document.getElementById('btn-my-saved-spots')?.addEventListener('click', async () => {
+        if (!auth.currentUser) { showCustomAlert({icon:'lock', title:'로그인 필요', desc:'로그인 후 이용 가능합니다.'}); return; }
+        
+        const screen = document.getElementById('saved-spots-screen');
+        const list = document.getElementById('saved-spots-list');
+        screen.classList.add('active');
+        list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">불러오는 중...</div>';
+        
+        try {
+            const q = query(collection(db, "savedSpots"), where("uid", "==", auth.currentUser.uid), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            
+            if (snap.empty) {
+                list.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-sub);"><span class="material-symbols-rounded" style="font-size:48px; color:#CBD5E1; margin-bottom:16px;">heart_broken</span><h3 style="font-size:16px; font-weight:800; color:var(--text-main); margin-bottom:8px;">아직 찜한 스팟이 없어요</h3><p style="font-size:14px; font-weight:600;">마음에 드는 장소에 하트를 눌러보세요!</p></div>`;
+                return;
+            }
+            
+            let html = '';
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const defaultImg = "https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400";
+                html += `
+                <div class="explore-card ripple-btn" onclick="window.openPlaceDetail('${data.placeId}')" style="background:var(--card-bg); border-radius:16px; overflow:hidden; border:1px solid var(--card-border); display:flex; align-items:center; gap:16px; padding:12px; cursor:pointer;">
+                    <div style="width:72px; height:72px; border-radius:12px; background:url('${data.photoUrl || defaultImg}') center/cover; flex-shrink:0;"></div>
+                    <div style="flex:1;">
+                        <h4 style="font-size:16px; font-weight:800; color:var(--text-main); line-height:1.3; margin-bottom:4px;">${data.name}</h4>
+                        <span style="font-size:12px; font-weight:700; color:#EF4444; background:rgba(239,68,68,0.1); padding:4px 8px; border-radius:6px;">저장된 스팟</span>
+                    </div>
+                    <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
+                </div>`;
+            });
+            list.innerHTML = html;
+        } catch(e) {
+            console.error(e);
+            list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);"><b>[개발자 안내]</b><br>Firebase Index(색인) 설정이 필요합니다. 콘솔 에러를 확인해주세요.</div>';
+        }
+    });
+
+    // 4. 앱 설정창 열람 및 회원 탈퇴 로직
+    document.getElementById('btn-app-settings')?.addEventListener('click', () => { document.getElementById('settings-screen').classList.add('active'); });
+    
+    document.getElementById('btn-delete-account')?.addEventListener('click', () => {
+        showCustomAlert({ icon:'warning', title:'회원 탈퇴', desc:'정말로 탈퇴하시겠습니까?\n저장된 모든 플랜과 찜한 스팟이 삭제되며 복구할 수 없습니다.', showCancel:true, confirmText:'탈퇴하기', isDanger:true, 
+            onConfirm: async () => {
+                try {
+                    // 구글 Auth 계정 영구 삭제
+                    await auth.currentUser.delete(); 
+                    showCustomAlert({icon:'check_circle', title:'탈퇴 완료', desc:'그동안 이용해주셔서 감사합니다.'});
+                    document.getElementById('settings-screen').classList.remove('active');
+                    document.getElementById('account-screen').classList.remove('active');
+                } catch(e) {
+                    console.error(e);
+                    // 보안상 최근 로그인이 아닐 경우 탈퇴가 막히는 에러 핸들링
+                    showCustomAlert({icon:'error', title:'안전 보호', desc:'탈퇴를 위해 본인 인증이 다시 필요합니다.\n로그아웃 후 다시 로그인하여 탈퇴를 진행해주세요.'});
+                }
+            } 
+        });
+    });
 }); // 👈 파일의 맨 마지막 줄
