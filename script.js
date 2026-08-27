@@ -1271,19 +1271,29 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                     place.photos.slice(0, 5).forEach(p => { html += `<div style="width:140px; height:140px; flex-shrink:0; border-radius:12px; background:url('${p.getUrl({maxWidth:400})}') center/cover; box-shadow:0 2px 8px var(--shadow-color);"></div>`; });
                     html += `</div>`;
                 }
-                // 🌟 하트 버튼 상태 체크
+                // 🌟 하트 버튼 상태 체크 (위경도 수집 추가)
                 const isSaved = mySavedSpots[placeId] ? 'favorite' : 'favorite_border';
                 const photoUrl = place.photos && place.photos.length > 0 ? place.photos[0].getUrl({maxWidth:400}) : '';
                 const safeName = place.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const lat = place.geometry && place.geometry.location ? place.geometry.location.lat() : 0;
+                const lng = place.geometry && place.geometry.location ? place.geometry.location.lng() : 0;
                 
                 html += `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
                         <h3 style="font-size:20px; font-weight:800; color:var(--text-main); line-height:1.3;">${place.name}</h3>
-                        <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
-                            <button class="icon-btn ripple-btn" onclick="toggleSaveSpot('${placeId}', '${safeName}', '${photoUrl}')" style="background:var(--icon-bg); color:#EF4444;"><span class="material-symbols-rounded" id="fav-icon-${placeId}" style="transition:0.2s;">${isSaved}</span></button>
-                            <span style="background:#FEF08A; color:#D97706; padding:6px 10px; border-radius:8px; font-weight:800; font-size:14px; display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:16px;">star</span> ${place.rating || '없음'}</span>
+                        <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
+                            <!-- 🌟 네이버 길찾기 미니 이모지 버튼 -->
+                            <button class="icon-btn ripple-btn" onclick="window.open('https://map.naver.com/v5/search/${encodeURIComponent(place.name)}', '_blank')" style="background:transparent; color:#03C75A; width:36px; height:36px;"><span class="material-symbols-rounded" style="font-size:24px;">navigation</span></button>
+                            <!-- 🌟 찜하기(하트) 배경 투명화 -->
+                            <button class="icon-btn ripple-btn" onclick="toggleSaveSpot('${placeId}', '${safeName}', '${photoUrl}', ${lat}, ${lng})" style="background:transparent; color:#EF4444; width:36px; height:36px;"><span class="material-symbols-rounded" id="fav-icon-${placeId}" style="font-size:24px; transition:0.2s;">${isSaved}</span></button>
+                            <span style="background:#FEF08A; color:#D97706; padding:4px 8px; border-radius:8px; font-weight:800; font-size:13px; display:flex; align-items:center; gap:4px; margin-left:4px;"><span class="material-symbols-rounded" style="font-size:16px;">star</span> ${place.rating || '없음'}</span>
                         </div>
                     </div>`;
+                if(place.reviews && place.reviews.length > 0) { place.reviews.slice(0, 3).forEach(rev => { html += `<div style="background:var(--icon-bg); padding:16px; border-radius:16px; margin-bottom:12px;"><div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-sub); display:flex; align-items:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">account_circle</span> ${rev.author_name}</div><div style="font-size:14px; color:var(--text-main); line-height:1.5;">"${rev.text}"</div></div>`; }); } 
+                else { html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`; }
+                
+                // 불필요한 하단 버튼 제거 완료
+                document.getElementById('detail-modal-content').innerHTML = html;
                 if(place.reviews && place.reviews.length > 0) { place.reviews.slice(0, 3).forEach(rev => { html += `<div style="background:var(--icon-bg); padding:16px; border-radius:16px; margin-bottom:12px;"><div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-sub); display:flex; align-items:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">account_circle</span> ${rev.author_name}</div><div style="font-size:14px; color:var(--text-main); line-height:1.5;">"${rev.text}"</div></div>`; }); } 
                 // [수정 후 (네이버 지도 연동 버튼 듀얼 배치)]
                 else { html += `<p style="font-size:14px; color:var(--text-sub); text-align:center; padding:20px;">등록된 한글 리뷰가 없습니다.</p>`; }
@@ -1626,154 +1636,122 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     });
 
     // ==========================================
-    // 🌟 네이티브 앱 UX 3: 스와이프 삭제 & 터치 로직
+    // 🌟 네이티브 앱 UX 3: 스와이프 삭제 & 터치 로직 (듀얼 엔진 업그레이드)
     // ==========================================
-    const listContainer = document.getElementById('saved-plans-list');
-    let cardStartX = 0;
-    let cardStartY = 0;
-    let currentSwipedCard = null; // 현재 열려있는 카드 추적
+    let cardStartX = 0; let cardStartY = 0; let currentSwipedCard = null;
 
-    // 1. 손가락 닿을 때 (시작)
-    listContainer?.addEventListener('touchstart', (e) => {
-        const card = e.target.closest('.swipe-card-front');
-        if(!card) return;
-        
-        // 다른 카드가 열려있으면 닫아줌
-        if(currentSwipedCard && currentSwipedCard !== card) {
-            currentSwipedCard.style.transform = 'translateX(0px)';
-            currentSwipedCard.classList.remove('swiped');
-            currentSwipedCard = null;
-        }
-        
-        card.style.transition = 'none'; // 드래그 중엔 부드러운 애니메이션 끄기
-        cardStartX = e.touches[0].clientX;
-        cardStartY = e.touches[0].clientY;
-    }, {passive: true});
+    ['saved-plans-list', 'saved-spots-list'].forEach(listId => {
+        const listContainer = document.getElementById(listId);
+        if(!listContainer) return;
 
-    // 2. 손가락 드래그 중 (이동)
-    listContainer?.addEventListener('touchmove', (e) => {
-        const card = e.target.closest('.swipe-card-front');
-        if(!card || cardStartX === 0) return;
-        
-        const diffX = e.touches[0].clientX - cardStartX;
-        const diffY = e.touches[0].clientY - cardStartY;
-        
-        // 상하 스크롤이 더 크면 스와이프 무시 (리스트 스크롤 허용)
-        if (Math.abs(diffY) > Math.abs(diffX)) return;
-        
-        // 왼쪽으로만 밀리게 처리 (오른쪽으로 밀면 0까지만)
-        if (diffX < 0) {
-            const moveX = Math.max(diffX, -100); // 최대 -100px 까지만 저항감 있게
-            card.style.transform = `translateX(${moveX}px)`;
-            if(e.cancelable) e.preventDefault(); // 스와이프 중 화면 꿀렁임 방어
-        }
-    }, {passive: false});
+        listContainer.addEventListener('touchstart', (e) => {
+            const card = e.target.closest('.swipe-card-front');
+            if(!card) return;
+            if(currentSwipedCard && currentSwipedCard !== card) {
+                currentSwipedCard.style.transform = 'translateX(0px)';
+                currentSwipedCard.classList.remove('swiped'); currentSwipedCard = null;
+            }
+            card.style.transition = 'none'; 
+            cardStartX = e.touches[0].clientX; cardStartY = e.touches[0].clientY;
+        }, {passive: true});
 
-    // 3. 손가락 뗐을 때 (결정)
-    listContainer?.addEventListener('touchend', (e) => {
-        const card = e.target.closest('.swipe-card-front');
-        if(!card || cardStartX === 0) return;
-        
-        const diffX = e.changedTouches[0].clientX - cardStartX;
-        card.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; // 튕기는 애니메이션 온!
-        
-        if (diffX < -40) {
-            // -40px 이상 밀었으면 둥근 휴지통 공간만큼 찰칵! 열림
-            card.style.transform = 'translateX(-72px)';
-            card.classList.add('swiped');
-            currentSwipedCard = card;
-        } else {
-            // 찔끔 밀었으면 다시 스르륵 원상복구
-            card.style.transform = 'translateX(0px)';
-            card.classList.remove('swiped');
-            if(currentSwipedCard === card) currentSwipedCard = null;
-        }
-        cardStartX = 0; cardStartY = 0;
-    });
+        listContainer.addEventListener('touchmove', (e) => {
+            const card = e.target.closest('.swipe-card-front');
+            if(!card || cardStartX === 0) return;
+            const diffX = e.touches[0].clientX - cardStartX; const diffY = e.touches[0].clientY - cardStartY;
+            if (Math.abs(diffY) > Math.abs(diffX)) return;
+            if (diffX < 0) {
+                card.style.transform = `translateX(${Math.max(diffX, -100)}px)`;
+                if(e.cancelable) e.preventDefault(); 
+            }
+        }, {passive: false});
 
-    // 4. 클릭 감지기 (카드 열기 vs 휴지통 삭제)
-    listContainer?.addEventListener('click', async (e) => {
-        // [삭제 버튼]을 눌렀을 때
-        const deleteBtn = e.target.closest('.btn-delete-plan');
-        if (deleteBtn) {
-            const docId = deleteBtn.getAttribute('data-id');
-            showCustomAlert({
-                icon: 'delete', title: '일정 삭제', desc: '정말로 이 일정을 삭제하시겠습니까?\n삭제 후에는 복원할 수 없습니다.', 
-                showCancel: true, confirmText: '삭제하기', isDanger: true,
-                onConfirm: async () => {
-                    try {
-                        const wrapper = document.getElementById(`plan-wrapper-${docId}`);
-                        wrapper.classList.add('deleting'); // 스르륵 사라지는 CSS 마법
-                        await deleteDoc(doc(db, "triplans", docId)); // 🔥 DB에서 영구 삭제
-                        setTimeout(() => wrapper.remove(), 300); // 0.3초 뒤 화면에서 삭제
-                    } catch(err) {
-                        console.error(err);
-                        showCustomAlert({ icon:'error', title:'오류', desc:'삭제에 실패했습니다.' });
-                    }
-                }
-            });
-            return; // 휴지통 눌렀으면 여기서 종료
-        }
-
-        // [카드 뚜껑]을 눌렀을 때
-        const card = e.target.closest('.swipe-card-front');
-        if (!card) return;
-        
-        // 카드가 스와이프된 상태로 뚜껑을 누르면? -> 닫아주기만 하고 안으로 안 들어감! (iOS 국룰)
-        if (card.classList.contains('swiped')) {
-            card.style.transform = 'translateX(0px)';
-            card.classList.remove('swiped');
-            currentSwipedCard = null;
-            return;
-        }
-        
-        // 🌟 안 열려있을 때 누르면 정상적으로 일정표 복구!
-        const index = card.getAttribute('data-index');
-        const planData = loadedSavedPlans[index];
-        if (!planData) return;
-
-        currentDocId = planData.docId; // 🌟 불러온 카드의 DB 고유 ID 장착!
-
-        aiData.startDate = planData.startDate ? new Date(planData.startDate) : null;
-        aiData.endDate = planData.endDate ? new Date(planData.endDate) : null;
-        aiData.totalTripDays = planData.totalTripDays;
-        aiData.destinations = planData.destinations || [{city: '여행지'}];
-        aiData.themes = planData.themes || [];
-        dailyPlans = planData.dailyPlans;
-        
-        document.getElementById('ai-result-title').innerText = planData.title;
-        document.getElementById('ai-result-subtitle').innerText = planData.subtitle;
-        
-        let tabsHtml = '';
-        for(let i=1; i<=aiData.totalTripDays; i++) {
-            let tempDate = aiData.startDate ? new Date(aiData.startDate) : new Date();
-            tempDate.setDate(tempDate.getDate() + (i - 1));
-            tabsHtml += `<div class="day-tab ${i===1?'active':''}" data-day="${i}"><div class="d-day">Day ${i}</div><div class="d-date">${tempDate.getMonth()+1}.${tempDate.getDate()}</div></div>`;
-        }
-        document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
-
-        document.querySelectorAll('.day-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active')); 
-                tab.classList.add('active');
-                renderDayPlan(parseInt(tab.getAttribute('data-day')), false);
-            });
+        listContainer.addEventListener('touchend', (e) => {
+            const card = e.target.closest('.swipe-card-front');
+            if(!card || cardStartX === 0) return;
+            const diffX = e.changedTouches[0].clientX - cardStartX;
+            card.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; 
+            if (diffX < -40) { card.style.transform = 'translateX(-72px)'; card.classList.add('swiped'); currentSwipedCard = card; } 
+            else { card.style.transform = 'translateX(0px)'; card.classList.remove('swiped'); if(currentSwipedCard === card) currentSwipedCard = null; }
+            cardStartX = 0; cardStartY = 0;
         });
 
-        renderDayPlan(1, false);
-        const mainDest = aiData.destinations[0]?.city || '여행지';
-        initMapForResult(mainDest); 
+        listContainer.addEventListener('click', async (e) => {
+            // [1] 플랜 휴지통 삭제
+            const deletePlanBtn = e.target.closest('.btn-delete-plan');
+            if (deletePlanBtn) {
+                const docId = deletePlanBtn.getAttribute('data-id');
+                showCustomAlert({
+                    icon: 'delete', title: '일정 삭제', desc: '정말로 이 일정을 삭제하시겠습니까?', showCancel: true, confirmText: '삭제하기', isDanger: true,
+                    onConfirm: async () => {
+                        const wrapper = document.getElementById(`plan-wrapper-${docId}`); wrapper.classList.add('deleting');
+                        await deleteDoc(doc(db, "triplans", docId)); setTimeout(() => wrapper.remove(), 300);
+                    }
+                }); return;
+            }
 
-        isCurrentPlanSaved = true; 
-        const saveBtn = document.querySelector('.floating-save-btn');
-        if(saveBtn) { 
-            saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!'; 
-            saveBtn.style.background = 'rgba(16, 185, 129, 0.85)'; // 반투명 에메랄드
-            saveBtn.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.3)';
-            saveBtn.style.pointerEvents = 'none'; 
-        }
+            // [2] 찜한 스팟 휴지통 삭제
+            const deleteSpotBtn = e.target.closest('.btn-delete-spot');
+            if (deleteSpotBtn) {
+                const docId = deleteSpotBtn.getAttribute('data-id');
+                const placeId = deleteSpotBtn.getAttribute('data-placeid');
+                showCustomAlert({
+                    icon: 'delete', title: '스팟 삭제', desc: '찜한 스팟을 삭제하시겠습니까?', showCancel: true, confirmText: '삭제하기', isDanger: true,
+                    onConfirm: async () => {
+                        const wrapper = document.getElementById(`spot-wrapper-${docId}`); wrapper.classList.add('deleting');
+                        await deleteDoc(doc(db, "savedSpots", docId)); 
+                        if (window.mySavedSpots[placeId]) delete window.mySavedSpots[placeId];
+                        setTimeout(() => wrapper.remove(), 300);
+                    }
+                }); return;
+            }
 
-        document.getElementById('ai-result-screen').classList.add('active');
+            // [3] 스와이프 열린 상태에서 클릭하면 닫기만 함
+            const card = e.target.closest('.swipe-card-front');
+            if (!card) return;
+            if (card.classList.contains('swiped')) {
+                card.style.transform = 'translateX(0px)'; card.classList.remove('swiped'); currentSwipedCard = null; return;
+            }
+            
+            // [4] 플랜 열기 (찜한 스팟은 HTML 인라인 onclick으로 바로 열리므로 패스)
+            if (listId === 'saved-plans-list') {
+                const index = card.getAttribute('data-index');
+                const planData = loadedSavedPlans[index];
+                if (!planData) return;
+
+                currentDocId = planData.docId; 
+                aiData.startDate = planData.startDate ? new Date(planData.startDate) : null;
+                aiData.endDate = planData.endDate ? new Date(planData.endDate) : null;
+                aiData.totalTripDays = planData.totalTripDays; aiData.destinations = planData.destinations || [{city: '여행지'}];
+                aiData.themes = planData.themes || []; dailyPlans = planData.dailyPlans;
+                
+                document.getElementById('ai-result-title').innerText = planData.title;
+                document.getElementById('ai-result-subtitle').innerText = planData.subtitle;
+                
+                let tabsHtml = '';
+                for(let i=1; i<=aiData.totalTripDays; i++) {
+                    let tempDate = aiData.startDate ? new Date(aiData.startDate) : new Date(); tempDate.setDate(tempDate.getDate() + (i - 1));
+                    tabsHtml += `<div class="day-tab ${i===1?'active':''}" data-day="${i}"><div class="d-day">Day ${i}</div><div class="d-date">${tempDate.getMonth()+1}.${tempDate.getDate()}</div></div>`;
+                }
+                document.getElementById('ai-result-tabs').innerHTML = tabsHtml;
+
+                document.querySelectorAll('.day-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active');
+                        renderDayPlan(parseInt(tab.getAttribute('data-day')), false);
+                    });
+                });
+
+                renderDayPlan(1, false); initMapForResult(aiData.destinations[0]?.city || '여행지'); 
+                isCurrentPlanSaved = true; 
+                const saveBtn = document.querySelector('.floating-save-btn');
+                if(saveBtn) { 
+                    saveBtn.innerHTML = '<span class="material-symbols-rounded">bookmark_added</span> 저장 완료!'; 
+                    saveBtn.style.background = 'rgba(16, 185, 129, 0.85)'; saveBtn.style.boxShadow = '0 8px 24px rgba(16, 185, 129, 0.3)'; saveBtn.style.pointerEvents = 'none'; 
+                }
+                document.getElementById('ai-result-screen').classList.add('active');
+            }
+        });
     });
 
     // 뒤로가기 버튼 로직
@@ -2103,25 +2081,26 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         }
     });
 
-    // 2. 찜하기 버튼 토글 함수 (DB 추가/삭제)
-    window.toggleSaveSpot = async (placeId, name, photoUrl) => {
+    // 2. 찜하기 버튼 토글 함수 (DB 추가/삭제 & 피드백 알림)
+    window.toggleSaveSpot = async (placeId, name, photoUrl, lat = 0, lng = 0) => {
         if (!auth.currentUser) { showCustomAlert({icon:'lock', title:'로그인 필요', desc:'장소를 찜하려면 로그인해주세요.'}); return; }
         const icon = document.getElementById(`fav-icon-${placeId}`);
         
-        // 찜 해제 (DB 삭제)
         if (window.mySavedSpots[placeId]) {
             icon.innerText = 'favorite_border';
-            icon.style.transform = 'scale(0.8)'; setTimeout(() => icon.style.transform = 'scale(1)', 150); // 하트 통통 애니메이션
+            icon.style.transform = 'scale(0.8)'; setTimeout(() => icon.style.transform = 'scale(1)', 150); 
             const docId = window.mySavedSpots[placeId];
             delete window.mySavedSpots[placeId];
             await deleteDoc(doc(db, "savedSpots", docId));
-        } 
-        // 찜하기 (DB 추가)
-        else {
+            showCustomAlert({icon:'bookmark_remove', title:'찜 해제', desc:'찜한 스팟에서 삭제되었습니다.'}); // 🌟 알림 추가!
+        } else {
             icon.innerText = 'favorite';
             icon.style.transform = 'scale(1.2)'; setTimeout(() => icon.style.transform = 'scale(1)', 150);
-            const newDoc = await addDoc(collection(db, "savedSpots"), { uid: auth.currentUser.uid, placeId, name, photoUrl, createdAt: serverTimestamp() });
+            const newDoc = await addDoc(collection(db, "savedSpots"), { 
+                uid: auth.currentUser.uid, placeId, name, photoUrl, lat, lng, createdAt: serverTimestamp() 
+            });
             window.mySavedSpots[placeId] = newDoc.id;
+            showCustomAlert({icon:'bookmark_added', title:'찜 완료', desc:'마이페이지 찜한 스팟에 저장되었습니다!'}); // 🌟 알림 추가!
         }
     };
 
@@ -2148,13 +2127,20 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 const data = docSnap.data();
                 const defaultImg = "https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400";
                 html += `
-                <div class="explore-card ripple-btn" onclick="window.openPlaceDetail('${data.placeId}')" style="background:var(--card-bg); border-radius:16px; overflow:hidden; border:1px solid var(--card-border); display:flex; align-items:center; gap:16px; padding:12px; cursor:pointer;">
-                    <div style="width:72px; height:72px; border-radius:12px; background:url('${data.photoUrl || defaultImg}') center/cover; flex-shrink:0;"></div>
-                    <div style="flex:1;">
-                        <h4 style="font-size:16px; font-weight:800; color:var(--text-main); line-height:1.3; margin-bottom:4px;">${data.name}</h4>
-                        <span style="font-size:12px; font-weight:700; color:#EF4444; background:rgba(239,68,68,0.1); padding:4px 8px; border-radius:6px;">저장된 스팟</span>
+                <div class="swipe-wrapper" id="spot-wrapper-${docSnap.id}" style="margin-bottom:16px;">
+                    <div class="swipe-action-container">
+                        <button class="swipe-circle-btn btn-delete-spot ripple-btn" data-id="${docSnap.id}" data-placeid="${data.placeId}">
+                            <span class="material-symbols-rounded" style="font-size:24px;">delete</span>
+                        </button>
                     </div>
-                    <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
+                    <div class="swipe-card-front ripple-btn" onclick="window.openPlaceDetail('${data.placeId}')" style="background:var(--card-bg); border-radius:16px; overflow:hidden; border:1px solid var(--card-border); display:flex; align-items:center; gap:16px; padding:12px; cursor:pointer; width:100%; box-sizing:border-box;">
+                        <div style="width:72px; height:72px; border-radius:12px; background:url('${data.photoUrl || defaultImg}') center/cover; flex-shrink:0;"></div>
+                        <div style="flex:1;">
+                            <h4 style="font-size:16px; font-weight:800; color:var(--text-main); line-height:1.3; margin-bottom:4px;">${data.name}</h4>
+                            <span style="font-size:12px; font-weight:700; color:#EF4444; background:rgba(239,68,68,0.1); padding:4px 8px; border-radius:6px;">저장된 스팟</span>
+                        </div>
+                        <span class="material-symbols-rounded" style="color:#CBD5E1;">chevron_right</span>
+                    </div>
                 </div>`;
             });
             list.innerHTML = html;

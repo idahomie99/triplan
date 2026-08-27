@@ -528,7 +528,14 @@
                 <h2>찜한 스팟</h2>
                 <div class="header-right"></div>
             </header>
-            <div id="saved-spots-list" style="flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;"></div>
+            
+            <!-- 🌟 지도로 보기 & 폴더 추가 영역 -->
+            <div style="display:flex; justify-content:space-between; padding:16px 24px 0 24px;">
+                <button class="ripple-btn" style="flex:1; margin-right:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="showCustomAlert({icon:'map', title:'준비 중', desc:'지도로 보기 기능을 위해\\n데이터베이스를 업그레이드하고 있습니다!\\n조금만 기다려주세요.'})"><span class="material-symbols-rounded" style="font-size:18px; color:#2563EB;">map</span>지도로 보기</button>
+                <button class="ripple-btn" style="flex:1; margin-left:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="showCustomAlert({icon:'folder', title:'준비 중', desc:'폴더 관리 기능을 위해\\n데이터베이스를 업그레이드하고 있습니다!\\n조금만 기다려주세요.'})"><span class="material-symbols-rounded" style="font-size:18px; color:#F59E0B;">create_new_folder</span>새 폴더</button>
+            </div>
+
+            <div id="saved-spots-list" style="flex: 1; padding: 16px 24px 24px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 0;"></div>
         </div>
 
         <!-- 🌟 새로 추가: 앱 설정 화면 -->
