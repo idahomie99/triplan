@@ -1905,7 +1905,6 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     // 🌟 5단계 보너스: 일상 데이트 & 영감 큐레이션 엔진 (필터/모달 업그레이드)
     // ==========================================
 
-    let lastInspType = '';
     let lastInspParams = null; // 리프레시를 위해 조건 묶음 통째로 기억
 
     // 1. 데이트 코스 모달 열기
@@ -2126,7 +2125,7 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         if(placeId) { window.openPlaceDetail(placeId); } 
         else { showCustomAlert({icon:'info', title:'불러오는 중', desc:'지도 데이터를 가져오고 있습니다.\n1~2초 뒤에 다시 눌러주세요.'}); }
     });
-    
+
     // ==========================================
     // 🌟 6단계: 찜한 스팟 및 앱 설정 백엔드
     // ==========================================
