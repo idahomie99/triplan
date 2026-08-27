@@ -1258,9 +1258,14 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         document.getElementById('calendar-overlay').style.zIndex = '1000'; document.getElementById('calendar-overlay').style.display = 'block'; document.getElementById('place-detail-modal').classList.add('active');
         document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-sub);">정보를 불러오는 중입니다...</div>';
         if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
-        placesService.getDetails({ placeId: placeId, fields: ['name', 'rating', 'reviews', 'url', 'photos'] }, (place, status) => {
+        // [수정 후 (geometry 추가 및 미니맵 태그 추가)]
+        placesService.getDetails({ placeId: placeId, fields: ['name', 'rating', 'reviews', 'url', 'photos', 'geometry'] }, (place, status) => {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
                 let html = '';
+                
+                // 🌟 미니 지도 캔버스 추가!
+                html += `<div id="detail-mini-map" style="width:100%; height:180px; border-radius:16px; margin-bottom:16px; background:#E2E8F0; overflow:hidden;"></div>`;
+                
                 if(place.photos && place.photos.length > 0) {
                     html += `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:16px; scrollbar-width:none; -webkit-overflow-scrolling: touch;">`;
                     place.photos.slice(0, 5).forEach(p => { html += `<div style="width:140px; height:140px; flex-shrink:0; border-radius:12px; background:url('${p.getUrl({maxWidth:400})}') center/cover; box-shadow:0 2px 8px var(--shadow-color);"></div>`; });
@@ -1288,7 +1293,18 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                     <button class="search-btn ripple-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:#2563EB; font-size:14px; padding:12px;" onclick="window.open('${place.url}', '_blank')"><span class="material-symbols-rounded" style="font-size:18px;">map</span>구글 맵</button>
                     <button class="search-btn ripple-btn" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:#03C75A; font-size:14px; padding:12px; color:white;" onclick="window.open('https://map.naver.com/v5/search/${encodeURIComponent(place.name)}', '_blank')"><span class="material-symbols-rounded" style="font-size:18px;">navigation</span>네이버 길찾기</button>
                 </div>`;
+                // [수정 후 (실제 지도 렌더링 로직 추가)]
                 document.getElementById('detail-modal-content').innerHTML = html;
+
+                // 🌟 미니 지도에 핀 꽂기 로직
+                if (place.geometry && place.geometry.location) {
+                    const lat = place.geometry.location.lat();
+                    const lng = place.geometry.location.lng();
+                    const miniMap = new google.maps.Map(document.getElementById('detail-mini-map'), {
+                        center: {lat, lng}, zoom: 15, disableDefaultUI: true, gestureHandling: 'none'
+                    });
+                    new google.maps.Marker({position: {lat, lng}, map: miniMap});
+                }
             } else { document.getElementById('detail-modal-content').innerHTML = '<div style="text-align:center; padding: 20px;">리뷰 정보를 불러오지 못했습니다.</div>'; }
         });
     };
@@ -1349,6 +1365,21 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             if (startY === 0) return; 
             const diff = currentY - startY;
             if (diff > 100) { 
+                // 🌟 추천 여행지 창은 내리면 경고창 띄우기!
+                if (sheet.id === 'inspiration-modal') {
+                    sheet.style.transform = ''; startY = 0; currentY = 0;
+                    showCustomAlert({
+                        icon: 'warning', title: '창 닫기', desc: '조회한 추천 핫플 목록이 사라집니다.\n정말 닫으시겠습니까?',
+                        showCancel: true, confirmText: '닫기', isDanger: true,
+                        onConfirm: () => {
+                            sheet.classList.remove('active');
+                            document.getElementById('calendar-overlay').style.zIndex = '';
+                            document.getElementById('calendar-overlay').style.display = 'none';
+                        }
+                    });
+                    return;
+                }
+                
                 sheet.classList.remove('active'); 
                 document.getElementById('calendar-overlay').style.zIndex = ''; 
                 document.getElementById('calendar-overlay').style.display = 'none'; 
@@ -1356,6 +1387,21 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             }
             sheet.style.transform = ''; startY = 0; currentY = 0;
         });
+
+    }); // forEach 종료괄호
+
+    // 🌟 X 버튼 클릭 시에도 똑같이 경고창 띄우기
+    document.getElementById('btn-close-insp-modal')?.addEventListener('click', () => {
+        showCustomAlert({
+            icon: 'warning', title: '창 닫기', desc: '조회한 추천 핫플 목록이 사라집니다.\n정말 닫으시겠습니까?',
+            showCancel: true, confirmText: '닫기', isDanger: true,
+            onConfirm: () => {
+                document.getElementById('inspiration-modal').classList.remove('active');
+                document.getElementById('calendar-overlay').style.zIndex = '';
+                document.getElementById('calendar-overlay').style.display = 'none';
+            }
+        });
+    });
     });
 
     let edgeStartX = 0; let edgeStartY = 0;
@@ -1415,7 +1461,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         // 기존 meta 태그를 다 지우고, 현재 모드에 맞는 딱 1개의 태그만 강제로 쑤셔 넣습니다.
         document.querySelectorAll('meta[name="theme-color"]').forEach(el => el.remove());
         
-        const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('triplan_theme') || 'system';
+        const isDarkMode = (savedTheme === 'dark') || (savedTheme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         const targetColor = isDarkMode ? darkColor : lightColor;
         
         const newMeta = document.createElement('meta');
@@ -1947,7 +1994,15 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             const data = await response.json();
             const parsedData = JSON.parse(data.candidates[0].content.parts[0].text);
             
-            let html = '<div style="display:flex; flex-direction:column; gap:16px;">';
+            // [수정 후]
+            let html = `
+            <div class="explore-chips-container" style="position:sticky; top:0; background:var(--bg-body); padding:10px 0 16px 0; margin:0 -20px 16px -20px; padding-left:20px; z-index:10; border-bottom:1px solid var(--card-border);">
+                <div class="explore-chip active insp-filter" data-filter="all">전체보기</div>
+                <div class="explore-chip insp-filter" data-filter="맛집">식사/맛집</div>
+                <div class="explore-chip insp-filter" data-filter="카페">카페/디저트</div>
+                <div class="explore-chip insp-filter" data-filter="놀거리">관광/놀거리</div>
+            </div>
+            <div id="insp-cards-wrap" style="display:flex; flex-direction:column; gap:16px;">`;
             
             parsedData.spots.forEach((spot, i) => {
                 const safeName = spot.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
@@ -1959,12 +2014,17 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 else if(spot.category.includes('놀거리') || spot.category.includes('문화') || spot.category.includes('액티비티')) { icon = 'attractions'; color = '#10B981'; bg = 'rgba(16,185,129,0.1)'; }
                 else { icon = 'photo_camera'; color = '#8B5CF6'; bg = 'rgba(139,92,246,0.1)'; }
                 
+                // 🌟 카테고리 탭 분류용 데이터 속성 추가
+                let filterType = '놀거리';
+                if(icon === 'restaurant') filterType = '맛집';
+                else if(icon === 'local_cafe') filterType = '카페';
+                
+                // 🌟 뱃지를 흰색 배경 영역(글씨 위)으로 빼서 시인성 극대화!
                 html += `
-                <div class="explore-card ripple-btn insp-card" data-name="${safeName}" style="background:var(--card-bg); border-radius:20px; overflow:hidden; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); display:flex; flex-direction:column; cursor:pointer;">
-                    <div id="${uniqueId}" style="width:100%; height:180px; background: #E2E8F0 url('https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400') center/cover; position:relative;">
-                        <div style="position:absolute; top:16px; left:16px; background:${bg}; color:${color}; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:4px; backdrop-filter:blur(4px); box-shadow:0 2px 10px rgba(0,0,0,0.1);"><span class="material-symbols-rounded" style="font-size:16px;">${icon}</span>${spot.category}</div>
-                    </div>
+                <div class="explore-card ripple-btn insp-card" data-name="${safeName}" data-type="${filterType}" style="background:var(--card-bg); border-radius:20px; overflow:hidden; border:1px solid var(--card-border); box-shadow:0 4px 15px var(--shadow-color); display:flex; flex-direction:column; cursor:pointer;">
+                    <div id="${uniqueId}" style="width:100%; height:180px; background: #E2E8F0 url('https://images.unsplash.com/photo-1527631509225-7e23115584a3?q=80&w=400') center/cover; position:relative;"></div>
                     <div style="padding:20px;">
+                        <div style="margin-bottom:8px;"><span class="tc-category" style="color:${color}; background:${bg}; padding:4px 8px; border-radius:6px; font-weight:800; font-size:12px; display:inline-flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:14px;">${icon}</span>${spot.category}</span></div>
                         <h4 style="font-size:20px; font-weight:800; color:var(--text-main); margin-bottom:6px; line-height:1.3;">${spot.name}</h4>
                         <p style="font-size:14px; font-weight:700; color:var(--text-sub); line-height:1.4; margin-bottom:12px;">${spot.desc}</p>
                         <div style="background:rgba(16,185,129,0.1); padding:12px; border-radius:12px; display:flex; gap:8px; align-items:flex-start;">
@@ -1998,6 +2058,33 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             content.innerHTML = `<div style="padding:60px 20px; text-align:center; color:#EF4444;"><span class="material-symbols-rounded" style="font-size:40px; margin-bottom:12px;">error</span><br><b style="font-size:16px;">데이터를 불러오지 못했습니다.</b><br><span style="font-size:13px; margin-top:8px; display:block;">잠시 후 다시 시도해주세요.</span></div>`;
         }
     }
+
+    // 🌟 추천 카드 카테고리 탭 및 카드 클릭 이벤트
+    document.getElementById('inspiration-content')?.addEventListener('click', (e) => {
+        // 1. 카테고리 탭 클릭 시
+        const filterChip = e.target.closest('.insp-filter');
+        if(filterChip) {
+            document.querySelectorAll('.insp-filter').forEach(c => c.classList.remove('active'));
+            filterChip.classList.add('active');
+            const type = filterChip.getAttribute('data-filter');
+            document.querySelectorAll('.insp-card').forEach(card => {
+                if(type === 'all' || card.getAttribute('data-type') === type) card.style.display = 'flex';
+                else card.style.display = 'none';
+            });
+            return;
+        }
+
+        // 2. 카드 클릭 시 상세 정보창 띄우기
+        const card = e.target.closest('.insp-card');
+        if(!card) return;
+        const placeId = card.getAttribute('data-placeid');
+        
+        if(placeId) {
+            window.openPlaceDetail(placeId);
+        } else {
+            showCustomAlert({icon:'info', title:'불러오는 중', desc:'지도 데이터를 가져오고 있습니다.\n1~2초 뒤에 다시 눌러주세요.'});
+        }
+    });
 
     // ==========================================
     // 🌟 6단계: 찜한 스팟 및 앱 설정 백엔드
@@ -2098,4 +2185,61 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             } 
         });
     });
+
+    // ==========================================
+    // 🌟 7단계: 화면 테마 설정 (라이트/다크 수동 제어)
+    // ==========================================
+    const applyTheme = (theme) => {
+        const root = document.documentElement;
+        if (theme === 'dark') root.setAttribute('data-theme', 'dark');
+        else if (theme === 'light') root.setAttribute('data-theme', 'light');
+        else root.removeAttribute('data-theme');
+        
+        localStorage.setItem('triplan_theme', theme); // 폰 껐다 켜도 기억하도록 저장
+        
+        // 텍스트 및 파란색 체크 아이콘 UI 업데이트
+        let text = '기기 설정 따름';
+        if (theme === 'dark') text = '항상 어둡게';
+        else if (theme === 'light') text = '항상 밝게';
+        const statusText = document.getElementById('theme-status-text');
+        if (statusText) statusText.innerText = text;
+        
+        document.querySelectorAll('.theme-option').forEach(el => {
+            const check = el.querySelector('.check-icon');
+            if (el.getAttribute('data-theme') === theme) check.style.display = 'block';
+            else check.style.display = 'none';
+        });
+        
+        updateThemeColor(); // 아이폰 상단바 색상도 동기화
+    };
+
+    // 모달창 띄우기
+    document.getElementById('btn-theme-setting')?.addEventListener('click', () => {
+        document.getElementById('calendar-overlay').style.zIndex = '1000';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        document.getElementById('theme-select-modal').classList.add('active');
+    });
+
+    // 테마 옵션(밝게/어둡게/시스템) 클릭 시
+    document.querySelectorAll('.theme-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const theme = opt.getAttribute('data-theme');
+            applyTheme(theme);
+            document.getElementById('theme-select-modal').classList.remove('active');
+            document.getElementById('calendar-overlay').style.display = 'none';
+        });
+    });
+
+    // 앱 켤 때마다 마지막 설정값 불러와서 자동 적용!
+    applyTheme(localStorage.getItem('triplan_theme') || 'system');
+    
+    // 유저가 '기기 설정 따름' 모드일 때, 폰 제어센터에서 다크모드를 껐다 켜면 실시간으로 반영
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if((localStorage.getItem('triplan_theme') || 'system') === 'system') {
+                updateThemeColor();
+                applyTheme('system'); // 강제 리렌더링
+            }
+        });
+    }
 }); // 👈 파일의 맨 마지막 줄
