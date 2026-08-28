@@ -681,11 +681,9 @@
                     <p id="ai-result-subtitle" style="font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">AI가 완성한 최적의 동선</p>
                 </div>
                 <div class="header-right" style="display: flex; width: auto; gap: 4px; justify-content: flex-end;">
-                    <!-- 🌟 가계부 & 정산 버튼 -->
-                    <button class="icon-btn" id="btn-open-expense"><span class="material-symbols-rounded">payments</span></button>
                     <button class="icon-btn" id="btn-toggle-map-top"><span class="material-symbols-rounded" id="top-map-icon">map</span></button>
-                    <button class="icon-btn" id="btn-download-plan"><span class="material-symbols-rounded">download</span></button>
-                    <button class="icon-btn" id="btn-share-plan"><span class="material-symbols-rounded">share</span></button>
+                    <!-- 🌟 복잡한 버튼들을 숨길 '더보기' 버튼 -->
+                    <button class="icon-btn" onclick="document.getElementById('plan-action-modal').classList.add('active'); document.getElementById('calendar-overlay').style.zIndex='1030'; document.getElementById('calendar-overlay').style.display='block';"><span class="material-symbols-rounded">more_horiz</span></button>
                 </div>
             </header>
             
@@ -782,16 +780,49 @@
                 </div>
 
                 <!-- 입력 폼 -->
-                <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                    <input type="text" id="expense-title-input" class="ai-text-input" placeholder="내역 (예: 흑돼지)" style="flex: 1.5; font-size: 14px;">
-                    <input type="number" id="expense-amount-input" class="ai-text-input" placeholder="금액" style="flex: 1; font-size: 14px;">
-                    <button class="search-btn ripple-btn" id="btn-add-expense" style="padding: 0 16px; font-size: 14px; background: #10B981;">추가</button>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+                    <input type="text" id="expense-title-input" placeholder="어디서 돈을 쓰셨나요? (예: 흑돼지 식당)" style="width: 100%; padding: 16px; border-radius: 12px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 15px; outline: none; box-sizing: border-box; font-family: inherit;">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="number" id="expense-amount-input" placeholder="결제 금액 (원)" style="flex: 1; padding: 16px; border-radius: 12px; border: 1px solid var(--card-border); background: var(--card-bg); color: var(--text-main); font-size: 15px; outline: none; box-sizing: border-box; font-family: inherit;">
+                        <button class="ripple-btn" id="btn-add-expense" style="padding: 0 24px; border-radius: 12px; background: #10B981; color: white; font-weight: 800; font-size: 15px; border: none; cursor: pointer; white-space: nowrap;">추가하기</button>
+                    </div>
                 </div>
 
                 <!-- 지출 리스트 -->
                 <div style="font-size: 14px; font-weight: 800; color: var(--text-main); margin-bottom: 12px;">지출 상세 내역</div>
                 <div id="expense-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
                     <!-- JS로 리스트가 렌더링 됩니다 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 🌟 일정 더보기 메뉴 모달 (토스/iOS 스타일 액션 시트) -->
+        <div id="plan-action-modal" class="bottom-sheet" style="z-index: 1040;">
+            <div class="sheet-header">
+                <h3>일정 옵션</h3>
+                <button class="icon-btn" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="sheet-content" style="padding-bottom: 30px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    
+                    <!-- 1. 가계부 버튼 -->
+                    <div class="ripple-btn" id="btn-open-expense" onclick="document.getElementById('plan-action-modal').classList.remove('active');" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(37,99,235,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #2563EB;">payments</span></div>
+                        여행 가계부 및 1/N 정산
+                    </div>
+                    
+                    <!-- 2. 이미지 저장 버튼 -->
+                    <div class="ripple-btn" id="btn-download-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active');" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #10B981;">download</span></div>
+                        일정표 이미지로 저장
+                    </div>
+                    
+                    <!-- 3. 링크 공유 버튼 -->
+                    <div class="ripple-btn" id="btn-share-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active');" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139,92,246,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #8B5CF6;">share</span></div>
+                        친구에게 일정 공유
+                    </div>
+
                 </div>
             </div>
         </div>
