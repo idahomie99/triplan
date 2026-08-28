@@ -2734,29 +2734,21 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     };
 
     // ==========================================
-    // 🌟 Phase 5: 일정표 사진 당겨서 새로고침 (Pull-to-Refresh)
+    // 🌟 Phase 5: 일정표 사진 당겨서 새로고침 (iOS 네이티브 바운스 차단 완벽 적용)
     // ==========================================
     const timelineContainer = document.getElementById('ai-timeline-container');
-    if (timelineContainer) {
+    const tlIndicator = document.getElementById('pull-refresh-indicator');
+
+    if (timelineContainer && tlIndicator) {
         let tStartY = 0; let tCurrentY = 0; let tIsPulling = false;
-        
-        // 새로고침 UI(보라색 빙글빙글 아이콘) 생성
-        const tlIndicator = document.createElement('div');
-        tlIndicator.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px; color: #8B5CF6;">sync</span>';
-        Object.assign(tlIndicator.style, {
-            position: 'absolute', top: '-50px', left: '0', width: '100%', 
-            display: 'flex', justifyContent: 'center', transition: 'top 0.2s', zIndex: '10'
-        });
-        
-        // 타임라인 부모(스크롤 구역 위쪽)에 아이콘 숨겨두기
-        timelineContainer.parentElement.style.position = 'relative';
-        timelineContainer.parentElement.insertBefore(tlIndicator, timelineContainer);
 
         timelineContainer.addEventListener('touchstart', (e) => {
-            if (timelineContainer.scrollTop === 0) {
+            // 스크롤이 맨 위일 때만 제스처 인식 시작
+            if (timelineContainer.scrollTop <= 1) { 
                 tStartY = e.touches[0].clientY;
                 tIsPulling = true;
-                tlIndicator.style.transition = 'none'; 
+                tlIndicator.style.transition = 'none';
+                timelineContainer.style.transition = 'none';
             }
         }, {passive: true});
         
@@ -2764,26 +2756,42 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             if (!tIsPulling) return;
             tCurrentY = e.touches[0].clientY;
             const diff = tCurrentY - tStartY;
-            if (diff > 0) {
-                timelineContainer.style.transform = `translateY(${Math.min(diff / 2, 50)}px)`;
-                tlIndicator.style.top = `${Math.min(diff / 2 - 40, 20)}px`;
-                if (diff > 100) tlIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
-                else tlIndicator.querySelector('span').style.animation = 'none';
+            
+            if (diff > 0 && timelineContainer.scrollTop <= 1) {
+                // 🌟 핵심: iOS의 징그러운 네이티브 화면 바운스 현상 강제 차단! (passive: false 필수)
+                if (e.cancelable) e.preventDefault(); 
+                
+                // 손가락 따라오는 거리 제한 (쫀득한 느낌 부여)
+                timelineContainer.style.transform = `translateY(${Math.min(diff / 3, 70)}px)`;
+                tlIndicator.style.top = `${Math.min(diff / 3 - 60, 20)}px`;
+                
+                if (diff > 120) {
+                    tlIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
+                    tlIndicator.querySelector('span').style.color = '#2563EB'; // 꽉 당기면 파란색
+                } else {
+                    tlIndicator.querySelector('span').style.animation = 'none';
+                    tlIndicator.querySelector('span').style.color = '#8B5CF6'; // 덜 당기면 보라색
+                }
+            } else {
+                tIsPulling = false;
             }
-        }, {passive: true});
+        }, {passive: false}); // 🌟 passive: false 가 있어야 브라우저 제어가 가능합니다!
         
         timelineContainer.addEventListener('touchend', async (e) => {
             if (!tIsPulling) return;
             const diff = tCurrentY - tStartY;
             
-            timelineContainer.style.transition = 'transform 0.3s';
+            // 손 떼면 제자리로 팅~ 돌아가는 애니메이션 복구
+            timelineContainer.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
             timelineContainer.style.transform = 'translateY(0)';
-            tlIndicator.style.transition = 'top 0.3s';
+            tlIndicator.style.transition = 'top 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
             
-            if (diff > 100 && timelineContainer.scrollTop === 0) {
-                tlIndicator.style.top = '20px'; // 아이콘 고정
+            // 120px 이상 충분히 당겼다가 놓았을 때 새로고침 발동!
+            if (diff > 120 && timelineContainer.scrollTop <= 1) {
+                tlIndicator.style.top = '20px'; // 도는 동안 아이콘 띄워둠
+                tlIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
                 
-                // 🌟 구글 API 다시 찔러서 최신 사진 URL로 교체하는 마법!
+                // 구글 사진 URL 엑스박스 교체 작업 시작
                 const plan = dailyPlans[currentSelectedDay];
                 if (plan && plan.spots) {
                     const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
@@ -2795,27 +2803,30 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                             placesService.findPlaceFromQuery({ query: `${mainDest} ${spot.name}`, fields: ['photos'] }, (results, status) => {
                                 if (status === google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos) {
                                     const realPhotoUrl = results[0].photos[0].getUrl({ maxWidth: 400 });
-                                    spot.img = realPhotoUrl; // 데이터 최신화
+                                    spot.img = realPhotoUrl;
                                     const imgEl = document.getElementById(spot.imgId); 
-                                    if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`; // 화면 사진 즉시 교체
+                                    if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`; 
                                 }
                                 resolve();
                             });
                         });
                     });
-                    await Promise.all(promises);
                     
-                    // 완료되면 아이콘 다시 위로 숨기기
-                    tlIndicator.style.top = '-50px';
-                    tlIndicator.querySelector('span').style.animation = 'none';
-                    setTimeout(() => { timelineContainer.style.transition = 'none'; }, 300);
+                    // 사진 다 불러올 때까지 최소 1초는 돌게 해서 시각적 쾌감 부여
+                    await Promise.all([Promise.all(promises), new Promise(r => setTimeout(r, 1000))]);
                 }
+                
+                // 완료 후 아이콘 숨기기
+                tlIndicator.style.top = '-60px';
+                setTimeout(() => { tlIndicator.querySelector('span').style.animation = 'none'; }, 300);
             } else {
-                tlIndicator.style.top = '-50px';
+                // 덜 당겨서 취소된 경우
+                tlIndicator.style.top = '-60px';
                 tlIndicator.querySelector('span').style.animation = 'none';
-                setTimeout(() => { timelineContainer.style.transition = 'none'; }, 300);
             }
+            
             tIsPulling = false; tStartY = 0; tCurrentY = 0;
+            setTimeout(() => { timelineContainer.style.transition = 'none'; }, 300);
         });
     }
 }); // 👈 파일의 맨 마지막 줄
