@@ -2626,7 +2626,6 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
 
         try {
             // DB에서 이 일정의 가계부 내역 가져오기 (공유받은 링크로 들어온 친구도 동기화됨!)
-            import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
             const docSnap = await getDoc(doc(db, "triplans", currentDocId));
             if (docSnap.exists()) {
                 currentExpenses = docSnap.data().expenses || [];
@@ -2705,7 +2704,6 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     const saveExpensesToDB = async () => {
         if (!currentDocId) return;
         try {
-            import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
             await updateDoc(doc(db, "triplans", currentDocId), {
                 expenses: currentExpenses
             });
