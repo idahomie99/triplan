@@ -2637,23 +2637,24 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         }
     });
 
-    // 2. 가계부 리스트 렌더링 & 금액 계산 함수
+    // [✨ 수정 후]
+    // 2. 가계부 리스트 렌더링 & 금액 계산 함수 (토스 스타일 적용)
     const renderExpenses = () => {
         let totalAmount = 0;
         let html = '';
 
         if (currentExpenses.length === 0) {
-            html = '<div style="text-align:center; padding: 30px 0; color:var(--text-sub); font-size: 13px;">아직 지출 내역이 없습니다.</div>';
+            html = '<div style="text-align:center; padding: 40px 0; color:var(--text-sub); font-size: 14px; font-weight: 600;">아직 지출 내역이 없습니다.</div>';
         } else {
             currentExpenses.forEach(exp => {
                 totalAmount += exp.amount;
                 html += `
-                <div style="display:flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                    <div style="display:flex; flex-direction:column; gap:4px;">
-                        <span style="font-weight: 800; font-size: 15px; color: var(--text-main);">${exp.title}</span>
-                        <span style="font-size: 13px; color: var(--text-sub);">${exp.amount.toLocaleString()}원</span>
+                <div style="display:flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); margin-bottom: 10px;">
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <span style="font-weight: 800; font-size: 16px; color: var(--text-main);">${exp.title}</span>
+                        <span style="font-size: 14px; color: var(--text-sub); font-weight: 600;">${exp.amount.toLocaleString()}원</span>
                     </div>
-                    <button class="icon-btn ripple-btn" onclick="deleteExpenseItem('${exp.id}')" style="background: rgba(239,68,68,0.1); color: #EF4444; width: 32px; height: 32px; border-radius: 8px;">
+                    <button class="icon-btn ripple-btn" onclick="deleteExpenseItem('${exp.id}')" style="background: rgba(239,68,68,0.1); color: #EF4444; width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;">
                         <span class="material-symbols-rounded" style="font-size: 18px;">delete</span>
                     </button>
                 </div>`;
@@ -2663,7 +2664,6 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         document.getElementById('expense-list-container').innerHTML = html;
         document.getElementById('expense-total').innerText = totalAmount.toLocaleString() + '원';
         
-        // 1/N 계산 (인원수가 0명 이하일 수 없으므로 안전하게 방어)
         const peopleCount = Math.max(1, aiData.people || 1);
         const perPerson = Math.round(totalAmount / peopleCount);
         document.getElementById('expense-per-person').innerText = perPerson.toLocaleString() + '원';
