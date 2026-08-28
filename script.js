@@ -1346,13 +1346,13 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     document.querySelectorAll('.bottom-sheet').forEach(sheet => {
         let startY = 0; let currentY = 0; let isHeaderTouch = false;
         
+        // [✨ 수정 후 (완벽 격리!)]
         sheet.addEventListener('touchstart', (e) => { 
             // 🌟 터치한 곳이 상단 바(헤더)인지 확인
             isHeaderTouch = !!e.target.closest('.sheet-header'); 
-            const content = sheet.querySelector('.sheet-content'); 
             
-            // 상단 바를 만진 게 아닌데, 내용물 스크롤이 내려가 있다면 스와이프 무시 (내용물 스크롤 허용)
-            if (!isHeaderTouch && content && content.scrollTop > 0) return; 
+            // 🌟 내용물 구역을 만졌을 때는 모달이 위아래로 흔들리거나 닫히지 않고, 온전히 내부 스크롤만 되도록 강제 차단!
+            if (!isHeaderTouch) return; 
             startY = e.touches[0].clientY; 
         }, {passive: true});
         
@@ -2555,8 +2555,11 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             const originalHeight = timelineContainer.style.height;
             const originalMaxHeight = timelineContainer.style.maxHeight;
 
+            // [✨ 수정 후 (길이 딱 맞춤!)]
             timelineContainer.style.overflow = 'visible';
-            timelineContainer.style.height = 'auto';
+            // 🌟 핵심: 캡처할 내용물의 '실제 높이(scrollHeight)'를 구해서 강제로 세팅
+            const exactHeight = timelineContainer.scrollHeight;
+            timelineContainer.style.height = exactHeight + 'px';
             timelineContainer.style.maxHeight = 'none';
 
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -2567,6 +2570,8 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
                 scale: 2, 
                 useCORS: true, 
                 backgroundColor: bgColor,
+                windowHeight: exactHeight, // 🌟 캡처 렌즈의 높이도 딱 맞춤
+                height: exactHeight,       // 🌟 캡처 결과물의 높이도 딱 맞춤
                 logging: false
             });
 
@@ -2727,4 +2732,90 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             showCustomAlert({icon: 'error', title: '저장 지연', desc: '네트워크 상태를 확인해주세요.'});
         }
     };
+
+    // ==========================================
+    // 🌟 Phase 5: 일정표 사진 당겨서 새로고침 (Pull-to-Refresh)
+    // ==========================================
+    const timelineContainer = document.getElementById('ai-timeline-container');
+    if (timelineContainer) {
+        let tStartY = 0; let tCurrentY = 0; let tIsPulling = false;
+        
+        // 새로고침 UI(보라색 빙글빙글 아이콘) 생성
+        const tlIndicator = document.createElement('div');
+        tlIndicator.innerHTML = '<span class="material-symbols-rounded" style="font-size: 28px; color: #8B5CF6;">sync</span>';
+        Object.assign(tlIndicator.style, {
+            position: 'absolute', top: '-50px', left: '0', width: '100%', 
+            display: 'flex', justifyContent: 'center', transition: 'top 0.2s', zIndex: '10'
+        });
+        
+        // 타임라인 부모(스크롤 구역 위쪽)에 아이콘 숨겨두기
+        timelineContainer.parentElement.style.position = 'relative';
+        timelineContainer.parentElement.insertBefore(tlIndicator, timelineContainer);
+
+        timelineContainer.addEventListener('touchstart', (e) => {
+            if (timelineContainer.scrollTop === 0) {
+                tStartY = e.touches[0].clientY;
+                tIsPulling = true;
+                tlIndicator.style.transition = 'none'; 
+            }
+        }, {passive: true});
+        
+        timelineContainer.addEventListener('touchmove', (e) => {
+            if (!tIsPulling) return;
+            tCurrentY = e.touches[0].clientY;
+            const diff = tCurrentY - tStartY;
+            if (diff > 0) {
+                timelineContainer.style.transform = `translateY(${Math.min(diff / 2, 50)}px)`;
+                tlIndicator.style.top = `${Math.min(diff / 2 - 40, 20)}px`;
+                if (diff > 100) tlIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
+                else tlIndicator.querySelector('span').style.animation = 'none';
+            }
+        }, {passive: true});
+        
+        timelineContainer.addEventListener('touchend', async (e) => {
+            if (!tIsPulling) return;
+            const diff = tCurrentY - tStartY;
+            
+            timelineContainer.style.transition = 'transform 0.3s';
+            timelineContainer.style.transform = 'translateY(0)';
+            tlIndicator.style.transition = 'top 0.3s';
+            
+            if (diff > 100 && timelineContainer.scrollTop === 0) {
+                tlIndicator.style.top = '20px'; // 아이콘 고정
+                
+                // 🌟 구글 API 다시 찔러서 최신 사진 URL로 교체하는 마법!
+                const plan = dailyPlans[currentSelectedDay];
+                if (plan && plan.spots) {
+                    const dests = aiData.destinations.map(d => d.city).filter(c => c !== '');
+                    const mainDest = dests[0] || '여행지';
+
+                    const promises = plan.spots.map(spot => {
+                        return new Promise(resolve => {
+                            if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
+                            placesService.findPlaceFromQuery({ query: `${mainDest} ${spot.name}`, fields: ['photos'] }, (results, status) => {
+                                if (status === google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos) {
+                                    const realPhotoUrl = results[0].photos[0].getUrl({ maxWidth: 400 });
+                                    spot.img = realPhotoUrl; // 데이터 최신화
+                                    const imgEl = document.getElementById(spot.imgId); 
+                                    if(imgEl) imgEl.style.backgroundImage = `url('${realPhotoUrl}')`; // 화면 사진 즉시 교체
+                                }
+                                resolve();
+                            });
+                        });
+                    });
+                    await Promise.all(promises);
+                    
+                    // 완료되면 아이콘 다시 위로 숨기기
+                    tlIndicator.style.top = '-50px';
+                    tlIndicator.querySelector('span').style.animation = 'none';
+                    setTimeout(() => { timelineContainer.style.transition = 'none'; }, 300);
+                }
+            } else {
+                tlIndicator.style.top = '-50px';
+                tlIndicator.querySelector('span').style.animation = 'none';
+                setTimeout(() => { timelineContainer.style.transition = 'none'; }, 300);
+            }
+            tIsPulling = false; tStartY = 0; tCurrentY = 0;
+        });
+    }
 }); // 👈 파일의 맨 마지막 줄
