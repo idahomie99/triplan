@@ -2500,36 +2500,102 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     }
 
     // ==========================================
-    // 🌟 네이티브 앱 UX 4: 찜한 스팟 당겨서 새로고침 (Pull-to-Refresh)
+    // 🌟 // ==========================================
+    // 🌟 네이티브 앱 UX 4: 찜한 스팟 당겨서 새로고침 (iOS 바운스 차단 & 시각적 UI 추가)
     // ==========================================
     const savedSpotsListEl = document.getElementById('saved-spots-list');
     if (savedSpotsListEl) {
         let pStartY = 0; let pCurrentY = 0; let pIsPulling = false;
+
+        // 🌟 새로고침 UI(보라색 빙글빙글 아이콘) 동적 생성
+        const spotIndicator = document.createElement('div');
+        spotIndicator.innerHTML = `
+            <div style="background: var(--card-bg); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <span class="material-symbols-rounded" style="font-size: 24px; color: #8B5CF6;">sync</span>
+            </div>
+        `;
+        Object.assign(spotIndicator.style, {
+            position: 'absolute', top: '150px', left: '0', width: '100%', 
+            display: 'flex', justifyContent: 'center', zIndex: '10',
+            opacity: '0', transform: 'translateY(-20px)', pointerEvents: 'none',
+            transition: 'opacity 0.3s, transform 0.3s'
+        });
         
+        // 찜한 스팟 화면 컨테이너에 아이콘 추가
+        const spotsScreen = document.getElementById('saved-spots-screen');
+        if (spotsScreen) {
+            spotsScreen.style.position = 'relative';
+            spotsScreen.appendChild(spotIndicator);
+        }
+
         savedSpotsListEl.addEventListener('touchstart', (e) => {
-            // 스크롤이 맨 위일 때만 당기기 인식 시작
-            if (savedSpotsListEl.scrollTop === 0) {
+            if (savedSpotsListEl.scrollTop <= 1) {
                 pStartY = e.touches[0].clientY;
                 pIsPulling = true;
+                spotIndicator.style.transition = 'none';
+                savedSpotsListEl.style.transition = 'none';
             }
         }, {passive: true});
         
         savedSpotsListEl.addEventListener('touchmove', (e) => {
             if (!pIsPulling) return;
             pCurrentY = e.touches[0].clientY;
-        }, {passive: true});
+            const diff = pCurrentY - pStartY;
+            
+            if (diff > 0 && savedSpotsListEl.scrollTop <= 1) {
+                if (e.cancelable) e.preventDefault(); // 🌟 iOS 징그러운 바운스 차단!
+                
+                savedSpotsListEl.style.transform = `translateY(${Math.min(diff / 3, 70)}px)`;
+                
+                // 인디케이터가 서서히 보이면서 내려옴
+                spotIndicator.style.opacity = `${Math.min(diff / 100, 1)}`;
+                spotIndicator.style.transform = `translateY(${Math.min(diff / 3, 50)}px)`;
+
+                if (diff > 120) {
+                    spotIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
+                    spotIndicator.querySelector('span').style.color = '#2563EB'; // 꽉 당기면 파란색
+                } else {
+                    spotIndicator.querySelector('span').style.animation = 'none';
+                    spotIndicator.querySelector('span').style.color = '#8B5CF6'; // 덜 당기면 보라색
+                }
+            } else {
+                pIsPulling = false;
+            }
+        }, {passive: false}); // passive: false 필수!
         
-        savedSpotsListEl.addEventListener('touchend', (e) => {
+        savedSpotsListEl.addEventListener('touchend', async (e) => {
             if (!pIsPulling) return;
             const diff = pCurrentY - pStartY;
             
-            // 아래로 80px 이상 훅 당겼다가 놓으면 새로고침 발동!
-            if (diff > 80 && savedSpotsListEl.scrollTop === 0) {
+            savedSpotsListEl.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            savedSpotsListEl.style.transform = 'translateY(0)';
+            spotIndicator.style.transition = 'opacity 0.3s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            if (diff > 120 && savedSpotsListEl.scrollTop <= 1) {
+                // 도는 동안 잠깐 유지
+                spotIndicator.style.opacity = '1';
+                spotIndicator.style.transform = 'translateY(50px)';
+                spotIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
+                
+                // DB 최신화 (마이페이지 버튼 클릭 트리거)
                 const btn = document.getElementById('btn-my-saved-spots');
-                // 마이페이지의 '찜한 스팟' 버튼을 몰래 다시 눌러서 자연스럽게 최신 DB 데이터로 리로드
                 if (btn) btn.click(); 
+
+                // 1초 뒤에 스르륵 사라짐 (자연스러운 UI)
+                setTimeout(() => {
+                    spotIndicator.style.opacity = '0';
+                    spotIndicator.style.transform = 'translateY(-20px)';
+                    setTimeout(() => { spotIndicator.querySelector('span').style.animation = 'none'; }, 300);
+                }, 1000);
+            } else {
+                // 덜 당겨서 취소됨
+                spotIndicator.style.opacity = '0';
+                spotIndicator.style.transform = 'translateY(-20px)';
+                spotIndicator.querySelector('span').style.animation = 'none';
             }
+            
             pIsPulling = false; pStartY = 0; pCurrentY = 0;
+            setTimeout(() => { savedSpotsListEl.style.transition = 'none'; }, 300);
         });
     }
 
