@@ -23,6 +23,9 @@
     
     <link rel="stylesheet" href="style.css">
     
+<!-- 🌟 일정표 이미지 다운로드를 위한 html2canvas 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <!-- 👇 여기서부터 복사해서 붙여넣기 👇 -->
     <style>
         /* 🌟 숨어있는 8개의 팝업창이 위로 쏘아 올리던 새까만 그림자 완벽 박멸! */
@@ -679,7 +682,8 @@
                 </div>
                 <div class="header-right" style="display: flex; width: auto; gap: 4px; justify-content: flex-end;">
                     <button class="icon-btn" id="btn-toggle-map-top"><span class="material-symbols-rounded" id="top-map-icon">map</span></button>
-                    <!-- 🌟 공유 버튼에 ID 추가 -->
+                    <!-- 🌟 이미지 다운로드 버튼 -->
+                    <button class="icon-btn" id="btn-download-plan"><span class="material-symbols-rounded">download</span></button>
                     <button class="icon-btn" id="btn-share-plan"><span class="material-symbols-rounded">share</span></button>
                 </div>
             </header>
