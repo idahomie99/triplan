@@ -2601,4 +2601,117 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             showCustomAlert({icon: 'error', title: '저장 실패', desc: '이미지를 저장하는 중 문제가 발생했습니다.\n다시 시도해 주세요.'});
         }
     });
+
+    // ==========================================
+    // 🌟 Phase 3: 여행 가계부 & 1/N 정산 엔진 (Firebase 연동)
+    // ==========================================
+    let currentExpenses = []; // 현재 보고 있는 일정의 가계부 데이터
+
+    // 1. 가계부 모달 열기
+    document.getElementById('btn-open-expense')?.addEventListener('click', async () => {
+        // 일정을 한 번도 저장하지 않았다면 차단 (DB에 고유 ID가 있어야 가계부를 연결할 수 있음)
+        if (!isCurrentPlanSaved || !currentDocId) {
+            showCustomAlert({icon: 'payments', title: '저장 먼저!', desc: '가계부를 작성하시려면\n먼저 [내 일정에 저장하기]를 눌러주세요!'});
+            return;
+        }
+
+        document.getElementById('calendar-overlay').style.zIndex = '1030';
+        document.getElementById('calendar-overlay').style.display = 'block';
+        const modal = document.getElementById('expense-modal');
+        modal.classList.add('active');
+
+        // 참여 인원 세팅
+        document.getElementById('expense-people').innerText = aiData.people || 1;
+        document.getElementById('expense-list-container').innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-sub);">데이터를 불러오는 중...</div>';
+
+        try {
+            // DB에서 이 일정의 가계부 내역 가져오기 (공유받은 링크로 들어온 친구도 동기화됨!)
+            import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+            const docSnap = await getDoc(doc(db, "triplans", currentDocId));
+            if (docSnap.exists()) {
+                currentExpenses = docSnap.data().expenses || [];
+                renderExpenses();
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('expense-list-container').innerHTML = '<div style="text-align:center; padding: 20px; color:#EF4444;">오류가 발생했습니다.</div>';
+        }
+    });
+
+    // 2. 가계부 리스트 렌더링 & 금액 계산 함수
+    const renderExpenses = () => {
+        let totalAmount = 0;
+        let html = '';
+
+        if (currentExpenses.length === 0) {
+            html = '<div style="text-align:center; padding: 30px 0; color:var(--text-sub); font-size: 13px;">아직 지출 내역이 없습니다.</div>';
+        } else {
+            currentExpenses.forEach(exp => {
+                totalAmount += exp.amount;
+                html += `
+                <div style="display:flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        <span style="font-weight: 800; font-size: 15px; color: var(--text-main);">${exp.title}</span>
+                        <span style="font-size: 13px; color: var(--text-sub);">${exp.amount.toLocaleString()}원</span>
+                    </div>
+                    <button class="icon-btn ripple-btn" onclick="deleteExpenseItem('${exp.id}')" style="background: rgba(239,68,68,0.1); color: #EF4444; width: 32px; height: 32px; border-radius: 8px;">
+                        <span class="material-symbols-rounded" style="font-size: 18px;">delete</span>
+                    </button>
+                </div>`;
+            });
+        }
+
+        document.getElementById('expense-list-container').innerHTML = html;
+        document.getElementById('expense-total').innerText = totalAmount.toLocaleString() + '원';
+        
+        // 1/N 계산 (인원수가 0명 이하일 수 없으므로 안전하게 방어)
+        const peopleCount = Math.max(1, aiData.people || 1);
+        const perPerson = Math.round(totalAmount / peopleCount);
+        document.getElementById('expense-per-person').innerText = perPerson.toLocaleString() + '원';
+    };
+
+    // 3. 내역 추가하기
+    document.getElementById('btn-add-expense')?.addEventListener('click', async () => {
+        const titleInput = document.getElementById('expense-title-input');
+        const amountInput = document.getElementById('expense-amount-input');
+        const title = titleInput.value.trim();
+        const amount = parseInt(amountInput.value.trim());
+
+        if (!title || isNaN(amount) || amount <= 0) {
+            showCustomAlert({icon: 'error', title: '입력 오류', desc: '내역과 금액을 정확히 입력해주세요.'});
+            return;
+        }
+
+        // 고유 ID 생성 후 배열에 추가
+        const newItem = { id: 'exp_' + Date.now(), title, amount };
+        currentExpenses.push(newItem);
+
+        // 입력창 비우기
+        titleInput.value = '';
+        amountInput.value = '';
+
+        renderExpenses();
+        await saveExpensesToDB(); // DB 업데이트
+    });
+
+    // 4. 내역 삭제하기 (HTML 인라인에서 호출되므로 전역 함수로 등록)
+    window.deleteExpenseItem = async (expId) => {
+        currentExpenses = currentExpenses.filter(e => e.id !== expId);
+        renderExpenses();
+        await saveExpensesToDB(); // DB 업데이트
+    };
+
+    // 5. DB에 저장하기 (Firebase 문서 업데이트)
+    const saveExpensesToDB = async () => {
+        if (!currentDocId) return;
+        try {
+            import { updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+            await updateDoc(doc(db, "triplans", currentDocId), {
+                expenses: currentExpenses
+            });
+        } catch(e) {
+            console.error('가계부 DB 업데이트 실패:', e);
+            showCustomAlert({icon: 'error', title: '저장 지연', desc: '네트워크 상태를 확인해주세요.'});
+        }
+    };
 }); // 👈 파일의 맨 마지막 줄

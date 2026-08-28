@@ -681,8 +681,9 @@
                     <p id="ai-result-subtitle" style="font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">AI가 완성한 최적의 동선</p>
                 </div>
                 <div class="header-right" style="display: flex; width: auto; gap: 4px; justify-content: flex-end;">
+                    <!-- 🌟 가계부 & 정산 버튼 -->
+                    <button class="icon-btn" id="btn-open-expense"><span class="material-symbols-rounded">payments</span></button>
                     <button class="icon-btn" id="btn-toggle-map-top"><span class="material-symbols-rounded" id="top-map-icon">map</span></button>
-                    <!-- 🌟 이미지 다운로드 버튼 -->
                     <button class="icon-btn" id="btn-download-plan"><span class="material-symbols-rounded">download</span></button>
                     <button class="icon-btn" id="btn-share-plan"><span class="material-symbols-rounded">share</span></button>
                 </div>
@@ -762,5 +763,37 @@
         <script type="module" src="firebase-config.js"></script>
         <script type="module" src="script.js"></script>
     </div> <!-- app-container 끝 -->
+
+    <!-- 🌟 여행 가계부 & 1/N 정산 모달 -->
+        <div id="expense-modal" class="bottom-sheet" style="z-index: 1040; height: 80vh;">
+            <div class="sheet-header">
+                <h3>여행 가계부 & 정산</h3>
+                <button class="icon-btn" onclick="document.getElementById('expense-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button>
+            </div>
+            <div class="sheet-content" style="padding-bottom: 40px; display: flex; flex-direction: column;">
+                <!-- 요약 대시보드 -->
+                <div style="background: linear-gradient(135deg, #2563EB, #8B5CF6); padding: 20px; border-radius: 16px; margin-bottom: 20px; color: white; box-shadow: 0 4px 15px rgba(37,99,235,0.3);">
+                    <div style="font-size: 13px; font-weight: 600; opacity: 0.9; margin-bottom: 4px;">총 지출 금액</div>
+                    <div style="font-size: 28px; font-weight: 800; margin-bottom: 12px;" id="expense-total">0원</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.2); padding: 10px 12px; border-radius: 10px;">
+                        <span style="font-size: 14px; font-weight: 700;">1인당 정산액 (<span id="expense-people">1</span>명)</span>
+                        <span style="font-size: 18px; font-weight: 800;" id="expense-per-person">0원</span>
+                    </div>
+                </div>
+
+                <!-- 입력 폼 -->
+                <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+                    <input type="text" id="expense-title-input" class="ai-text-input" placeholder="내역 (예: 흑돼지)" style="flex: 1.5; font-size: 14px;">
+                    <input type="number" id="expense-amount-input" class="ai-text-input" placeholder="금액" style="flex: 1; font-size: 14px;">
+                    <button class="search-btn ripple-btn" id="btn-add-expense" style="padding: 0 16px; font-size: 14px; background: #10B981;">추가</button>
+                </div>
+
+                <!-- 지출 리스트 -->
+                <div style="font-size: 14px; font-weight: 800; color: var(--text-main); margin-bottom: 12px;">지출 상세 내역</div>
+                <div id="expense-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px;">
+                    <!-- JS로 리스트가 렌더링 됩니다 -->
+                </div>
+            </div>
+        </div>
 </body>
 </html>
