@@ -28,29 +28,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
    <style>
-        /* 🌟 1. 웹페이지 전체 스크롤 완벽 차단 및 레이아웃 복구 */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden !important; background: var(--bg-body); }
-        
-        #app-container {
-            position: relative; width: 100%; height: 100dvh !important; margin: 0 auto;
-            overflow: hidden !important; 
-            display: flex !important; flex-direction: column !important; /* 🌟 버튼들 제자리로 내리는 핵심! */
-            background: var(--bg-body);
-        }
-        
-        #main-content { flex: 1 !important; overflow-y: auto !important; } /* 🌟 스크롤 영역 복구! */
-
-        /* 🌟 2. 팝업창(바텀시트) 그림자 및 숨김 완벽 제어 */
+        /* 🌟 1. 팝업창(바텀시트) 그림자 및 숨김 완벽 제어 */
         .bottom-sheet:not(.active) { box-shadow: none !important; visibility: hidden; }
         .bottom-sheet { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, visibility 0s 0.3s !important; }
         .bottom-sheet.active { visibility: visible; box-shadow: 0 -10px 40px rgba(0,0,0,0.15) !important; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, visibility 0s 0s !important; }
         
-        /* 🌟 3. 카테고리 뱃지 무적 방어 */
+        /* 🌟 2. 카테고리 뱃지 무적 방어 (절대 안 찌그러짐) */
         .timeline-card-header { display: flex; flex-wrap: nowrap !important; gap: 12px !important; align-items: flex-start !important; }
         .tc-title { flex: 1; word-break: keep-all; margin: 0 !important; }
         .tc-category { white-space: nowrap !important; flex-shrink: 0 !important; min-width: max-content !important; display: inline-flex !important; align-items: center; justify-content: center; }
         
-        /* 🌟 4. 스와이프 삭제 UI 전용 스타일 */
+        /* 🌟 3. 스와이프 삭제 UI 전용 스타일 */
         .swipe-wrapper { position: relative; width: 100%; margin-bottom: 16px; }
         .swipe-action-container { position: absolute; top: 0; right: 0; height: 100%; display: flex; align-items: center; padding-right: 8px; z-index: 1; }
         .swipe-circle-btn { width: 52px; height: 52px; border-radius: 50%; background: #EF4444; border: none; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); cursor: pointer; transition: transform 0.2s; }
@@ -60,12 +48,12 @@
         .swipe-wrapper.deleting { animation: shrinkHeight 0.3s ease forwards; }
         @keyframes shrinkHeight { to { height: 0; margin-bottom: 0; opacity: 0; transform: scale(0.9); } }
         
-        /* 🌟 5. 플로팅 버튼 */
+        /* 🌟 4. 세련된 토스/iOS 감성 플로팅 버튼 */
         .result-action-area { position: absolute !important; bottom: 32px !important; left: 0 !important; width: 100% !important; display: flex !important; justify-content: center !important; pointer-events: none !important; background: transparent !important; border: none !important; padding: 0 20px !important; z-index: 100 !important; }
         .floating-save-btn { pointer-events: auto !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; background: rgba(37, 99, 235, 0.85) !important; -webkit-backdrop-filter: blur(12px) !important; backdrop-filter: blur(12px) !important; color: white !important; border: none !important; padding: 14px 28px !important; border-radius: 100px !important; font-size: 15px !important; font-weight: 800 !important; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3) !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: auto !important; min-width: 160px !important; }
         .floating-save-btn:active { transform: scale(0.94) !important; }
         
-        /* 🌟 6. 애니메이션 및 인스타 하트 */
+        /* 🌟 5. 애니메이션 및 인스타 하트 설정 */
         @keyframes floatUpAndFade { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 50% { transform: translate(-50%, -150%) scale(1.5); opacity: 1; } 100% { transform: translate(-50%, -250%) scale(1); opacity: 0; } }
         .floating-heart-anim { position: absolute; top: 50%; left: 50%; pointer-events: none; color: #EF4444; z-index: 100; animation: floatUpAndFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; font-variation-settings: 'FILL' 1; }
         @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
