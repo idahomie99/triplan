@@ -2533,29 +2533,24 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         });
     }
 
-    // ==========================================
-    // 🌟 Phase 2: 일정표 이미지 다운로드 기능 (html2canvas)
+   // ==========================================
+    // 🌟 Phase 2: 일정표 이미지 다운로드 기능 (iOS Share API 호환)
     // ==========================================
     document.getElementById('btn-download-plan')?.addEventListener('click', async () => {
         const timelineContainer = document.getElementById('ai-timeline-container');
         
-        // 1. 일정표 탭이 안 열려있으면 차단 (지도나 탐색 탭에서는 캡처 불가)
         if (!timelineContainer || timelineContainer.style.display === 'none') {
-            showCustomAlert({icon: 'info', title: '안내', desc: '일정표 보기 탭에서만\n이미지로 저장할 수 있습니다.'});
+            showCustomAlert({icon: 'info', title: '안내', desc: '일정표 보기 탭에서만\n이미지로 캡처할 수 있습니다.'});
             return;
         }
-
-        // 2. 스켈레톤 로딩 중인지 확인
         if (timelineContainer.innerHTML.includes('skeleton-box')) {
             showCustomAlert({icon: 'hourglass_empty', title: '잠시만요', desc: '일정을 모두 불러온 뒤에\n저장해 주세요.'});
             return;
         }
 
-        // 3. 안내창 띄우기
-        showCustomAlert({icon: 'photo_camera', title: '이미지 저장 중', desc: '멋진 일정표 이미지를 굽고 있습니다.\n잠시만 기다려주세요!', showCancel: false});
+        showCustomAlert({icon: 'photo_camera', title: '이미지 굽는 중', desc: '고화질 일정표 이미지를 굽고 있습니다.\n잠시만 기다려주세요!', showCancel: false});
 
         try {
-            // 4. 스크롤되어 숨겨진 밑부분까지 100% 캡처하기 위한 마법의 스타일 조작
             const originalOverflow = timelineContainer.style.overflow;
             const originalHeight = timelineContainer.style.height;
             const originalMaxHeight = timelineContainer.style.maxHeight;
@@ -2564,44 +2559,64 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             timelineContainer.style.height = 'auto';
             timelineContainer.style.maxHeight = 'none';
 
-            // 다크/라이트 모드 배경색 감지
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
             const bgColor = isDark ? '#0F172A' : '#F8FAFC';
 
-            // 5. 찰칵! 화면 캡처
+            // 찰칵! 화면 캡처
             const canvas = await html2canvas(timelineContainer, {
-                scale: 2, // 고화질(레티나) 대응
-                useCORS: true, // 외부 이미지(Unsplash 등) 렌더링 허용
+                scale: 2, 
+                useCORS: true, 
                 backgroundColor: bgColor,
                 logging: false
             });
 
-            // 6. 조작했던 스타일 원상복구
             timelineContainer.style.overflow = originalOverflow;
             timelineContainer.style.height = originalHeight;
             timelineContainer.style.maxHeight = originalMaxHeight;
 
-            // 7. 이미지 파일로 변환 후 폰/컴퓨터에 다운로드 트리거
-            const imgData = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            
-            // 파일명에 타이틀 넣기
-            const planTitle = document.getElementById('ai-result-title').innerText || '여행';
-            link.download = `Triplan_${planTitle}_일정표.png`;
-            link.href = imgData;
-            link.click();
-            
-            // 8. 완료 알림
-            setTimeout(() => {
-                showCustomAlert({icon: 'check_circle', title: '저장 완료', desc: '일정표가 갤러리(다운로드 폴더)에\n성공적으로 저장되었습니다!'});
-            }, 500);
+            // 로딩 알림창 강제 종료
+            document.getElementById('custom-alert-modal').classList.remove('active');
+            document.getElementById('custom-alert-overlay').classList.remove('active');
+
+            // 🌟 아이폰(PWA) 대응: 이미지 데이터를 파일로 변환하여 iOS Share 시트 띄우기
+            canvas.toBlob(async (blob) => {
+                const planTitle = document.getElementById('ai-result-title').innerText || '여행';
+                const fileName = `Triplan_${planTitle}_일정표.png`;
+                const file = new File([blob], fileName, { type: 'image/png' });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    // 모바일(iOS 등): 기본 팝업(Share Sheet)을 띄워서 '이미지 저장' 또는 '공유' 유도
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: '일정표',
+                            text: 'Triplan AI가 짜준 여행 일정표입니다!'
+                        });
+                    } catch (e) {
+                        console.log('유저가 공유 창 닫음');
+                    }
+                } else {
+                    // PC 또는 지원하지 않는 브라우저: 기존 방식대로 강제 다운로드
+                    const imgUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = fileName;
+                    link.href = imgUrl;
+                    link.click();
+                    URL.revokeObjectURL(imgUrl);
+                    
+                    setTimeout(() => {
+                        showCustomAlert({icon: 'check_circle', title: '저장 완료', desc: '일정표가 기기에 성공적으로 저장되었습니다!'});
+                    }, 500);
+                }
+            }, 'image/png');
 
         } catch (error) {
             console.error('이미지 캡처 에러:', error);
-            showCustomAlert({icon: 'error', title: '저장 실패', desc: '이미지를 저장하는 중 문제가 발생했습니다.\n다시 시도해 주세요.'});
+            document.getElementById('custom-alert-modal').classList.remove('active');
+            document.getElementById('custom-alert-overlay').classList.remove('active');
+            showCustomAlert({icon: 'error', title: '저장 실패', desc: '이미지를 굽는 중 문제가 발생했습니다.\n다시 시도해 주세요.'});
         }
     });
-
     // ==========================================
     // 🌟 Phase 3: 여행 가계부 & 1/N 정산 엔진 (Firebase 연동)
     // ==========================================

@@ -811,22 +811,22 @@
             <div class="sheet-content" style="padding-bottom: 30px;">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     
-                    <!-- 1. 가계부 버튼 -->
-                    <div class="ripple-btn" id="btn-open-expense" onclick="document.getElementById('plan-action-modal').classList.remove('active');" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <!-- 1. 가계부 버튼 (onclick 수정!) -->
+                    <div class="ripple-btn" id="btn-open-expense" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(37,99,235,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #2563EB;">payments</span></div>
                         여행 가계부 및 1/N 정산
                     </div>
                     
-                    <!-- 2. 이미지 저장 버튼 -->
-                    <div class="ripple-btn" id="btn-download-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active');" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <!-- 2. 이미지 저장 버튼 (onclick 수정!) -->
+                    <div class="ripple-btn" id="btn-download-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #10B981;">download</span></div>
-                        일정표 이미지로 저장
+                        일정표 이미지로 캡처/공유
                     </div>
                     
-                    <!-- 3. 링크 공유 버튼 -->
-                    <div class="ripple-btn" id="btn-share-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active');" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <!-- 3. 링크 공유 버튼 (onclick 수정!) -->
+                    <div class="ripple-btn" id="btn-share-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139,92,246,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #8B5CF6;">share</span></div>
-                        친구에게 일정 공유
+                        친구에게 일정 링크 공유
                     </div>
 
                 </div>
