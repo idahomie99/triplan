@@ -28,19 +28,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
    <style>
-        /* 🌟 1. 웹페이지 전체 스크롤 완벽 차단 (이게 없으면 화면 전체가 밀려서 글씨가 겹칩니다!) */
-        html, body {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            overflow: hidden !important; 
-        }
+        /* 🌟 1. 웹페이지 전체 스크롤 완벽 차단 및 레이아웃 복구 */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden !important; background: var(--bg-body); }
+        
         #app-container {
-            position: relative;
-            width: 100%; 
-            height: 100dvh !important;
-            margin: 0 auto;
+            position: relative; width: 100%; height: 100dvh !important; margin: 0 auto;
             overflow: hidden !important; 
+            display: flex !important; flex-direction: column !important; /* 🌟 버튼들 제자리로 내리는 핵심! */
+            background: var(--bg-body);
         }
+        
+        #main-content { flex: 1 !important; overflow-y: auto !important; } /* 🌟 스크롤 영역 복구! */
 
         /* 🌟 2. 팝업창(바텀시트) 그림자 및 숨김 완벽 제어 */
         .bottom-sheet:not(.active) { box-shadow: none !important; visibility: hidden; }
