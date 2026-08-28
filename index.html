@@ -758,11 +758,6 @@
         </div>
 <!-- 👆👆 여기까지 👆👆 -->
 
-        <script type="module" src="firebase-config.js"></script>
-        <script type="module" src="script.js"></script>
-    </div> <!-- app-container 끝 -->
-
-    <!-- 🌟 여행 가계부 & 1/N 정산 모달 -->
         <!-- 🌟 여행 가계부 & 1/N 정산 모달 (토스/iOS 스타일 완벽 적용) -->
         <div id="expense-modal" class="bottom-sheet" style="z-index: 1040; height: 85vh; display: flex; flex-direction: column;">
             <div class="sheet-header" style="flex-shrink: 0;">
@@ -787,9 +782,7 @@
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; flex-shrink: 0;">
                     <input type="text" id="expense-title-input" placeholder="어디서 돈을 쓰셨나요? (예: 흑돼지 식당)" style="width: 100%; height: 52px; padding: 0 16px; border-radius: 14px; border: none; background: var(--icon-bg); color: var(--text-main); font-size: 15px; font-weight: 600; outline: none; box-sizing: border-box; font-family: inherit;">
                     <div style="display: flex; gap: 10px; width: 100%; box-sizing: border-box;">
-                        <!-- min-width: 0 을 주어야 좁은 폰에서도 입력창이 버튼을 안 밀어냅니다! -->
                         <input type="number" id="expense-amount-input" placeholder="결제 금액 (원)" style="flex: 1; height: 52px; padding: 0 16px; border-radius: 14px; border: none; background: var(--icon-bg); color: var(--text-main); font-size: 15px; font-weight: 600; outline: none; box-sizing: border-box; font-family: inherit; min-width: 0;">
-                        <!-- flex-shrink: 0 을 주어야 추가 버튼이 절대 안 잘립니다! -->
                         <button class="ripple-btn" id="btn-add-expense" style="flex-shrink: 0; width: 85px; height: 52px; border-radius: 14px; background: var(--text-main); color: var(--bg-body); font-weight: 800; font-size: 15px; border: none; cursor: pointer;">추가</button>
                     </div>
                 </div>
@@ -811,19 +804,16 @@
             <div class="sheet-content" style="padding-bottom: 30px;">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     
-                    <!-- 1. 가계부 버튼 (onclick 수정!) -->
                     <div class="ripple-btn" id="btn-open-expense" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(37,99,235,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #2563EB;">payments</span></div>
                         여행 가계부 및 1/N 정산
                     </div>
                     
-                    <!-- 2. 이미지 저장 버튼 (onclick 수정!) -->
                     <div class="ripple-btn" id="btn-download-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #10B981;">download</span></div>
                         일정표 이미지로 캡처/공유
                     </div>
                     
-                    <!-- 3. 링크 공유 버튼 (onclick 수정!) -->
                     <div class="ripple-btn" id="btn-share-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
                         <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139,92,246,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #8B5CF6;">share</span></div>
                         친구에게 일정 링크 공유
@@ -832,5 +822,9 @@
                 </div>
             </div>
         </div>
+
+        <script type="module" src="firebase-config.js"></script>
+        <script type="module" src="script.js"></script>
+    </div> <!-- app-container 끝 -->
 </body>
 </html>
