@@ -2500,8 +2500,7 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
     }
 
     // ==========================================
-    // 🌟 // ==========================================
-    // 🌟 네이티브 앱 UX 4: 찜한 스팟 당겨서 새로고침 (iOS 바운스 차단 & 시각적 UI 추가)
+    // 🌟 네이티브 앱 UX 4: 찜한 스팟 당겨서 새로고침 (iOS 바운스 차단 & 구글 최신 사진 갱신)
     // ==========================================
     const savedSpotsListEl = document.getElementById('saved-spots-list');
     if (savedSpotsListEl) {
@@ -2543,11 +2542,9 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             const diff = pCurrentY - pStartY;
             
             if (diff > 0 && savedSpotsListEl.scrollTop <= 1) {
-                if (e.cancelable) e.preventDefault(); // 🌟 iOS 징그러운 바운스 차단!
+                if (e.cancelable) e.preventDefault(); // 🌟 iOS 화면 끌림 차단
                 
                 savedSpotsListEl.style.transform = `translateY(${Math.min(diff / 3, 70)}px)`;
-                
-                // 인디케이터가 서서히 보이면서 내려옴
                 spotIndicator.style.opacity = `${Math.min(diff / 100, 1)}`;
                 spotIndicator.style.transform = `translateY(${Math.min(diff / 3, 50)}px)`;
 
@@ -2572,21 +2569,47 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             spotIndicator.style.transition = 'opacity 0.3s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
             
             if (diff > 120 && savedSpotsListEl.scrollTop <= 1) {
-                // 도는 동안 잠깐 유지
                 spotIndicator.style.opacity = '1';
                 spotIndicator.style.transform = 'translateY(50px)';
                 spotIndicator.querySelector('span').style.animation = 'rotateRing 1s linear infinite';
                 
-                // DB 최신화 (마이페이지 버튼 클릭 트리거)
-                const btn = document.getElementById('btn-my-saved-spots');
-                if (btn) btn.click(); 
+                // 🌟 구글 API를 찔러서 찜한 스팟의 만료된 사진을 최신 URL로 교체!
+                if (mySavedSpotsData && mySavedSpotsData.length > 0) {
+                    const promises = mySavedSpotsData.map(spot => {
+                        return new Promise(resolve => {
+                            if (!spot.placeId) return resolve();
+                            if (!placesService) placesService = new google.maps.places.PlacesService(document.createElement('div'));
+                            
+                            placesService.getDetails({ placeId: spot.placeId, fields: ['photos'] }, async (place, status) => {
+                                if (status === google.maps.places.PlacesServiceStatus.OK && place && place.photos && place.photos.length > 0) {
+                                    const newUrl = place.photos[0].getUrl({ maxWidth: 400 });
+                                    spot.photoUrl = newUrl; // 화면 표시용 메모리 업데이트
+                                    
+                                    // 🌟 DB에도 조용히 새 주소로 업데이트 (다음 접속 땐 안 당겨도 바로 나오게!)
+                                    try {
+                                        await updateDoc(doc(db, "savedSpots", spot.docId), { photoUrl: newUrl });
+                                    } catch(err) {}
+                                }
+                                resolve();
+                            });
+                        });
+                    });
+                    
+                    // 사진 다 불러올 때까지 최소 1초 대기 (애니메이션 쾌감 유지)
+                    await Promise.all([Promise.all(promises), new Promise(r => setTimeout(r, 1000))]);
+                    
+                    // 🌟 바뀐 사진으로 리스트 다시 그리기
+                    renderSavedSpotsList();
+                } else {
+                    await new Promise(r => setTimeout(r, 1000));
+                    const btn = document.getElementById('btn-my-saved-spots');
+                    if (btn) btn.click();
+                }
 
-                // 1초 뒤에 스르륵 사라짐 (자연스러운 UI)
-                setTimeout(() => {
-                    spotIndicator.style.opacity = '0';
-                    spotIndicator.style.transform = 'translateY(-20px)';
-                    setTimeout(() => { spotIndicator.querySelector('span').style.animation = 'none'; }, 300);
-                }, 1000);
+                // 1초 뒤에 스르륵 사라짐
+                spotIndicator.style.opacity = '0';
+                spotIndicator.style.transform = 'translateY(-20px)';
+                setTimeout(() => { spotIndicator.querySelector('span').style.animation = 'none'; }, 300);
             } else {
                 // 덜 당겨서 취소됨
                 spotIndicator.style.opacity = '0';
