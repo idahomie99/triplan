@@ -1408,32 +1408,78 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
         });
     });
 
-    let edgeStartX = 0; let edgeStartY = 0;
-    document.addEventListener('touchstart', (e) => { edgeStartX = e.touches[0].clientX; edgeStartY = e.touches[0].clientY; }, {passive: true});
-    document.addEventListener('touchend', (e) => {
-        if (edgeStartX < 30) {
-            const endX = e.changedTouches[0].clientX; const endY = e.changedTouches[0].clientY;
-            if (endX - edgeStartX > 50 && Math.abs(endY - edgeStartY) < 50) {
-                // 🌟 추가된 방어막: 바텀시트(팝업)가 하나라도 떠있으면 스와이프 무시!!
-                if (document.querySelector('.bottom-sheet.active')) return;
+    // ==========================================
+    // 🌟 네이티브 앱 UX 5: 토스 스타일 슬라이딩 뒤로가기 (손가락 추적 인터랙션)
+    // ==========================================
+    let edgeStartX = 0; let edgeCurrentX = 0; let isEdgeSwiping = false; let topSubScreen = null;
 
-                // [✨ 수정 후 (설정창, 찜한스팟창 모두 추가 완료!)]
-                const resultScreen = document.getElementById('ai-result-screen'); 
-                const savedPlansScreen = document.getElementById('saved-plans-screen');
-                const savedSpotsScreen = document.getElementById('saved-spots-screen');
-                const settingsScreen = document.getElementById('settings-screen');
-                const aiScreen = document.getElementById('ai-screen'); 
-                const accountScreen = document.getElementById('account-screen');
-
-                // 제일 위에 떠있는 화면부터 순서대로 체크해서 닫아줍니다!
-                if (resultScreen && resultScreen.classList.contains('active')) document.getElementById('btn-back-ai-result')?.click();
-                else if (savedPlansScreen && savedPlansScreen.classList.contains('active')) document.getElementById('btn-back-saved-plans')?.click();
-                else if (savedSpotsScreen && savedSpotsScreen.classList.contains('active')) document.querySelector('#saved-spots-screen .icon-btn')?.click();
-                else if (settingsScreen && settingsScreen.classList.contains('active')) document.querySelector('#settings-screen .icon-btn')?.click();
-                else if (aiScreen && aiScreen.classList.contains('active')) document.getElementById('btn-back-ai')?.click();
-                else if (accountScreen && accountScreen.classList.contains('active')) document.getElementById('btn-back-account')?.click();
+    document.addEventListener('touchstart', (e) => {
+        // 바텀시트(팝업창)가 켜져 있으면 무시
+        if (document.querySelector('.bottom-sheet.active')) return; 
+        
+        // 화면 왼쪽 끝(30px 이내)에서 터치가 시작되었는지 확인
+        if (e.touches[0].clientX < 30) {
+            edgeStartX = e.touches[0].clientX;
+            // 가장 위에 켜져 있는 화면 찾기
+            const activeScreens = Array.from(document.querySelectorAll('.sub-screen.active'));
+            if (activeScreens.length > 0) {
+                topSubScreen = activeScreens[activeScreens.length - 1]; 
+                topSubScreen.style.transition = 'none'; // 손가락을 즉시 따라오게 애니메이션 임시 해제
+                isEdgeSwiping = true;
             }
         }
+    }, {passive: true});
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isEdgeSwiping || !topSubScreen) return;
+        edgeCurrentX = e.touches[0].clientX;
+        const diffX = edgeCurrentX - edgeStartX;
+        
+        // 손가락이 오른쪽으로 이동할 때만 화면도 같이 밀어주기!
+        if (diffX > 0) {
+            topSubScreen.style.transform = `translateX(${diffX}px)`; 
+        }
+    }, {passive: true});
+
+    document.addEventListener('touchend', (e) => {
+        if (!isEdgeSwiping || !topSubScreen) return;
+        const diffX = edgeCurrentX - edgeStartX;
+        
+        // 손을 뗐으니 애니메이션 다시 장착
+        topSubScreen.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s';
+        
+        // 🌟 100px 이상 충분히 당겼으면 창 닫기!
+        if (diffX > 100) {
+            const screenId = topSubScreen.id;
+            
+            // "진짜 나가시겠어요?" 알림창이 뜰 수 있는 화면은 제자리로 돌려놓고 기존 로직에 맡김
+            if ((screenId === 'ai-result-screen' && !isCurrentPlanSaved) || screenId === 'ai-screen') {
+                topSubScreen.style.transform = ''; 
+            } else {
+                // 안전한 화면들은 시각적으로 바로 오른쪽으로 치워버리기
+                topSubScreen.style.transform = 'translateX(100%)'; 
+            }
+            
+            // 시각적 처리가 끝난 직후 실제 버튼 누른 것과 똑같은 효과 발동
+            setTimeout(() => {
+                if (screenId === 'ai-result-screen') document.getElementById('btn-back-ai-result')?.click();
+                else if (screenId === 'saved-plans-screen') document.getElementById('btn-back-saved-plans')?.click();
+                else if (screenId === 'saved-spots-screen') document.querySelector('#saved-spots-screen .icon-btn')?.click();
+                else if (screenId === 'saved-map-screen') document.querySelector('#saved-map-screen .icon-btn')?.click();
+                else if (screenId === 'settings-screen') document.querySelector('#settings-screen .icon-btn')?.click();
+                else if (screenId === 'ai-screen') document.getElementById('btn-back-ai')?.click();
+                else if (screenId === 'account-screen') document.getElementById('btn-back-account')?.click();
+                else topSubScreen.classList.remove('active');
+                
+                if (topSubScreen) topSubScreen.style.transform = ''; // 인라인 스타일 청소
+            }, 50); 
+        } else {
+            // 🌟 덜 당겼으면 다시 화면을 제자리(0)로 튕겨서 복구시킴
+            topSubScreen.style.transform = 'translateX(0)';
+            setTimeout(() => { if(topSubScreen) topSubScreen.style.transform = ''; }, 300);
+        }
+        
+        isEdgeSwiping = false; topSubScreen = null; edgeStartX = 0; edgeCurrentX = 0;
     });
 
 // ==========================================
