@@ -28,19 +28,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
    <style>
-        /* 🌟 1. 유령 서브화면들이 로비 바닥을 차지해서 밀어올리는 현상 100% 차단! */
+        /* 🌟 1. 서브 화면 토스/iOS 스타일 슬라이드 전환 애니메이션 적용! */
         .sub-screen {
             position: fixed !important; top: 0 !important; left: 0 !important; 
             width: 100% !important; height: 100% !important; 
-        }
-        .sub-screen:not(.active) {
-            display: none !important; /* 에러로 박힌 인라인 style 강제 무력화 */
+            display: flex !important; flex-direction: column !important;
+            background: var(--bg-body) !important; z-index: 100 !important;
+            
+            /* 🌟 핵심: 화면을 미리 오른쪽 바깥에 숨겨둡니다 */
+            transform: translateX(100%) !important; 
+            visibility: hidden !important; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.3s !important; 
         }
         .sub-screen.active {
-            display: flex !important; flex-direction: column !important;
+            /* 🌟 켜질 때 제자리로 슥~ 미끄러져 들어옵니다 */
+            transform: translateX(0) !important; 
+            visibility: visible !important;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0s !important;
         }
 
-        /* 🌟 2. 팝업창들이 바닥을 차지하는 현상 100% 차단 및 공중부양 */
+        /* 🌟 2. 팝업창들이 바닥을 차지하는 현상 차단 및 공중부양 (기존 동일) */
         .bottom-sheet {
             position: fixed !important; bottom: 0 !important; left: 0 !important; 
             width: 100% !important; z-index: 1040 !important;
