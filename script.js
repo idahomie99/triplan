@@ -2151,10 +2151,28 @@ let currentDocId = null; // 🌟 현재 보고 있는 일정의 DB 고유 ID 기
             document.querySelectorAll('.insp-filter').forEach(c => c.classList.remove('active'));
             filterChip.classList.add('active');
             const type = filterChip.getAttribute('data-filter');
+            
+            let visibleCount = 0; // 🌟 보이는 카드 개수 추적
+            
             document.querySelectorAll('.insp-card').forEach(card => {
-                if(type === 'all' || card.getAttribute('data-type') === type) card.style.display = 'flex';
-                else card.style.display = 'none';
+                if(type === 'all' || card.getAttribute('data-type') === type) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
             });
+            
+            // 🌟 카드가 하나도 없으면 '장소가 없습니다' 메시지 띄우기
+            let emptyMsg = document.getElementById('insp-empty-msg');
+            if (!emptyMsg) {
+                emptyMsg = document.createElement('div');
+                emptyMsg.id = 'insp-empty-msg';
+                emptyMsg.innerHTML = '<div style="padding: 60px 20px; text-align: center; color: var(--text-sub); font-weight: 600; line-height: 1.5;"><span class="material-symbols-rounded" style="font-size: 32px; color: #CBD5E1; margin-bottom: 8px;">search_off</span><br>해당 카테고리의 핫플이 없습니다.</div>';
+                document.getElementById('insp-cards-wrap').appendChild(emptyMsg);
+            }
+            emptyMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+            
             return;
         }
 

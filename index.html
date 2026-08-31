@@ -222,12 +222,18 @@
             <div class="sheet-content" id="insp-region-list" style="padding-top: 10px;"></div>
         </div>
 
-        <div id="inspiration-modal" class="bottom-sheet" style="z-index: 1005; max-height: 85vh;">
-            <div class="sheet-header">
+       <!-- 🌟 영감 찾기 결과 모달 (높이 고정 완료!) -->
+        <div id="inspiration-modal" class="bottom-sheet" style="z-index: 1005; height: 85vh; display: flex; flex-direction: column;">
+            <div class="sheet-header" style="flex-shrink: 0;">
                 <h3 id="inspiration-title">추천 여행지</h3>
-                <div style="display:flex; gap:4px;"><button class="icon-btn" id="btn-refresh-insp" style="display:none;"><span class="material-symbols-rounded">refresh</span></button><button class="icon-btn" id="btn-close-insp-modal"><span class="material-symbols-rounded">close</span></button></div>
+                <div style="display:flex; gap:4px;">
+                    <button class="icon-btn" id="btn-refresh-insp" style="display:none;"><span class="material-symbols-rounded">refresh</span></button>
+                    <button class="icon-btn" id="btn-close-insp-modal"><span class="material-symbols-rounded">close</span></button>
+                </div>
             </div>
-            <div class="sheet-content" id="inspiration-content" style="padding-bottom: 40px; overflow-y: auto; height: 100%;"></div>
+            <div class="sheet-content" id="inspiration-content" style="flex: 1; padding-bottom: 40px; overflow-y: auto;">
+                <!-- AI가 찾아온 핫플 카드들이 꽂힐 자리 -->
+            </div>
         </div>
 
         <div id="calendar-modal" class="bottom-sheet" style="z-index: 1005;">
