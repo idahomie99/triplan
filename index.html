@@ -452,14 +452,14 @@
 
 <!-- 출석 체크 모달 -->
 <div class="modal-overlay" id="attendanceModal">
-  <div class="modal-content" style="padding: 50px 24px;">
-    <div class="material-symbols-rounded fire-icon-large">local_fire_department</div>
-    <h2 class="modal-title" style="margin-bottom: 20px;">출석 완료!</h2>
-    <div style="font-size: 20px; font-weight: 700; color: #495057; margin-bottom: 24px;">
-      연속 <span class="streak-number" id="attendanceStreakNum">0</span>일째 토벌 중!
+  <div class="modal-content" style="width: 300px; padding: 36px 20px;">
+    <div class="material-symbols-rounded fire-icon-large" style="margin-bottom: 8px;">local_fire_department</div>
+    <h2 class="modal-title" style="margin-bottom: 12px;">출석 완료!</h2>
+    <div style="font-size: 18px; font-weight: 700; color: #495057; margin-bottom: 16px;">
+      연속 <span class="streak-number" id="attendanceStreakNum" style="font-size: 40px; margin: 0 4px;">0</span>일째 토벌 중!
     </div>
-    <p class="modal-desc" id="attendanceMsg" style="margin-bottom: 30px;">오늘도 단어들을 물리쳐 볼까요?<br>(💰 +50원 지급 완료)</p>
-    <button class="btn-primary" onclick="closeAttendanceModal()">확인</button>
+    <p class="modal-desc" id="attendanceMsg" style="margin-bottom: 24px; font-size: 14px;"></p>
+    <button class="btn-primary" style="width: 100%;" onclick="closeAttendanceModal()">확인</button>
   </div>
 </div>
 
@@ -765,8 +765,8 @@
 
     if (isNewLogin) {
       document.getElementById('attendanceMsg').innerHTML = isPenalty 
-        ? `앗! ${getDaysDifference(userStats.lastLoginDate, today)-1}일 결석하여 경험치가 ${penaltyExp} 하락했어요.<br>다시 힘차게 시작해 봐요! (💰 +50원)`
-        : `오늘도 잊지 않고 찾아오셨군요!<br>단어들을 물리쳐 볼까요? (💰 +50원)`;
+        ? `앗! ${getDaysDifference(userStats.lastLoginDate, today)-1}일 결석하여 경험치가 ${penaltyExp} 하락했어요.<br>다시 힘차게 시작해 봐요! (${coinIcon} +50원)`
+        : `오늘도 잊지 않고 찾아오셨군요!<br>단어들을 물리쳐 볼까요? (${coinIcon} +50원)`;
       
       document.getElementById('attendanceModal').classList.add('show');
       animateValue(document.getElementById('attendanceStreakNum'), oldStreak, newStreak, 1000); 
@@ -1089,7 +1089,7 @@
         isMistakeMode = false; 
         if (!userStats.dailyStudyDone && sessionTotal > 0) {
           userStats.dailyStudyDone = true; userStats.money += 100; addExp(sessionTotal);
-          document.getElementById('completionMsg').innerHTML = `훌륭하게 단어 토벌에 성공했습니다!<br><br><span style="font-size:16px; color:#4dabf7; font-weight:800;">EXP +${sessionTotal}  |  💰 +100원</span>`;
+          document.getElementById('completionMsg').innerHTML = `훌륭하게 단어 토벌에 성공했습니다!<br><br><span style="font-size:16px; color:#4dabf7; font-weight:800;">EXP +${sessionTotal} &nbsp;|&nbsp; ${coinIcon} +100원</span>`;
         } else { document.getElementById('completionMsg').innerHTML = `오늘의 토벌을 완벽하게 마쳤습니다.<br>푹 쉬고 내일 다시 만나요!`; }
         document.getElementById('completionModal').classList.add('show'); 
       }, 300); 
@@ -1330,7 +1330,7 @@
     document.getElementById('finalQuizScore').innerText = `${quizScore} / ${quizQuestions.length}`;
     let msg = ''; const ratio = quizScore / quizQuestions.length;
     if (ratio === 1) msg = "완벽하게 제초를 완료했습니다!"; else if (ratio >= 0.7) msg = "훌륭합니다. 제초에 성공했습니다!"; else msg = "아슬아슬했네요. 단어장을 복습해 보세요.";
-    if (!userStats.dailyQuizDone) { userStats.dailyQuizDone = true; userStats.money += 50; addExp(20); msg += `<br><br><span style="font-size:16px; color:#51cf66; font-weight:800;">EXP +20  |  💰 +50원</span>`; }
+    if (!userStats.dailyQuizDone) { userStats.dailyQuizDone = true; userStats.money += 50; addExp(20); msg += `<br><br><span style="font-size:16px; color:#51cf66; font-weight:800;">EXP +20 &nbsp;|&nbsp; ${coinIcon}+50원</span>`; }
     document.getElementById('quizResultMsg').innerHTML = msg; document.getElementById('quizResultModal').classList.add('show');
   }
 
