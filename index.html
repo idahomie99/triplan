@@ -1,583 +1,1336 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#F8FAFC" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)">
-    
-    <title>Triplan</title>
-    
-    <meta name="apple-mobile-web-app-title" content="Triplan">
-    <meta name="application-name" content="Triplan">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    
-    <link rel="icon" type="image/png" href="image/triplanappimg.png">
-    <link rel="apple-touch-icon" href="image/triplanappimg.png">
-    
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,0..1,0" />
-    
-    <!-- 🚀 구글 맵 API 로드 -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAt_ZABfNumgwj1Tb2dR9wK2fj5C6CFbFU&libraries=places,geometry"></script>
-    
-    <!-- 🌟 강력한 캐시 파괴(Cache Busting) 꼬리표 부착! -->
-    <link rel="stylesheet" href="style.css?v=260828_1">
-    
-    <!-- 🌟 일정표 이미지 다운로드를 위한 html2canvas 라이브러리 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Vocawa - 치이카와 단어장</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vocawa">
+<link rel="icon" href="./image/app_logo.png">
+<link rel="apple-touch-icon" href="./image/app_logo.png">
+<meta name="theme-color" content="#fcf6ef">
 
-   <style>
-        /* 🌟 1. 서브 화면 토스/iOS 스타일 슬라이드 전환 애니메이션 적용! */
-        .sub-screen {
-            position: fixed !important; top: 0 !important; left: 0 !important; 
-            width: 100% !important; height: 100% !important; 
-            display: flex !important; flex-direction: column !important;
-            background: var(--bg-body) !important; z-index: 100 !important;
-            
-            /* 🌟 핵심: 화면을 미리 오른쪽 바깥에 숨겨둡니다 */
-            transform: translateX(100%) !important; 
-            visibility: hidden !important; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0.3s !important; 
-        }
-        .sub-screen.active {
-            /* 🌟 켜질 때 제자리로 슥~ 미끄러져 들어옵니다 */
-            transform: translateX(0) !important; 
-            visibility: visible !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s 0s !important;
-        }
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v3.2.1/dist/web/static/pretendard.css" />
 
-        /* 🌟 2. 팝업창들이 바닥을 차지하는 현상 차단 및 공중부양 (기존 동일) */
-        .bottom-sheet {
-            position: fixed !important; bottom: 0 !important; left: 0 !important; 
-            width: 100% !important; z-index: 1040 !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, visibility 0s 0.3s !important;
-        }
-        .bottom-sheet:not(.active) {
-            transform: translateY(100%) !important; /* 아래로 완전히 치움 */
-            visibility: hidden !important; 
-            box-shadow: none !important;
-        }
-        .bottom-sheet.active {
-            transform: translateY(0) !important;
-            visibility: visible !important; 
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.15) !important;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, visibility 0s 0s !important;
-        }
+<style>
+  body { display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #fcf6ef; margin: 0; font-family: Pretendard, -apple-system, sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; overflow: hidden; overscroll-behavior-y: contain; color: #343a40; }
+  
+  .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; box-sizing: border-box; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: 120px; }
+  .screen.active { opacity: 1; visibility: visible; }
+  
+  #authScreen { justify-content: center; padding-top: 0; padding-bottom: 0; }
+  #homeScreen { padding-top: 16px; justify-content: flex-start; }
+  #shopScreen, #vocabScreen { padding-top: 30px; justify-content: flex-start; }
+  #quizScreen, #learningScreen { padding-top: 40px; justify-content: flex-start; }
+  
+  .responsive-width { width: 90%; max-width: 440px; margin: 0 auto; }
 
-        /* 🌟 3. 카테고리 뱃지 무적 방어 */
-        .timeline-card-header { display: flex; flex-wrap: nowrap !important; gap: 12px !important; align-items: flex-start !important; }
-        .tc-title { flex: 1; word-break: keep-all; margin: 0 !important; }
-        .tc-category { white-space: nowrap !important; flex-shrink: 0 !important; min-width: max-content !important; display: inline-flex !important; align-items: center; justify-content: center; }
-        
-        /* 🌟 4. 스와이프 삭제 UI 전용 스타일 */
-        .swipe-wrapper { position: relative; width: 100%; margin-bottom: 16px; }
-        .swipe-action-container { position: absolute; top: 0; right: 0; height: 100%; display: flex; align-items: center; padding-right: 8px; z-index: 1; }
-        .swipe-circle-btn { width: 52px; height: 52px; border-radius: 50%; background: #EF4444; border: none; color: white; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); cursor: pointer; transition: transform 0.2s; }
-        .swipe-circle-btn:active { transform: scale(0.9); }
-        .swipe-card-front { position: relative; background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--card-border); box-shadow: 0 4px 15px var(--shadow-color); z-index: 2; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; }
-        .swipe-card-front.swiped { transform: translateX(-72px); }
-        .swipe-wrapper.deleting { animation: shrinkHeight 0.3s ease forwards; }
-        @keyframes shrinkHeight { to { height: 0; margin-bottom: 0; opacity: 0; transform: scale(0.9); } }
-        
-        /* 🌟 5. 플로팅 버튼 */
-        .result-action-area { position: absolute !important; bottom: 32px !important; left: 0 !important; width: 100% !important; display: flex !important; justify-content: center !important; pointer-events: none !important; background: transparent !important; border: none !important; padding: 0 20px !important; z-index: 100 !important; }
-        .floating-save-btn { pointer-events: auto !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; background: rgba(37, 99, 235, 0.85) !important; -webkit-backdrop-filter: blur(12px) !important; backdrop-filter: blur(12px) !important; color: white !important; border: none !important; padding: 14px 28px !important; border-radius: 100px !important; font-size: 15px !important; font-weight: 800 !important; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3) !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: auto !important; min-width: 160px !important; }
-        .floating-save-btn:active { transform: scale(0.94) !important; }
-        
-        /* 🌟 6. 애니메이션 등 */
-        @keyframes floatUpAndFade { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; } 50% { transform: translate(-50%, -150%) scale(1.5); opacity: 1; } 100% { transform: translate(-50%, -250%) scale(1); opacity: 0; } }
-        .floating-heart-anim { position: absolute; top: 50%; left: 50%; pointer-events: none; color: #EF4444; z-index: 100; animation: floatUpAndFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; font-variation-settings: 'FILL' 1; }
-        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
-        .skeleton-box { background: linear-gradient(90deg, var(--card-border) 25%, var(--icon-bg) 50%, var(--card-border) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
-        @keyframes rotateRing { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .material-symbols-rounded { font-variation-settings: 'FILL' 1; }
-        
-        /* 테마 지원 */
-        @media (prefers-color-scheme: dark) { .magic-spinner-inner { background: #0F172A !important; } #ai-loading-overlay { background: #0F172A !important; } }
-        :root[data-theme="dark"] { --bg-body: #0F172A !important; --bg-app: #1E293B !important; --card-bg: #1E293B !important; --card-border: #334155 !important; --text-main: #F8FAFC !important; --text-sub: #94A3B8 !important; --icon-bg: #334155 !important; --shadow-color: rgba(0,0,0,0.5) !important; }
-        :root[data-theme="light"] { --bg-body: #F8FAFC !important; --bg-app: #FFFFFF !important; --card-bg: #FFFFFF !important; --card-border: #E2E8F0 !important; --text-main: #0F172A !important; --text-sub: #64748B !important; --icon-bg: #F1F5F9 !important; --shadow-color: rgba(15, 23, 42, 0.03) !important; }
-        :root[data-theme="dark"] #bottom-nav { background: #1E293B !important; box-shadow: 0 -4px 20px rgba(0,0,0,0.5) !important; }
-        :root[data-theme="dark"] #bottom-nav .nav-item { color: #94A3B8 !important; }
-        :root[data-theme="dark"] #bottom-nav .nav-item.active { color: #8B5CF6 !important; }
-        :root[data-theme="dark"] #btn-theme-setting span:not(.material-symbols-rounded), :root[data-theme="dark"] .theme-option span:not(.material-symbols-rounded) { color: #F8FAFC !important; }
-        :root[data-theme="dark"] .skeleton-box { background: linear-gradient(90deg, #1E293B 25%, #334155 50%, #1E293B 75%); background-size: 200% 100%; }
-    </style>
+  /* 🔐 로그인 화면 */
+  .auth-container { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; width: 100%; }
+  .google-btn { display: flex; align-items: center; justify-content: center; gap: 12px; background-color: white; color: #343a40; font-size: 16px; font-weight: 700; padding: 20px; border-radius: 20px; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 12px 32px rgba(160, 140, 120, 0.12); }
+  .google-btn:active { transform: scale(0.98); background-color: #f8f9fa; }
+  
+  /* 🎯 홈 화면 상단 헤더 */
+  .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; margin-top: 0; width: 100%; }
+  .streak-badge { background: white; color: #ff922b; border: 1px solid #ffc078; padding: 6px 12px; border-radius: 12px; display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; margin-right: 4px; box-shadow: 0 4px 12px rgba(255, 146, 43, 0.15); }
+  .settings-btn { background: none; border: none; color: #868e96; cursor: pointer; padding: 6px; border-radius: 50%; display: flex; transition: background 0.2s, color 0.2s; }
+  .settings-btn:active { background: white; color: #343a40; }
+
+  /* 🎯 공통 흰색 카드 스타일 */
+  .course-card, .shop-item, .vocab-item, .quiz-q-container, .card-face, .modal-content {
+    background-color: white; border: none; box-shadow: 0 12px 36px rgba(180, 160, 140, 0.12);
+  }
+
+  /* 🎯 재사용되는 텍스트 및 경험치 바 UI */
+  .stat-level { font-size: 17px; font-weight: 700; color: #343a40; display: flex; align-items: center; gap: 8px; }
+  .stat-level .badge { background: #4dabf7; color: white; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+  .stat-money { font-size: 15px; font-weight: 700; color: #ff922b; display: flex; align-items: center; gap: 4px; }
+  
+  .exp-wrapper { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 4px; }
+  .exp-container { width: 100%; height: 12px; background-color: #f1f3f5; border-radius: 6px; overflow: hidden; position: relative; box-shadow: inset 0 2px 4px rgba(160,140,120,0.05);}
+  .exp-bar { height: 100%; width: 0%; background-color: #51cf66; border-radius: 6px; transition: width 0.5s ease-out; box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);}
+  .exp-text { font-size: 11px; font-weight: 700; color: #adb5bd; text-align: right; }
+
+  /* 🎯 마이룸(상태창) */
+  .user-room-card { display: flex; flex-direction: column; margin-bottom: 32px; background-color: white; border-radius: 28px; box-shadow: 0 12px 36px rgba(180, 160, 140, 0.12); padding: 6px; box-sizing: border-box; }
+  .room-view { width: 100%; height: 240px; position: relative; overflow: hidden; border-radius: 22px; background-color: #f1f3f5; }
+  .room-bg-img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; }
+  .room-character { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 2; width: 90px; height: auto; object-fit: contain; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3)); }
+  .room-item { position: absolute; z-index: 2; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.25)); }
+  
+  .room-beetle { bottom: 20px; left: 65%; width: 35px; height: auto; object-fit: contain; } 
+  .room-guitar { bottom: 35px; left: 15%; width: 65px; height: auto; object-fit: contain; transform: rotate(-10deg); } 
+  .room-tv { bottom: 30px; right: 15%; width: 85px; height: auto; object-fit: contain; } 
+
+  .room-info-top-bar { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 3; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(6px); padding: 8px 12px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+  .room-info-top-bar .stat-level { font-size: 14px; gap: 4px; }
+  .room-info-top-bar .stat-level .badge { padding: 3px 6px; font-size: 11px; }
+  .room-info-top-bar .stat-money { font-size: 13px; gap: 2px; }
+  .top-bar-exp { width: 75px; margin-top: 0; gap: 4px; }
+  .top-bar-exp .exp-text { font-size: 10px; text-align: center; color: #495057; }
+
+  /* 🎯 오늘의 할 일 */
+  .course-list { display: flex; flex-direction: column; gap: 12px; box-sizing: border-box;}
+  .course-header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 4px; box-sizing: border-box; margin-bottom: 2px; }
+  .course-header h3 { margin: 0; font-size: 15px; font-weight: 700; color: #495057; letter-spacing: -0.3px;}
+  
+  .course-card { border-radius: 24px; padding: 20px; box-sizing: border-box; cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; justify-content: center; }
+  .course-card:active { transform: scale(0.97); }
+  .course-title { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; color: #212529; margin-bottom: 6px; letter-spacing: -0.4px;}
+  .course-title .material-symbols-rounded { font-size: 24px; }
+  .course-desc { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #868e96; font-weight: 500; margin-left: 2px;}
+
+  /* 🎯 플로팅 하단 탭 바 & 페이드 효과 */
+  .bottom-nav-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 440px; height: 72px; background-color: white; border-radius: 36px; display: flex; justify-content: space-around; align-items: center; z-index: 100; box-shadow: 0 16px 40px rgba(180, 160, 140, 0.25); }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #adb5bd; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; width: 33%; }
+  .nav-item .material-symbols-rounded { font-size: 26px; }
+  .nav-item.active { color: #495057; }
+  .nav-item.active .material-symbols-rounded { color: #4dabf7; font-variation-settings: 'FILL' 1; }
+  .fade-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: 100px; background: linear-gradient(to bottom, rgba(252,246,239,0) 0%, rgba(252,246,239,1) 80%); z-index: 90; pointer-events: none; }
+
+  /* 🎯 상점 UI */
+  .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .shop-tabs { display: flex; background: rgba(255,255,255,0.5); border-radius: 14px; padding: 6px; box-sizing: border-box; margin-bottom: 20px; border: 1px solid white; box-shadow: 0 4px 12px rgba(180, 160, 140, 0.05);}
+  .shop-tab { flex: 1; text-align: center; padding: 10px 0; font-size: 14px; font-weight: 700; color: #868e96; cursor: pointer; border-radius: 10px; transition: 0.2s; }
+  .shop-tab.active { background: white; color: #343a40; box-shadow: 0 4px 12px rgba(160, 140, 120, 0.1); }
+  
+  .shop-list-wrapper { width: 100%; position: relative; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .shop-list { flex: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; overflow-y: auto; padding-bottom: 120px; }
+  .shop-list::-webkit-scrollbar { display: none; }
+  
+  .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+  .slide-in-left { animation: slideInLeft 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+  @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  
+  .shop-item { border-radius: 20px; padding: 16px; display: flex; gap: 14px; align-items: center; }
+  .shop-item-img { width: 64px; height: 64px; background: #f8f9fa; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #adb5bd; font-size: 12px; font-weight: 600; flex-shrink: 0; object-fit: cover; }
+  .shop-item-content { display: flex; flex: 1; justify-content: space-between; align-items: center; gap: 8px; }
+  .shop-item-info { flex: 1; }
+  .shop-item-info h4 { margin: 0 0 4px 0; font-size: 15px; font-weight: 700; color: #343a40; line-height: 1.2; letter-spacing: -0.3px; display: flex; align-items: center; }
+  .shop-item-info p { margin: 0; font-size: 12px; color: #868e96; line-height: 1.4; word-break: keep-all; font-weight: 500; }
+  .shop-buy-btn { padding: 10px 14px; font-size: 13px; font-weight: 700; border-radius: 10px; border: none; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; }
+  .btn-buy { background: #e7f5ff; color: #4dabf7; }
+  .btn-equip { background: #f1f3f5; color: #495057; }
+  .btn-equipped { background: #51cf66; color: white; }
+  .btn-unequip { background: #ffec99; color: #e67700; }
+
+  /* 🎯 단어장 UI */
+  .vocab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .vocab-list { width: 100%; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-bottom: 120px; }
+  .vocab-item { border-radius: 20px; padding: 16px 20px; display: flex; gap: 16px; align-items: center; }
+  .vocab-hanja { font-size: 32px; font-weight: 600; color: #343a40; width: 44px; text-align: center; }
+  .vocab-details { flex: 1; }
+  .vocab-meaning { font-size: 16px; font-weight: 700; color: #4dabf7; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .vocab-story { font-size: 13px; color: #adb5bd; line-height: 1.5; word-break: keep-all; font-weight: 700;}
+  .level-badge { font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 700; background: #f8f9fa; color: #868e96; }
+  .level-high { background: #e7f5ff; color: #4dabf7; }
+
+  /* 공통 (퀴즈, 플래시카드) */
+  .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; width: 100%;}
+  .back-btn { display: flex; align-items: center; gap: 4px; background: white; border: none; color: #495057; font-size: 15px; font-weight: 700; cursor: pointer; padding: 10px 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(180, 160, 140, 0.1); }
+  .sound-btn { display: flex; align-items: center; justify-content: center; background: white; border: none; color: #adb5bd; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(180, 160, 140, 0.1); }
+  .sound-btn.active { color: #343a40; }
+
+  .progress-container { height: 8px; background-color: #f1f3f5; border-radius: 4px; overflow: hidden; margin-bottom: 24px; width: 100%;}
+  .progress-bar { height: 100%; width: 0%; background-color: #4dabf7; border-radius: 4px; transition: width 0.5s ease-out; }
+  
+  .card-container { height: 50vh; min-height: 380px; perspective: 1000px; cursor: pointer; margin-bottom: 24px; position: relative; }
+  .card { width: 100%; height: 100%; position: absolute; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; will-change: transform; }
+  .card.flipped { transform: rotateY(180deg); }
+  .card.dragging { transition: none; }
+  .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 32px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 32px; box-sizing: border-box; text-align: center; }
+  .card-front { font-size: 80px; font-weight: 600; color: #343a40; word-break: break-word; padding: 0 20px; }
+  .card-back { transform: rotateY(180deg); }
+  .mini-hanja { font-size: 24px; font-weight: 600; color: #adb5bd; margin: 0 0 12px 0; }
+  .meaning { font-size: 24px; font-weight: 700; color: #4dabf7; margin: 0 0 20px 0; letter-spacing: -0.5px; line-height: 1.4; }
+  .radical { font-size: 14px; color: #495057; margin: 0 0 20px 0; background-color: #f8f9fa; padding: 8px 14px; border-radius: 10px; font-weight: 700; }
+  .story { font-size: 15px; color: #495057; line-height: 1.6; word-break: keep-all; font-weight: 500;}
+  
+  .swipe-hint { position: absolute; top: 24px; font-size: 20px; font-weight: 700; opacity: 0; transition: opacity 0.2s; pointer-events: none; padding: 10px 20px; border-radius: 12px; z-index: 10; background: white;}
+  .hint-bad { color: #ff8787; border: 3px solid #ff8787; right: 24px; transform: rotate(10deg); }
+  .hint-perfect { color: #51cf66; border: 3px solid #51cf66; left: 24px; transform: rotate(-10deg); }
+  .hint-soso { color: #ff922b; border: 3px solid #ff922b; top: auto; bottom: 30px; left: 50%; transform: translateX(-50%); }
+
+  .eval-buttons { display: flex; gap: 12px; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; pointer-events: none; }
+  .eval-buttons.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .eval-buttons button { flex: 1; padding: 18px 0; font-size: 15px; font-weight: 700; border-radius: 18px; cursor: pointer; transition: transform 0.1s; box-shadow: 0 8px 24px rgba(160, 140, 120, 0.08); border: none; display: flex; justify-content: center; align-items: center; gap: 4px;}
+  .eval-buttons button:active { transform: scale(0.96); }
+  .btn-bad { background-color: white; color: #ff8787; }
+  .btn-soso { background-color: white; color: #ff922b; }
+  .btn-perfect { background-color: white; color: #51cf66; }
+
+  /* 🎯 퀴즈 화면 UI */
+  .quiz-q-container { border-radius: 32px; padding: 40px 0; text-align: center; margin-bottom: 24px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;}
+  .quiz-instruction { font-size: 14px; font-weight: 700; color: #adb5bd; margin-bottom: 12px; }
+  .quiz-hanja { font-size: 60px; font-weight: 600; color: #343a40; line-height: 1.1; word-break: keep-all; padding: 0 20px;}
+  
+  .quiz-options { display: flex; flex-direction: column; gap: 12px; width: 100%;}
+  .quiz-opt-btn { padding: 18px; border-radius: 18px; border: none; background: white; font-size: 16px; font-weight: 700; color: #495057; cursor: pointer; transition: all 0.2s; word-break: keep-all; box-shadow: 0 8px 24px rgba(180, 160, 140, 0.08);}
+  .quiz-opt-btn.correct { background-color: #e7f5ff; color: #4dabf7; font-weight: 800; box-shadow: 0 8px 24px rgba(77, 171, 247, 0.2);}
+  .quiz-opt-btn.wrong { background-color: #fff5f5; color: #ff8787; opacity: 0.8; }
+
+  .empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; height: 50vh; text-align: center; width: 100%;}
+  .empty-state.show { display: flex; }
+  .empty-icon { color: white; background: #dee2e6; padding: 20px; border-radius: 50%; font-size: 48px; margin-bottom: 20px; box-shadow: 0 12px 24px rgba(180,160,140,0.15);}
+  .empty-title { font-size: 20px; font-weight: 700; color: #343a40; margin-bottom: 8px; }
+  .empty-desc { font-size: 15px; color: #868e96; line-height: 1.5; font-weight: 500;}
+
+  /* 모달 공통 */
+  .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(52, 58, 64, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 999; }
+  .modal-overlay.show { opacity: 1; visibility: visible; }
+  .modal-content { width: 320px; border-radius: 32px; padding: 40px 24px; text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .modal-overlay.show .modal-content { transform: scale(1); }
+  
+  .reward-img-placeholder { width: 120px; height: 120px; background: #f8f9fa; border-radius: 24px; display: flex; align-items: center; justify-content: center; color: #adb5bd; font-size: 14px; font-weight: 600; margin: 0 auto 20px auto; overflow: hidden; }
+  
+  .modal-title { font-size: 24px; font-weight: 800; color: #343a40; margin: 0 0 10px 0; letter-spacing: -0.5px;}
+  .modal-desc { font-size: 15px; color: #868e96; margin: 0 0 28px 0; line-height: 1.5; font-weight: 500;}
+  .quiz-score-text { font-size: 36px; font-weight: 800; color: #4dabf7; margin: 16px 0; }
+  
+  .input-group { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .input-group input { width: 90px; padding: 14px; font-size: 20px; font-weight: 700; text-align: center; border: 2px solid #dee2e6; border-radius: 16px; outline: none; transition: 0.2s; color: #343a40;}
+  .input-group input:focus { border-color: #4dabf7; }
+  .modal-buttons { display: flex; gap: 12px; width: 100%; }
+  .btn-primary { flex: 1; padding: 16px; background-color: #4dabf7; color: white; font-size: 15px; font-weight: 700; border: none; border-radius: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 24px rgba(77, 171, 247, 0.25);}
+  .btn-secondary { flex: 1; padding: 16px; background-color: #f1f3f5; color: #495057; font-size: 15px; font-weight: 700; border: none; border-radius: 16px; cursor: pointer; transition: 0.2s; }
+
+  /* 과정 변경 - 드롭다운 스타일 */
+  .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;}
+  .course-btn { padding: 16px 10px; border-radius: 18px; font-size: 15px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s; border: 2px solid transparent; box-sizing: border-box; }
+  .course-btn.active { background: #e7f5ff; color: #4dabf7; border-color: #4dabf7; box-shadow: 0 4px 12px rgba(77, 171, 247, 0.15); }
+  
+  .custom-select-wrapper { position: relative; width: 100%; }
+  .custom-select { appearance: none; -webkit-appearance: none; width: 100%; background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 16px; padding: 16px 20px; font-size: 16px; font-weight: 700; color: #495057; cursor: pointer; outline: none; transition: 0.2s; font-family: inherit; }
+  .custom-select:focus { border-color: #4dabf7; background: #fff; box-shadow: 0 4px 12px rgba(77, 171, 247, 0.1); }
+  .custom-select-arrow { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #adb5bd; font-size: 24px; }
+
+  /* 불꽃 애니메이션 (출석체크) */
+  .fire-icon-large { font-size: 64px; color: #ff922b; margin-bottom: 12px; filter: drop-shadow(0 4px 12px rgba(255, 146, 43, 0.4)); animation: pulseFire 1.5s infinite; }
+  @keyframes pulseFire { 0% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.9; } }
+  .streak-number { font-size: 48px; font-weight: 900; color: #ff922b; display: inline-block; }
+
+  @keyframes playShakeGuitar { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(-13deg) scale(1.05); } }
+  .playing-guitar { animation: playShakeGuitar 0.5s infinite ease-in-out; }
+  @keyframes playShakeTv { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg) scale(1.02); } 75% { transform: rotate(3deg) scale(1.02); } }
+  .playing-tv { animation: playShakeTv 0.5s infinite ease-in-out; }
+
+  /* 🎯 피드백 반영: 카드 뱃지 및 레벨 진행도 UI */
+  .card-badge { position: absolute; top: -16px; right: -16px; padding: 8px 16px; border-radius: 16px; font-size: 14px; font-weight: 800; color: white; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: rotate(5deg); }
+  .badge-new { background: #ff922b; }
+  .badge-review { background: #4dabf7; }
+  
+  .level-progress-wrap { width: 100%; margin-top: 14px; display: flex; align-items: center; gap: 10px; background: #f8f9fa; padding: 10px 14px; border-radius: 12px; box-sizing: border-box;}
+  .level-progress-bar-bg { flex: 1; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
+  .level-progress-bar-fill { height: 100%; background: #51cf66; border-radius: 4px; transition: width 0.4s ease; }
+  .level-progress-text { font-size: 13px; font-weight: 800; color: #495057; }
+</style>
 </head>
 <body>
-    <div id="app-container">
-        <!-- 내부 팝업 (Alert) -->
-        <div id="custom-alert-overlay" class="alert-overlay"></div>
-        <div id="custom-alert-modal" class="alert-modal">
-            <div class="alert-icon" id="alert-icon"><span class="material-symbols-rounded">info</span></div>
-            <h3 id="alert-title">안내</h3>
-            <p id="alert-desc">상세 설명</p>
-            <div class="alert-btn-group">
-                <button class="alert-cancel-btn ripple-btn" id="btn-alert-cancel" style="display: none;">취소</button>
-                <button class="alert-confirm-btn ripple-btn" id="btn-alert-confirm">확인했어요</button>
-            </div>
+
+<!-- 하단 그라데이션 페이드 효과 -->
+<div class="fade-bottom" id="fadeBottom" style="display: none;"></div>
+
+<!-- 🔐 로그인 화면 -->
+<div id="authScreen" class="screen active">
+  <div class="responsive-width header-title" style="text-align: center; margin-bottom: 60px; justify-content: center; display: flex; flex-direction: column; align-items: center;">
+    <img src="./image/logo.png" alt="Vocawa Logo" style="width: 100%; max-width: 180px; height: auto; display: block;">
+  </div>
+  <div class="responsive-width auth-container">
+    <button class="google-btn" id="googleLoginBtn" onclick="handleGoogleLogin()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width: 24px; height: 24px;">
+      Google 계정으로 로그인
+    </button>
+    <p id="authErrorMsg" style="color: #ff8787; font-size: 14px; text-align: center; margin-top: 14px; font-weight: 600;"></p>
+  </div>
+</div>
+
+<!-- 🏠 홈 화면 -->
+<div id="homeScreen" class="screen">
+  <div class="responsive-width header-container">
+    <div class="header-title" style="flex: 1; display: flex; align-items: center;">
+      <img src="./image/logo.png" style="height: 74px; width: auto; object-fit: contain; object-position: left; transform: translateX(15px);" alt="Vocawa Logo">
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <div class="streak-badge">
+        <span class="material-symbols-rounded">local_fire_department</span>
+        <span id="streakDaysText">1</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()" title="설정">
+        <span class="material-symbols-rounded" style="font-size: 24px;">tune</span>
+      </button>
+      <button class="settings-btn" onclick="handleLogout()" title="로그아웃">
+        <span class="material-symbols-rounded" style="font-size: 24px;">logout</span>
+      </button>
+    </div>
+  </div>
+  
+  <div class="responsive-width user-room-card">
+    <div class="room-view">
+      <img id="userRoomBg" class="room-bg-img" src="./image/cave.png" alt="room background">
+      <div class="room-info-top-bar">
+        <div class="stat-level">
+          <span class="badge" id="userLevelBadge">백수</span>
+          <span id="userLevelName">치이카와</span>
         </div>
-
-        <div id="splash-screen">
-            <div class="splash-logo"><img id="splash-logo-img" src="image/triplaninappimg.png" alt="Triplan" style="width: 190px; height: auto; object-fit: contain; animation: pulse 1s infinite;"></div>
+        <div class="stat-money">
+          <span class="material-symbols-rounded" style="font-size: 16px;">monetization_on</span>
+          <span id="userMoneyText">0</span>원
         </div>
-
-        <header class="top-header" id="top-header">
-            <img id="main-logo-img" src="image/triplaninappimg.png" alt="Triplan" style="height: 32px; width: auto; object-fit: contain; margin-left: 4px; cursor: pointer;">
-            <div class="profile-pic" id="btn-top-profile"></div>
-        </header>
-
-        <main id="main-content">
-            <section class="hero-section">
-                <h1 class="greeting">어디로 떠나시나요?</h1>
-                <p class="sub-greeting">단 1분 만에 완성되는 완벽한 여행 플랜</p>
-            </section>
-
-            <section class="main-action-group">
-                <button class="pill-btn ripple-btn" id="btn-ai-standard">
-                    <div class="pill-icon" style="color: #8B5CF6; background: rgba(139, 92, 246, 0.1);"><span class="material-symbols-rounded">auto_awesome</span></div>
-                    <div class="pill-text"><h3>AI 맞춤 일정 짜기</h3><p>취향저격 완벽한 플랜</p></div>
-                    <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
-                </button>
-                <button class="pill-btn ripple-btn" id="btn-ai-tension">
-                    <div class="pill-icon" style="color: #3B82F6; background: rgba(59, 130, 246, 0.1);"><span class="material-symbols-rounded">handshake</span></div>
-                    <div class="pill-text"><h3>AI 동행 믹스매치</h3><p>네 취향 반, 내 취향 반. 평화로운 일정</p></div>
-                    <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
-                </button>
-                <button class="pill-btn ripple-btn" id="btn-ai-date">
-                    <div class="pill-icon" style="color: #EC4899; background: rgba(236, 72, 153, 0.1);"><span class="material-symbols-rounded">favorite</span></div>
-                    <div class="pill-text"><h3>일상 데이트 코스 찾기</h3><p>평범한 일상을 여행처럼! 핫플 큐레이션</p></div>
-                    <div class="pill-arrow"><span class="material-symbols-rounded">chevron_right</span></div>
-                </button>
-            </section>
-
-            <section class="recommend-section">
-                <h2 class="section-title">여행 영감 찾기</h2>
-                <div class="rec-list-item ripple-btn" id="rec-month">
-                    <div class="rec-icon"><span class="material-symbols-rounded">travel_explore</span></div>
-                    <div class="rec-text"><h3 id="month-title">월별·국가별 추천 여행지</h3><p>현재 시즌, 지금 위치 기준 베스트 스팟</p></div>
-                    <div class="arrow"><span class="material-symbols-rounded">chevron_right</span></div>
-                </div>
-                <div class="rec-list-item ripple-btn" id="rec-sns">
-                    <div class="rec-icon"><span class="material-symbols-rounded">photo_camera</span></div>
-                    <div class="rec-text"><h3>SNS에서 핫한 글로벌 명소</h3><p>전 세계 여행자들의 인생샷 성지 탐색</p></div>
-                    <div class="arrow"><span class="material-symbols-rounded">chevron_right</span></div>
-                </div>
-            </section>
-        </main>
-
-        <nav id="bottom-nav">
-            <div class="nav-item active small-ripple-btn" id="nav-home"><div class="nav-icon"><span class="material-symbols-rounded">home</span></div><span>홈</span></div>
-            <div class="nav-item small-ripple-btn" id="nav-account"><div class="nav-icon"><span class="material-symbols-rounded">person</span></div><span>마이</span></div>
-        </nav>
-
-        <div id="calendar-overlay"></div>
-
-        <!-- 👇 모든 모달창들 (바텀 시트) 👇 -->
-        <div id="date-course-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3>데이트 지역 검색</h3><button class="icon-btn" onclick="document.getElementById('date-course-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content">
-                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px; font-weight:700;">어디서 데이트를 하시나요? (예: 성수동, 연남동, 강남역)</p>
-                <input type="text" id="date-location-input" class="ai-text-input" placeholder="동네 또는 지역 이름 입력" style="width: 100%; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <button class="search-btn ripple-btn" id="btn-search-date-course" style="width: 100%;">이 동네 핫플 찾기</button>
-            </div>
+        <div class="exp-wrapper top-bar-exp">
+          <div class="exp-container" style="height: 8px;">
+            <div class="exp-bar" id="userExpBar"></div>
+          </div>
+          <div class="exp-text" id="userExpText">EXP 0 / 100</div>
         </div>
+      </div>
+      <img id="userAvatarImg" class="room-character" src="./image/chiikawa.png" alt="character" onerror="this.src='./image/app_logo.png'">
+      <img id="itemBeetle" class="room-item room-beetle" src="./image/beetle.png" alt="beetle" style="display: none;">
+      <img id="itemGuitar" class="room-item room-guitar" src="./image/guitar.png" alt="guitar" style="display: none; cursor: pointer;" onclick="toggleFurnitureBGM('guitar')">
+      <img id="itemTv" class="room-item room-tv" src="./image/tv.png" alt="tv" style="display: none; cursor: pointer;" onclick="toggleFurnitureBGM('tv')">
+    </div>
+  </div>
+  
+  <div class="responsive-width course-list">
+    <div class="course-header" style="margin-bottom: 8px;">
+      <h3>오늘의 할 일</h3>
+      <button onclick="openCourseModal()" style="background:none; border:none; color:#adb5bd; font-size:13px; font-weight:700; display:flex; align-items:center; gap:2px; cursor:pointer; padding: 4px;">
+        과정 변경 <span class="material-symbols-rounded" style="font-size:16px;">edit</span>
+      </button>
+    </div>
+    
+    <div class="course-card" onclick="startLearning()">
+      <div class="course-title" id="currentCourseTitle">
+        <span class="material-symbols-rounded" style="color: #4dabf7; font-size: 24px;">swords</span>
+        한자 토벌 : 8급
+      </div>
+      <div class="course-desc" id="courseStatus">데이터 불러오는 중...</div>
+      <!-- 💡 피드백 5 반영: 해당 레벨 진행도 바 -->
+      <div class="level-progress-wrap" id="courseProgressWrap" style="display:none;">
+         <div class="level-progress-bar-bg">
+            <div class="level-progress-bar-fill" id="courseProgressBar"></div>
+         </div>
+         <div class="level-progress-text" id="courseProgressText">0 / 0</div>
+      </div>
+    </div>
+    
+    <div class="course-card" onclick="startQuiz()">
+      <div class="course-title">
+        <span class="material-symbols-rounded" style="color: #51cf66; font-size: 24px;">grass</span>
+        실전 모의고사 제초
+      </div>
+      <div class="course-desc" id="quizStatusText">일일 1회 보상 대기 중</div>
+    </div>
 
-        <div id="insp-filter-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header">
-                <h3 id="insp-filter-title">추천 설정</h3>
-                <button class="icon-btn" onclick="document.getElementById('insp-filter-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button>
-            </div>
-            <div class="sheet-content">
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 13px; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 8px;">방문할 월 (Month)</label>
-                    <div class="custom-select-wrap" style="position:relative;">
-                        <select id="insp-month-select" class="ai-text-input" style="width:100%; appearance:none; padding-right:40px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); font-weight:700;">
-                            <option value="전체">전체 (시기 상관없음)</option>
-                            <option value="1월">1월</option>
-                            <option value="2월">2월</option>
-                            <option value="3월">3월</option>
-                            <option value="4월">4월</option>
-                            <option value="5월">5월</option>
-                            <option value="6월">6월</option>
-                            <option value="7월">7월</option>
-                            <option value="8월">8월</option>
-                            <option value="9월">9월</option>
-                            <option value="10월">10월</option>
-                            <option value="11월">11월</option>
-                            <option value="12월">12월</option>
-                        </select>
-                        <span class="material-symbols-rounded" style="position:absolute; right:12px; top:12px; color:var(--text-sub); pointer-events:none;">expand_more</span>
-                    </div>
-                </div>
-                <div style="margin-bottom: 24px;">
-                    <label style="font-size: 13px; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 8px;">원하는 지역 (Location)</label>
-                    <button class="ai-text-input ripple-btn" id="btn-open-insp-region" style="width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; background:var(--card-bg); color:var(--text-main); font-weight:700; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
-                        <span id="insp-location-text">전세계</span>
-                        <span class="material-symbols-rounded" style="color:var(--text-sub);">chevron_right</span>
-                    </button>
-                </div>
-                <button class="search-btn ripple-btn" id="btn-exec-insp" style="width: 100%;">이 조건으로 추천받기</button>
-            </div>
-        </div>
+    <div class="course-card" onclick="startMistakeReview()">
+      <div class="course-title">
+        <span class="material-symbols-rounded" style="color: #ff922b; font-size: 24px;">menu_book</span>
+        오답 노트 (복습)
+      </div>
+      <div class="course-desc" id="mistakeStatusText">틀렸던 단어만 집중 토벌</div>
+    </div>
+  </div>
+</div>
 
-        <div id="insp-region-modal" class="bottom-sheet" style="z-index: 1010;">
-            <div class="sheet-header">
-                <div style="display:flex; align-items:center; gap:8px;"><button class="icon-btn" id="btn-insp-region-back" style="display:none;"><span class="material-symbols-rounded">arrow_back</span></button><h3 id="insp-region-title">지역 선택</h3></div>
-                <button class="icon-btn" onclick="document.getElementById('insp-region-modal').classList.remove('active');"><span class="material-symbols-rounded">close</span></button>
-            </div>
-            <div class="sheet-content" id="insp-region-list" style="padding-top: 10px;"></div>
-        </div>
+<!-- 🛒 치장 상점 화면 -->
+<div id="shopScreen" class="screen">
+  <div class="responsive-width shop-header">
+    <h2 style="font-size: 20px; font-weight: 800; margin: 0; color: #343a40;">치장 상점</h2>
+    <div class="stat-money" style="font-size: 15px;">
+      <span class="material-symbols-rounded" style="font-size: 18px;">monetization_on</span>
+      <span id="shopMoneyText">0</span>원
+    </div>
+  </div>
+  <div class="responsive-width shop-tabs">
+    <div class="shop-tab active" id="tabChar" onclick="changeShopTab('char')">캐릭터</div>
+    <div class="shop-tab" id="tabEquip" onclick="changeShopTab('equip')">장비/의상</div>
+    <div class="shop-tab" id="tabHouse" onclick="changeShopTab('house')">집/배경</div>
+  </div>
+  <div class="responsive-width shop-list-wrapper">
+    <div class="shop-list" id="shopListContainer"></div>
+  </div>
+</div>
 
-       <!-- 🌟 영감 찾기 결과 모달 (높이 고정 완료!) -->
-        <div id="inspiration-modal" class="bottom-sheet" style="z-index: 1005; height: 85vh; display: flex; flex-direction: column;">
-            <div class="sheet-header" style="flex-shrink: 0;">
-                <h3 id="inspiration-title">추천 여행지</h3>
-                <div style="display:flex; gap:4px;">
-                    <button class="icon-btn" id="btn-refresh-insp" style="display:none;"><span class="material-symbols-rounded">refresh</span></button>
-                    <button class="icon-btn" id="btn-close-insp-modal"><span class="material-symbols-rounded">close</span></button>
-                </div>
-            </div>
-            <div class="sheet-content" id="inspiration-content" style="flex: 1; padding-bottom: 40px; overflow-y: auto;">
-                <!-- AI가 찾아온 핫플 카드들이 꽂힐 자리 -->
-            </div>
-        </div>
+<!-- 📖 단어장 화면 -->
+<div id="vocabScreen" class="screen">
+  <div class="responsive-width vocab-header">
+    <h2 style="font-size: 20px; font-weight: 800; margin: 0; color: #343a40;">내 단어장</h2>
+    <div class="vocab-stats" id="vocabStatsCount" style="font-size: 14px; color: #868e96;">0 / 0</div>
+  </div>
+  <div class="responsive-width vocab-list" id="vocabListContainer"></div>
+</div>
 
-        <div id="calendar-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3>날짜 선택</h3><button class="icon-btn" id="btn-close-calendar"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" id="calendar-scroll-area"><div class="week-days"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div id="calendar-grid-container"></div></div>
-            <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-date">선택 완료</button></div>
-        </div>
+<!-- 🎯 플로팅 하단 고정 탭 바 -->
+<div class="bottom-nav-bar" id="mainBottomNav" style="display: none;">
+  <div class="nav-item active" id="navHome" onclick="switchMainTab('homeScreen')">
+    <span class="material-symbols-rounded">home</span>
+    <span>홈</span>
+  </div>
+  <div class="nav-item" id="navVocab" onclick="switchMainTab('vocabScreen')">
+    <span class="material-symbols-rounded">menu_book</span>
+    <span>단어장</span>
+  </div>
+  <div class="nav-item" id="navShop" onclick="switchMainTab('shopScreen')">
+    <span class="material-symbols-rounded">storefront</span>
+    <span>상점</span>
+  </div>
+</div>
 
-        <div id="country-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><div style="display:flex; align-items:center; gap:8px;"><button class="icon-btn" id="btn-country-back" style="display:none;"><span class="material-symbols-rounded">arrow_back</span></button><h3 id="country-modal-title">대륙 선택</h3></div><button class="icon-btn" id="btn-close-country"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" id="country-list-container" style="padding-top: 10px;"></div>
-        </div>
+<!-- 🎯 모의고사 화면 (랜덤 출제 지원) -->
+<div id="quizScreen" class="screen">
+  <div class="responsive-width top-nav">
+    <button class="back-btn" onclick="goHome()">
+      <span class="material-symbols-rounded" style="font-size: 18px;">close</span> 중단하기
+    </button>
+    <div class="quiz-header-text" id="quizProgressText" style="font-weight: 700; color: #868e96;">문제 1/10</div>
+    <div style="width: 24px;"></div> 
+  </div>
+  <div class="responsive-width quiz-q-container">
+    <div id="quizInstruction" class="quiz-instruction">다음 한자의 알맞은 훈음을 고르시오.</div>
+    <div class="quiz-hanja" id="quizHanjaTarget"></div>
+  </div>
+  <div class="responsive-width quiz-options" id="quizOptionsContainer"></div>
+</div>
 
-        <div id="theme-info-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3>여행 테마 안내</h3><button class="icon-btn" onclick="document.getElementById('theme-info-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" style="padding-bottom: 40px; max-height: 60vh; overflow-y: auto;">
-                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:20px;">
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#2563EB; font-size:24px;">diversity_1</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">우정여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">트렌디한 핫플, 포토존, 액티비티 위주로 짜인 텐션 높은 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#F43F5E; font-size:24px;">volunteer_activism</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">커플여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">분위기 좋은 식당과 감성 카페 등 데이트하기 좋은 로맨틱한 동선입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#E11D48; font-size:24px;">favorite</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">신혼여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">평생 한 번뿐인 허니문을 위해 고급스럽고 프라이빗한 럭셔리 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#F59E0B; font-size:24px;">family_restroom</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">가족여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">아이부터 어른까지 호불호 없는 대중적인 명소와 무난하고 편안한 동선입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#8B5CF6; font-size:24px;">elderly</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">효도여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">부모님 체력을 최우선으로 하여 걷기를 최소화하고 뷰와 식사에 집중한 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#10B981; font-size:24px;">flight_takeoff</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">자유여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">뻔한 패키지를 벗어나 발길 닿는 대로 골목과 문화를 탐험하는 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#06B6D4; font-size:24px;">backpack</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">배낭여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">대중교통과 로컬 찐 맛집을 적극 활용하는 가성비 좋고 활동적인 일정입니다.</span></div></li>
-                    <li style="display:flex; gap:12px; align-items:flex-start;"><span class="material-symbols-rounded" style="color:#F97316; font-size:24px;">restaurant</span><div><strong style="display:block; font-size:15px; margin-bottom:4px; color:var(--text-main);">식도락여행</strong><span style="font-size:13px; color:var(--text-sub); line-height:1.4;">오직 맛을 위해! 웨이팅이 아깝지 않은 로컬 맛집과 미슐랭 위주의 일정입니다.</span></div></li>
-                </ul>
-            </div>
-        </div>
+<!-- 학습 화면 -->
+<div id="learningScreen" class="screen">
+  <div class="responsive-width top-nav">
+    <button class="back-btn" onclick="goHome()">
+      <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back_ios_new</span> 뒤로가기
+    </button>
+    <button class="sound-btn active" id="ttsToggleBtn" onclick="toggleTTS()">
+      <span class="material-symbols-rounded" style="font-size: 20px;" id="ttsIcon">volume_up</span>
+    </button>
+  </div>
+  <div class="responsive-width progress-container"><div class="progress-bar" id="progressBar"></div></div>
+  
+  <div class="responsive-width empty-state" id="emptyState">
+    <div class="empty-icon material-symbols-rounded">check_circle</div>
+    <div class="empty-title">오늘 토벌 완료</div>
+    <div class="empty-desc">충분한 휴식을 취하세요.</div>
+  </div>
+  
+  <div class="responsive-width card-container" id="cardContainer">
+    <div class="card-badge" id="cardBadge" style="display:none;">NEW</div>
+    <div class="card" id="flashcard" onclick="flipCard()">
+      <div class="card-face card-front" id="cardHanja"></div>
+      <div class="card-face card-back">
+        <div class="swipe-hint hint-bad" id="hintBad">모름</div>
+        <div class="swipe-hint hint-perfect" id="hintPerfect">완벽함</div>
+        <div class="swipe-hint hint-soso" id="hintSoso">헷갈림</div>
+        <div class="mini-hanja" id="cardMiniHanja"></div>
+        <div class="meaning" id="cardMeaning"></div>
+        <div class="radical" id="cardRadical"></div>
+        <div class="story" id="cardStory"></div>
+      </div>
+    </div>
+  </div>
+  <div class="responsive-width eval-buttons" id="evalButtons">
+    <button class="btn-bad" onclick="processEvaluation('모름')">
+      <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back</span> 모름
+    </button>
+    <button class="btn-soso" onclick="processEvaluation('헷갈림')">
+      <span class="material-symbols-rounded" style="font-size: 18px;">arrow_upward</span> 헷갈림
+    </button>
+    <button class="btn-perfect" onclick="processEvaluation('완벽함')">
+      완벽함 <span class="material-symbols-rounded" style="font-size: 18px;">arrow_forward</span>
+    </button>
+  </div>
+</div>
 
-        <div id="confirm-replace-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3>일정 동선 확인</h3><button class="icon-btn" onclick="document.getElementById('confirm-replace-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.zIndex=''; document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content">
-                <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;"><button id="btn-show-before" style="padding:6px 16px; border-radius:20px; border:1px solid #CBD5E1; background:white; color:var(--text-sub); font-size:13px; font-weight:700; cursor:pointer;">기존 동선</button><button id="btn-show-after" style="padding:6px 16px; border-radius:20px; border:none; background:#2563EB; color:white; font-size:13px; font-weight:700; cursor:pointer;">변경 동선</button></div>
-                <div id="mini-map-container" style="width:100%; height:220px; border-radius:12px; background:#E2E8F0; margin-bottom:20px; overflow:hidden;"></div>
-                <p style="font-size:15px; color:var(--text-main); font-weight:800; text-align:center;">이대로 일정을 교체하시겠습니까?</p>
-                <div style="display:flex; gap:12px; margin-top:20px;">
-                    <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:var(--card-border); color:var(--text-main); font-weight:800; font-size:15px;" onclick="document.getElementById('confirm-replace-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.zIndex=''; document.getElementById('calendar-overlay').style.display='none';">아니오</button>
-                    <button class="ripple-btn" style="flex:1; padding:14px; border-radius:12px; border:none; background:#2563EB; color:white; font-weight:800; font-size:15px;" id="btn-do-replace">예, 교체할래요</button>
-                </div>
-            </div>
-        </div>
+<!-- 출석 체크 모달 -->
+<div class="modal-overlay" id="attendanceModal">
+  <div class="modal-content" style="padding: 50px 24px;">
+    <div class="material-symbols-rounded fire-icon-large">local_fire_department</div>
+    <h2 class="modal-title" style="margin-bottom: 20px;">출석 완료!</h2>
+    <div style="font-size: 20px; font-weight: 700; color: #495057; margin-bottom: 24px;">
+      연속 <span class="streak-number" id="attendanceStreakNum">0</span>일째 토벌 중!
+    </div>
+    <p class="modal-desc" id="attendanceMsg" style="margin-bottom: 30px;">오늘도 단어들을 물리쳐 볼까요?<br>(💰 +50원 지급 완료)</p>
+    <button class="btn-primary" onclick="closeAttendanceModal()">확인</button>
+  </div>
+</div>
 
-        <div id="replace-success-modal" class="bottom-sheet" style="z-index: 1003;">
-            <div class="sheet-content" style="text-align:center; padding: 40px 20px 20px 20px;">
-                <span class="material-symbols-rounded" style="font-size:56px; color:#10B981; margin-bottom:16px;">check_circle</span>
-                <h3 style="font-size:22px; font-weight:800; margin-bottom:30px; color:var(--text-main);">일정 교체 완료!</h3>
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                    <button class="ripple-btn" style="width:100%; padding:16px; border-radius:12px; border:none; background:#2563EB; color:white; font-weight:800; font-size:15px;" id="btn-success-timeline">변경된 일정표 확인하기</button>
-                    <button class="ripple-btn" style="width:100%; padding:16px; border-radius:12px; border:none; background:var(--card-border); color:var(--text-main); font-weight:800; font-size:15px;" id="btn-success-stay">여기서 계속 탐색하기</button>
-                </div>
-            </div>
-        </div>
+<!-- 토벌 완료 모달창 -->
+<div class="modal-overlay" id="completionModal">
+  <div class="modal-content">
+    <!-- 기존 placeholder 삭제 후 아래 img 태그 추가 -->
+    <img src="./image/reward_study.png" alt="토벌 성공" style="width: 130px; height: 130px; object-fit: contain; margin: 0 auto 20px auto; display: block; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.15));">
+    
+    <h2 class="modal-title">토벌 완료!</h2>
+    <p class="modal-desc" id="completionMsg"></p>
+    <button class="btn-primary" onclick="resetAndGoHome()">보상 받기</button>
+  </div>
+</div>
 
-        <div id="map-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3 id="map-modal-title">지도에서 숙소 찾기</h3><button class="icon-btn" id="btn-close-map"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" style="padding: 0; position: relative;">
-                <div style="position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2;"><input type="text" id="map-search-input" class="ai-text-input" placeholder="호텔이나 랜드마크 이름 검색" style="padding: 12px 16px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"></div>
-                <div id="map-container" style="width: 100%; height: 350px; z-index: 1;"></div>
-                <div style="padding: 20px; background: var(--card-bg);"><p style="font-size: 13px; color: var(--text-sub); font-weight: 700; margin-bottom: 4px;">선택된 위치</p><h4 id="map-selected-address" style="font-size: 16px; color: var(--text-main); font-weight: 800;">지도를 탭하거나 검색하세요</h4></div>
-            </div>
-            <div class="sheet-footer"><button class="search-btn ripple-btn" id="btn-confirm-map" disabled style="transition: all 0.3s;">이 위치로 설정</button></div>
-        </div>
+<!-- 🎯 다국어 맞춤형 과정 선택 모달 -->
+<div class="modal-overlay" id="courseModal">
+  <div class="modal-content" style="width: 320px; padding: 32px 20px;">
+    <div class="modal-icon material-symbols-rounded" style="color: #4dabf7; font-size: 32px; margin-bottom: 8px;">explore</div>
+    <h2 class="modal-title">학습 과정 선택</h2>
+    <p class="modal-desc" style="margin-bottom: 24px;">어떤 언어를 정복해 볼까요?</p>
 
-        <div id="customize-modal" class="bottom-sheet" style="z-index: 1005;">
-            <div class="sheet-header"><h3>일정 교체하기</h3><button class="icon-btn" onclick="document.getElementById('customize-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display = 'none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content"><p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px;">어느 시간대의 일정과 교체하시겠어요?</p><div id="customize-spot-list" style="display: flex; flex-direction: column; gap: 12px;"></div></div>
-        </div>
+    <!-- 언어 선택 그리드 -->
+    <div class="course-grid">
+      <div class="course-btn active" id="btnLang_hanja" onclick="selectTempLang('hanja')">
+        <span class="material-symbols-rounded">translate</span>
+        <span>한자</span>
+      </div>
+      <div class="course-btn" id="btnLang_english" onclick="selectTempLang('english')">
+        <span style="font-size: 24px; line-height: 1;">🇺🇸</span>
+        <span>영어</span>
+      </div>
+      <div class="course-btn" id="btnLang_chinese" onclick="selectTempLang('chinese')">
+        <span style="font-size: 24px; line-height: 1;">🇨🇳</span>
+        <span>중국어</span>
+      </div>
+      <div class="course-btn" id="btnLang_japanese" onclick="selectTempLang('japanese')">
+        <span style="font-size: 24px; line-height: 1;">🇯🇵</span>
+        <span>일본어</span>
+      </div>
+    </div>
 
-        <div id="place-detail-modal" class="bottom-sheet" style="z-index: 1010;">
-            <div class="sheet-header"><h3>장소 상세정보</h3><button class="icon-btn" id="btn-close-place-detail"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" id="detail-modal-content"></div>
-        </div>
+    <h3 style="font-size: 14px; font-weight: 700; color: #868e96; text-align: left; margin: 24px 0 10px 4px;">목표 레벨 설정</h3>
+    <div class="custom-select-wrapper">
+      <select id="courseLevelSelect" class="custom-select">
+        <!-- JS로 동적 생성됨 -->
+      </select>
+      <span class="custom-select-arrow material-symbols-rounded">expand_more</span>
+    </div>
+    <p style="font-size: 12px; color: #adb5bd; margin-top: 8px; text-align: left; padding-left: 4px;">* 기초부터 선택한 목표 레벨까지 누적 학습합니다.</p>
 
-        <div id="folder-create-modal" class="bottom-sheet" style="z-index: 1030;">
-            <div class="sheet-header"><h3>새 폴더 만들기</h3><button class="icon-btn" onclick="document.getElementById('folder-create-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content">
-                <input type="text" id="new-folder-input" class="ai-text-input" placeholder="폴더 이름 (예: 제주도 맛집)" style="width:100%; margin-bottom:16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <button class="search-btn ripple-btn" id="btn-confirm-create-folder" style="width:100%;">폴더 추가하기</button>
-            </div>
-        </div>
+    <div class="modal-buttons" style="margin-top: 24px;">
+      <button class="btn-secondary" onclick="closeCourseModal()">취소</button>
+      <button class="btn-primary" onclick="applyCourseChange()">변경하기</button>
+    </div>
+  </div>
+</div>
 
-        <div id="folder-move-modal" class="bottom-sheet" style="z-index: 1030;">
-            <div class="sheet-header"><h3>폴더 이동</h3><button class="icon-btn" onclick="document.getElementById('folder-move-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content">
-                <p style="font-size:13px; color:var(--text-sub); font-weight:700; margin-bottom:12px;">이동할 폴더를 선택해주세요.</p>
-                <div id="folder-move-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-        </div>
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-content">
+    <div class="modal-icon material-symbols-rounded" style="color: #868e96;">tune</div>
+    <h2 class="modal-title">학습량 설정</h2>
+    <p class="modal-desc">오늘 암기할 신규 단어 개수</p>
+    <div class="input-group">
+      <input type="number" id="limitInput" min="1" max="100" step="5">
+      <span>개</span>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn-secondary" onclick="closeSettings()">취소</button>
+      <button class="btn-primary" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
+</div>
 
-        <!-- 🌟 화면 테마 설정 모달 -->
-        <div id="theme-select-modal" class="bottom-sheet" style="z-index: 1010;">
-            <div class="sheet-header"><h3>화면 테마 설정</h3><button class="icon-btn" onclick="document.getElementById('theme-select-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content">
-                <div class="menu-list" style="padding:0; margin:0;">
-                    <div class="menu-item ripple-btn theme-option" data-theme="system" style="display:flex; justify-content:space-between; cursor:pointer;"><div style="display:flex; align-items:center; gap:12px;"><span class="material-symbols-rounded" style="color:#64748B;">smartphone</span><span>기기 설정 따름</span></div><span class="material-symbols-rounded check-icon" style="color:#2563EB;">check</span></div>
-                    <div class="menu-item ripple-btn theme-option" data-theme="light" style="display:flex; justify-content:space-between; cursor:pointer;"><div style="display:flex; align-items:center; gap:12px;"><span class="material-symbols-rounded" style="color:#F59E0B;">light_mode</span><span>항상 밝게 (라이트 모드)</span></div><span class="material-symbols-rounded check-icon" style="color:#2563EB; display:none;">check</span></div>
-                    <div class="menu-item ripple-btn theme-option" data-theme="dark" style="display:flex; justify-content:space-between; cursor:pointer;"><div style="display:flex; align-items:center; gap:12px;"><span class="material-symbols-rounded" style="color:#8B5CF6;">dark_mode</span><span>항상 어둡게 (다크 모드)</span></div><span class="material-symbols-rounded check-icon" style="color:#2563EB; display:none;">check</span></div>
-                </div>
-            </div>
-        </div>
+<div class="modal-overlay" id="quizResultModal">
+  <div class="modal-content">
+    <!-- 기존 placeholder 삭제 후 아래 img 태그 추가 -->
+    <img src="./image/reward_quiz.png" alt="제초 성공" style="width: 130px; height: 130px; object-fit: contain; margin: 0 auto 10px auto; display: block; filter: drop-shadow(0 12px 24px rgba(0,0,0,0.15));">
+    
+    <h2 class="modal-title">제초 완료!</h2>
+    <div class="quiz-score-text" id="finalQuizScore">8 / 10</div>
+    <p class="modal-desc" id="quizResultMsg"></p>
+    <button class="btn-primary" onclick="closeQuizResult()">홈으로 이동</button>
+  </div>
+</div>
 
-        <div id="expense-modal" class="bottom-sheet" style="z-index: 1040; height: 85vh; display: flex; flex-direction: column;">
-            <div class="sheet-header" style="flex-shrink: 0;">
-                <h3>여행 가계부 & 정산</h3>
-                <button class="icon-btn" onclick="document.getElementById('expense-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button>
-            </div>
-            <div class="sheet-content" style="flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; box-sizing: border-box; display: flex; flex-direction: column;">
-                <div style="background: #3182F6; padding: 24px; border-radius: 20px; margin-bottom: 24px; color: white; box-shadow: 0 10px 25px rgba(49, 130, 246, 0.3); flex-shrink: 0;">
-                    <div style="font-size: 14px; font-weight: 600; opacity: 0.9; margin-bottom: 6px;">총 지출 금액</div>
-                    <div style="font-size: 32px; font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;" id="expense-total">0원</div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.15); padding: 12px 16px; border-radius: 14px;">
-                        <span style="font-size: 14px; font-weight: 700;">1인당 정산액 (<span id="expense-people">1</span>명)</span>
-                        <span style="font-size: 18px; font-weight: 800;" id="expense-per-person">0원</span>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; flex-shrink: 0;">
-                    <input type="text" id="expense-title-input" placeholder="어디서 돈을 쓰셨나요? (예: 흑돼지 식당)" style="width: 100%; height: 52px; padding: 0 16px; border-radius: 14px; border: none; background: var(--icon-bg); color: var(--text-main); font-size: 15px; font-weight: 600; outline: none; box-sizing: border-box; font-family: inherit;">
-                    <div style="display: flex; gap: 10px; width: 100%; box-sizing: border-box;">
-                        <input type="number" id="expense-amount-input" placeholder="결제 금액 (원)" style="flex: 1; height: 52px; padding: 0 16px; border-radius: 14px; border: none; background: var(--icon-bg); color: var(--text-main); font-size: 15px; font-weight: 600; outline: none; box-sizing: border-box; font-family: inherit; min-width: 0;">
-                        <button class="ripple-btn" id="btn-add-expense" style="flex-shrink: 0; width: 85px; height: 52px; border-radius: 14px; background: var(--text-main); color: var(--bg-body); font-weight: 800; font-size: 15px; border: none; cursor: pointer;">추가</button>
-                    </div>
-                </div>
-                <div style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 12px; flex-shrink: 0;">지출 상세 내역</div>
-                <div id="expense-list-container" style="display: flex; flex-direction: column; flex-shrink: 0;"></div>
-            </div>
-        </div>
+<script type="module">
+  // 전역 함수 등록
+  window.handleGoogleLogin = handleGoogleLogin; window.handleLogout = handleLogout;
+  window.startLearning = startLearning; window.openSettings = openSettings; window.closeSettings = closeSettings; window.saveSettings = saveSettings;
+  window.goHome = goHome; window.flipCard = flipCard; window.processEvaluation = processEvaluation; window.resetAndGoHome = resetAndGoHome; window.closeQuizResult = closeQuizResult;
+  window.toggleTTS = toggleTTS; window.changeShopTab = changeShopTab; window.buyOrEquipItem = buyOrEquipItem; 
+  window.startQuiz = startQuiz; window.startMistakeReview = startMistakeReview;
+  window.switchMainTab = switchMainTab;
+  window.openCourseModal = openCourseModal; window.closeCourseModal = closeCourseModal; 
+  window.selectTempLang = selectTempLang; window.applyCourseChange = applyCourseChange;
+  window.closeAttendanceModal = closeAttendanceModal; 
 
-        <div id="plan-action-modal" class="bottom-sheet" style="z-index: 1040;">
-            <div class="sheet-header"><h3>일정 옵션</h3><button class="icon-btn" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';"><span class="material-symbols-rounded">close</span></button></div>
-            <div class="sheet-content" style="padding-bottom: 30px;">
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <div class="ripple-btn" id="btn-open-expense" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(37,99,235,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #2563EB;">payments</span></div>여행 가계부 및 1/N 정산
-                    </div>
-                    <div class="ripple-btn" id="btn-download-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(16,185,129,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #10B981;">download</span></div>일정표 이미지로 캡처/공유
-                    </div>
-                    <div class="ripple-btn" id="btn-share-plan" onclick="document.getElementById('plan-action-modal').classList.remove('active'); document.getElementById('calendar-overlay').style.display='none';" style="padding: 16px; border-radius: 16px; background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(139,92,246,0.1); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-rounded" style="color: #8B5CF6;">share</span></div>친구에게 일정 링크 공유
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- 👆 모든 팝업창 끝 👆 -->
+  // 🎯 1. 다국어 마스터 설정 (언어, 급수, TTS, 부수유무, 파일명)
+  const LANG_CONFIG = {
+    'hanja': { name: '한자', levels: ['8급', '7급', '6급', '5급', '4급', '3급', '2급', '1급'], ttsLang: 'ko-KR', hasRadical: true, file: './data_hanja.json' },
+    'english': { name: '영어', levels: ['토익 필수 단어'], ttsLang: 'en-US', hasRadical: false, file: './data_eng.json' },
+    'chinese': { name: '중국어', levels: ['HSK 1급', 'HSK 2급', 'HSK 3급', 'HSK 4급', 'HSK 5급', 'HSK 6급'], ttsLang: 'zh-CN', hasRadical: false, file: './data_chi.json' },
+    'japanese': { name: '일본어', levels: ['N5', 'N4', 'N3', 'N2', 'N1'], ttsLang: 'ja-JP', hasRadical: false, file: './data_jap.json' }
+  };
 
-        <div id="ai-loading-overlay">
-            <div class="magic-spinner-container"><div class="magic-spinner-ring"></div><div class="magic-spinner-inner"><span class="material-symbols-rounded">auto_awesome</span></div></div>
-            <h3 class="magic-text">AI가 여행 플랜을<br>설계하고 있어요 <span class="material-symbols-rounded" style="color: #FCD34D; font-size: inherit; vertical-align: middle;">auto_awesome</span></h3>
-            <p id="ai-loading-status">동선과 이동 시간을 계산 중입니다...</p>
-        </div>
+  // 🎵 BGM 컨트롤러
+  let bgmAudio = new Audio(); bgmAudio.loop = true; let isFirstInteraction = true;
+  window.toggleFurnitureBGM = toggleFurnitureBGM; window.stopBGM = stopBGM;
 
-        <!-- 👇 모든 서브 화면들 👇 -->
-        <div id="ai-screen" class="sub-screen">
-            <header class="sub-header">
-                <div class="header-left"><button class="icon-btn" id="btn-prev-ai-step" style="display: none;"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
-                <div class="progress-bar-container"><div class="progress-bar" id="ai-progress-bar"></div></div>
-                <div class="header-right"><button class="icon-btn" id="btn-back-ai"><span class="material-symbols-rounded">close</span></button></div>
-            </header>
-            <div class="ai-content">
-                <div class="ai-step active" id="ai-step-1">
-                    <h2 class="ai-question">여행 일정이<br>어떻게 되시나요?</h2><p class="ai-desc">이 일정을 바탕으로 세부 동선을 짭니다.</p>
-                    <div class="ai-date-select-card ripple-btn" id="btn-open-calendar-ai"><span class="material-symbols-rounded icon-purple">calendar_month</span><div class="ai-date-texts"><span class="label">전체 여행 기간</span><span class="value" id="ai-date-text">날짜를 선택해주세요</span></div><span class="material-symbols-rounded arrow">chevron_right</span></div>
-                </div>
-                <div class="ai-step" id="ai-step-2">
-                    <h2 class="ai-question">어느 도시로<br>여행을 떠나시나요?</h2><p class="ai-desc">여러 곳을 간다면 아래 추가 버튼을 눌러주세요.</p>
-                    <div id="dest-form-container"></div>
-                    <div style="display:flex; justify-content:flex-end; margin-bottom: 24px;"><button class="add-dest-text-btn" id="btn-add-dest"><span class="material-symbols-rounded" style="font-size:18px;">add</span> 여행지 추가</button></div>
-                    <label class="ai-optimize-toggle" id="ai-optimize-wrapper" style="display:none;"><input type="checkbox" id="chk-optimize-route"><div class="toggle-icon"><span class="material-symbols-rounded">auto_awesome</span></div><div class="toggle-text">AI에게 최적 동선 순서 맡기기</div><div class="toggle-switch"></div></label>
-                </div>
-                <div class="ai-step" id="ai-step-3">
-                    <h2 class="ai-question">주로 이용하실<br>교통수단은 무엇인가요?</h2><p class="ai-desc">다중 선택이 가능합니다. 동선 계산에 활용돼요.</p>
-                    <div class="ai-chips-container" id="transport-chips-container"><div class="ai-chip transport-chip" data-val="자동차"><span class="material-symbols-rounded" style="font-size:18px;">directions_car</span> 자동차</div><div class="ai-chip transport-chip" data-val="택시"><span class="material-symbols-rounded" style="font-size:18px;">local_taxi</span> 택시</div><div class="ai-chip transport-chip" data-val="대중교통"><span class="material-symbols-rounded" style="font-size:18px;">directions_bus</span> 대중교통</div><div class="ai-chip transport-chip" data-val="도보"><span class="material-symbols-rounded" style="font-size:18px;">directions_walk</span> 도보</div><div class="ai-chip transport-chip" data-val="비행기"><span class="material-symbols-rounded" style="font-size:18px;">flight</span> 비행기</div><div class="ai-chip transport-chip" data-val="기차"><span class="material-symbols-rounded" style="font-size:18px;">train</span> 기차 (KTX 등)</div></div>
-                </div>
-                <div class="ai-step" id="ai-step-4">
-                    <h2 class="ai-question">항공편 시간이<br>정해져 있나요?</h2><p class="ai-desc">정확한 일정 계산을 위해 필요해요. (선택사항)</p>
-                    <div class="ai-time-group"><label>도착지 공항 <b>도착</b> 시간 <span id="label-arr-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-arr-time"></div>
-                    <div class="ai-time-group" style="margin-top: 16px;"><label>귀국행 비행기 <b>출발</b> 시간 <span id="label-dep-date" class="highlight-date"></span></label><input type="time" class="ai-text-input" id="ai-input-dep-time"></div>
-                </div>
-                <div class="ai-step" id="ai-step-5">
-                    <h2 class="ai-question">머무르실 숙소가<br>정해져 있나요?</h2><p class="ai-desc">숙소를 중심으로 동선을 최적화합니다. (선택사항)</p>
-                    <div style="position: relative; display: flex; align-items: center; width: 100%;"><input type="text" id="ai-input-accom" class="ai-text-input" placeholder="호텔, 게스트하우스 등 (선택)" style="width: 100%; padding-right: 48px;"><button id="btn-open-map" class="ripple-btn" style="position: absolute; right: 6px; border: none; background: transparent; color: #3B82F6; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;"><span class="material-symbols-rounded" style="font-size: 18px;">map</span></button></div>
-                </div>
-                <div class="ai-step" id="ai-step-6">
-                    <h2 class="ai-question">누구와 함께<br>여행하시나요?</h2><p class="ai-desc">동행자에 맞춰 식당과 스팟을 추천해 드려요.</p>
-                    <div class="ai-options-grid"><div class="ai-option-card" data-val="혼자서"><div class="circle-icon" style="background: rgba(37, 99, 235, 0.1); color: #2563EB;"><span class="material-symbols-rounded">person</span></div><span class="text">혼자서</span></div><div class="ai-option-card" data-val="연인과"><div class="circle-icon" style="background: rgba(220, 38, 38, 0.1); color: #DC2626;"><span class="material-symbols-rounded">favorite</span></div><span class="text">연인과</span></div><div class="ai-option-card" data-val="친구들과"><div class="circle-icon" style="background: rgba(16, 185, 129, 0.1); color: #10B981;"><span class="material-symbols-rounded">diversity_3</span></div><span class="text">친구들과</span></div><div class="ai-option-card" data-val="가족과"><div class="circle-icon" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B;"><span class="material-symbols-rounded">family_restroom</span></div><span class="text">가족과</span></div><div class="ai-option-card" data-val="부모님과"><div class="circle-icon" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6;"><span class="material-symbols-rounded">elderly</span></div><span class="text">부모님과</span></div><div class="ai-option-card" data-val="아이와"><div class="circle-icon" style="background: rgba(236, 72, 153, 0.1); color: #EC4899;"><span class="material-symbols-rounded">child_care</span></div><span class="text">아이와</span></div></div>
-                </div>
-                <div class="ai-step" id="ai-step-7">
-                    <h2 class="ai-question">여행자 정보를<br>알려주세요</h2><p class="ai-desc">총 인원과 연령대를 모두 선택해 주세요.</p>
-                    <div class="people-counter-box"><span style="font-size: 16px; font-weight: 800; color: var(--text-main);">총 인원</span><div class="counter-controls"><button id="btn-minus-people" class="counter-btn"><span class="material-symbols-rounded">remove</span></button><span id="people-count">1명</span><button id="btn-plus-people" class="counter-btn"><span class="material-symbols-rounded">add</span></button></div></div>
-                    <p style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; margin-top: 24px;">동행자 연령대 (다중 선택 가능)</p>
-                    <div class="ai-chips-container" id="age-chips-container"><div class="ai-chip age-chip" data-val="10대">10대 이하</div><div class="ai-chip age-chip" data-val="20대">20대</div><div class="ai-chip age-chip" data-val="30대">30대</div><div class="ai-chip age-chip" data-val="40대">40대</div><div class="ai-chip age-chip" data-val="50대">50대</div><div class="ai-chip age-chip" data-val="60대 이상">60대 이상</div></div>
-                </div>
-                <div class="ai-step" id="ai-step-8">
-                    <div id="step-7-standard">
-                        <h2 class="ai-question">어떤 스타일의<br>여행을 원하시나요?</h2><p class="ai-desc">최대 3개까지 선택할 수 있어요.</p>
-                        <div class="ai-chips-container" id="style-chips-container-std"><div class="ai-chip style-chip std-chip" data-val="힐링"><span class="material-symbols-rounded" style="font-size:18px;">spa</span> 여유로운 힐링</div><div class="ai-chip style-chip std-chip" data-val="먹방"><span class="material-symbols-rounded" style="font-size:18px;">restaurant</span> 맛집 탐방</div><div class="ai-chip style-chip std-chip" data-val="관광"><span class="material-symbols-rounded" style="font-size:18px;">photo_camera</span> 랜드마크 </div><div class="ai-chip style-chip std-chip" data-val="쇼핑"><span class="material-symbols-rounded" style="font-size:18px;">shopping_bag</span> 폭풍 쇼핑</div><div class="ai-chip style-chip std-chip" data-val="액티비티"><span class="material-symbols-rounded" style="font-size:18px;">hiking</span> 액티비티</div><div class="ai-chip style-chip std-chip" data-val="자연"><span class="material-symbols-rounded" style="font-size:18px;">landscape</span> 대자연 </div><div class="ai-chip style-chip std-chip" data-val="예술"><span class="material-symbols-rounded" style="font-size:18px;">palette</span> 로컬 예술</div><div class="ai-chip style-chip std-chip" data-val="호캉스"><span class="material-symbols-rounded" style="font-size:18px;">hotel</span> 호캉스</div></div>
-                    </div>
-                    <div id="step-7-tension" style="display: none;">
-                        <h2 class="ai-question">서로의 최애 스타일을<br>알려주세요</h2><p class="ai-desc">AI가 두 분의 취향을 완벽하게 섞어드려요.</p>
-                        <h4 style="font-size: 14px; font-weight: 800; color:#2563EB; margin: 16px 0 8px 0;">나의 스타일 (최대 2개)</h4>
-                        <div class="ai-chips-container"><div class="ai-chip style-chip my-chip" data-val="나: 힐링">힐링</div><div class="ai-chip style-chip my-chip" data-val="나: 먹방">먹방</div><div class="ai-chip style-chip my-chip" data-val="나: 관광">관광</div><div class="ai-chip style-chip my-chip" data-val="나: 쇼핑">쇼핑</div></div>
-                        <h4 style="font-size: 14px; font-weight: 800; color:#DC2626; margin: 24px 0 8px 0;">동행자의 스타일 (최대 2개)</h4>
-                        <div class="ai-chips-container"><div class="ai-chip style-chip pt-chip" data-val="동행: 힐링">힐링</div><div class="ai-chip style-chip pt-chip" data-val="동행: 먹방">먹방</div><div class="ai-chip style-chip pt-chip" data-val="동행: 관광">관광</div><div class="ai-chip style-chip pt-chip" data-val="동행: 쇼핑">쇼핑</div></div>
-                    </div>
-                </div>
-                <div class="ai-step" id="ai-step-9">
-                    <div style="display: flex; align-items: flex-start; justify-content: space-between;"><h2 class="ai-question">이번 여행의 테마를<br>골라주세요</h2><button class="icon-btn ripple-btn" style="background: var(--card-border); color: var(--text-sub); width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-top: 4px;" onclick="document.getElementById('calendar-overlay').style.zIndex='1000'; document.getElementById('calendar-overlay').style.display='block'; document.getElementById('theme-info-modal').classList.add('active');"><span class="material-symbols-rounded" style="font-size: 18px;">question_mark</span></button></div>
-                    <p class="ai-desc" style="margin-top: 4px;">최대 2개까지 선택할 수 있어요.</p>
-                    <div class="ai-chips-container" id="theme-chips-container"><div class="ai-chip theme-chip" data-val="우정여행"><span class="material-symbols-rounded" style="font-size:18px;">diversity_1</span> 우정여행</div><div class="ai-chip theme-chip" data-val="커플여행"><span class="material-symbols-rounded" style="font-size:18px;">volunteer_activism</span> 커플여행</div><div class="ai-chip theme-chip" data-val="신혼여행"><span class="material-symbols-rounded" style="font-size:18px;">favorite</span> 신혼여행</div><div class="ai-chip theme-chip" data-val="가족여행"><span class="material-symbols-rounded" style="font-size:18px;">family_restroom</span> 가족여행</div><div class="ai-chip theme-chip" data-val="자유여행"><span class="material-symbols-rounded" style="font-size:18px;">flight_takeoff</span> 자유여행</div><div class="ai-chip theme-chip" data-val="배낭여행"><span class="material-symbols-rounded" style="font-size:18px;">backpack</span> 배낭여행</div><div class="ai-chip theme-chip" data-val="효도여행"><span class="material-symbols-rounded" style="font-size:18px;">elderly</span> 효도여행</div><div class="ai-chip theme-chip" data-val="식도락여행"><span class="material-symbols-rounded" style="font-size:18px;">restaurant</span> 식도락여행</div></div>
-                </div>
-                <div class="ai-step" id="ai-step-10">
-                    <h2 class="ai-question">하루 기본 체력은<br>어느 정도인가요?</h2><p class="ai-desc">체력에 맞춰 도보 이동과 휴식 빈도를 조절합니다.</p>
-                    <div class="stamina-box"><div class="stamina-icon" id="stamina-emoji"><span class="material-symbols-rounded" style="font-size: 48px; color: #10B981; transition: 0.3s;">battery_5_bar</span></div><input type="range" min="1" max="5" value="3" class="stamina-slider" id="ai-input-stamina"><div class="stamina-labels"><span>저질<br>(5,000보)</span><span>조금<br>(7,500보)</span><span>보통<br>(10,000보)</span><span>에너자이저<br>(15,000보)</span><span>강철<br>(무한)</span></div></div>
-                </div>
-                <div class="ai-step" id="ai-step-11">
-                    <h2 class="ai-question">이번 여행에서<br>꼭 하고 싶은 게 있나요?</h2><p class="ai-desc">명소, 음식, 액티비티 등을 적어주시면 일정에 꼭 반영할게요. (선택사항)</p>
-                    <textarea class="ai-text-input" id="ai-input-must-do" placeholder="예: 야경이 예쁜 루프탑 바 가기, 미슐랭 맛집 탐방, 유명 랜드마크 인증샷 찍기" rows="4" style="resize: none; border-radius: 16px; padding: 16px; width: 100%; font-family: inherit;"></textarea>
-                </div>
-            </div>
-            <div class="ai-footer"><button class="search-btn ripple-btn" id="btn-ai-next" disabled>다음으로</button></div>
-        </div>
+  function toggleFurnitureBGM(track) {
+    const guitarEl = document.getElementById('itemGuitar'); const tvEl = document.getElementById('itemTv');
+    if (userStats.bgmTrack === track && !bgmAudio.paused) { stopBGM(); userStats.bgmTrack = 'none'; syncToCloud(); return; }
+    userStats.bgmTrack = track; syncToCloud(); playBGMTrack(track);
+  }
 
-        <div id="account-screen" class="sub-screen">
-            <header class="sub-header"><div class="header-left"><button class="icon-btn" id="btn-back-account"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div><h2>내 정보</h2><div class="header-right"></div></header>
-            <div class="account-content">
-                <div class="profile-header"><div class="profile-pic-large" id="account-profile-pic"></div><div class="profile-info"><h3 id="account-name">로그인이 필요합니다</h3><p id="account-email">이메일 정보 없음</p></div></div>
-                <div class="account-menu-section">
-                    <h4 class="menu-title">나의 여행</h4>
-                    <div class="menu-list">
-                        <div class="menu-item ripple-btn" id="btn-my-saved-plans"><span class="material-symbols-rounded" style="color:#8B5CF6;">auto_awesome</span><span>저장된 플랜</span><span class="material-symbols-rounded arrow">chevron_right</span></div>
-                        <div class="menu-item ripple-btn" id="btn-my-saved-spots"><span class="material-symbols-rounded" style="color:#2563EB;">bookmark</span><span>찜한 스팟</span><span class="material-symbols-rounded arrow">chevron_right</span></div>
-                    </div>
-                </div>
-                <div class="account-menu-section">
-                    <h4 class="menu-title">설정</h4>
-                    <div class="menu-list">
-                        <div class="menu-item ripple-btn" id="btn-app-settings"><span class="material-symbols-rounded" style="color:#64748B;">settings</span><span>앱 설정</span><span class="material-symbols-rounded arrow">chevron_right</span></div>
-                        <div class="menu-item ripple-btn" id="btn-logout"><span class="material-symbols-rounded" style="color:#64748B;">logout</span><span style="color:var(--text-sub);">로그아웃</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  function playBGMTrack(track) {
+    const guitarEl = document.getElementById('itemGuitar'); const tvEl = document.getElementById('itemTv');
+    if (track === 'none') return;
+    bgmAudio.src = `./audio/${track}.mp3`; bgmAudio.play().catch(e => console.log("재생 오류:", e));
+    if (track === 'guitar') { guitarEl.classList.add('playing-guitar'); tvEl.classList.remove('playing-tv'); } 
+    else if (track === 'tv') { tvEl.classList.add('playing-tv'); guitarEl.classList.remove('playing-guitar'); }
+  }
 
-        <div id="saved-plans-screen" class="sub-screen" style="z-index: 120;">
-            <header class="sub-header"><div class="header-left"><button class="icon-btn" id="btn-back-saved-plans"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div><h2>저장된 플랜</h2><div class="header-right"></div></header>
-            <div id="saved-plans-list" style="flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: var(--bg-body);"></div>
-        </div>
+  function stopBGM() {
+    bgmAudio.pause(); document.getElementById('itemGuitar').classList.remove('playing-guitar'); document.getElementById('itemTv').classList.remove('playing-tv');
+  }
 
-        <div id="saved-spots-screen" class="sub-screen" style="z-index: 120; background: var(--bg-body);">
-            <header class="sub-header"><div class="header-left"><button class="icon-btn" onclick="document.getElementById('saved-spots-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div><h2>찜한 스팟</h2><div class="header-right"></div></header>
-            <div style="display:flex; justify-content:space-between; padding:16px 24px 0 24px;">
-                <button class="ripple-btn" id="btn-open-saved-map" style="flex:1; margin-right:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:18px; color:#2563EB;">map</span>지도로 보기</button>
-                <button class="ripple-btn" id="btn-create-folder" style="flex:1; margin-left:8px; padding:10px; border-radius:10px; background:var(--card-bg); border:1px solid var(--card-border); color:var(--text-main); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:18px; color:#F59E0B;">create_new_folder</span>새 폴더</button>
-            </div>
-            <div id="saved-folder-tabs" style="display:flex; gap:8px; overflow-x:auto; padding:16px 24px 0 24px; scrollbar-width:none; -webkit-overflow-scrolling:touch;"></div>
-            <div id="saved-spots-list" style="flex: 1; padding: 16px 24px 24px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 0;"></div>
-        </div>
+  document.body.addEventListener('click', () => {
+    if (isFirstInteraction) { isFirstInteraction = false; if (userStats.bgmTrack && userStats.bgmTrack !== 'none') playBGMTrack(userStats.bgmTrack); }
+  }, { once: true });
 
-        <div id="saved-map-screen" class="sub-screen" style="z-index: 125; background: var(--bg-body);">
-            <div style="display: flex; flex-direction: column; height: 100%;">
-                <header class="sub-header" style="background: var(--bg-app); border-bottom: 1px solid var(--card-border); z-index: 10;"><div class="header-left"><button class="icon-btn" onclick="document.getElementById('saved-map-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div><h2>스팟 모아보기</h2><div class="header-right"></div></header>
-                <div id="saved-map-full-container" style="flex: 1; width: 100%;"></div>
-            </div>
-        </div>
+  // ☁️ 파이어베이스 연동
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-        <div id="settings-screen" class="sub-screen" style="z-index: 120; background: var(--bg-body);">
-            <header class="sub-header"><div class="header-left"><button class="icon-btn" onclick="document.getElementById('settings-screen').classList.remove('active');"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div><h2>앱 설정</h2><div class="header-right"></div></header>
-            <div style="padding: 24px;">
-                <div class="account-menu-section">
-                    <h4 class="menu-title">디스플레이</h4>
-                    <div class="menu-list"><div class="menu-item ripple-btn" id="btn-theme-setting" style="display:flex; justify-content:space-between; cursor:pointer;"><div style="display:flex; gap:12px; align-items:center;"><span class="material-symbols-rounded" style="color:#8B5CF6;">dark_mode</span><span>화면 테마</span></div><div style="display:flex; align-items:center; gap:4px;"><span id="theme-status-text" style="font-size:13px; color:var(--text-sub); font-weight:700;">기기 설정 따름</span><span class="material-symbols-rounded" style="color:#CBD5E1; font-size:18px;">chevron_right</span></div></div></div>
-                </div>
-                <div class="account-menu-section" style="margin-top:24px;">
-                    <h4 class="menu-title">계정 관리</h4>
-                    <div class="menu-list"><div class="menu-item ripple-btn" id="btn-delete-account" style="color:#EF4444;"><span class="material-symbols-rounded">person_remove</span><span>회원 탈퇴</span></div></div>
-                </div>
-            </div>
-        </div>
+  const firebaseConfig = { apiKey: "AIzaSyAbNztAhkuZmhG64M1MxG42Rer4aIg1Z5M", authDomain: "vocawa-f362e.firebaseapp.com", projectId: "vocawa-f362e", storageBucket: "vocawa-f362e.firebasestorage.app", messagingSenderId: "390982379762", appId: "1:390982379762:web:07186d4fbfb1955eb2086b" };
+  let app, db, auth, provider;
+  try { app = initializeApp(firebaseConfig); db = getFirestore(app); auth = getAuth(app); provider = new GoogleAuthProvider(); } catch(e) { console.error(e); }
+  
+  let USER_UID = null; let myHanjaData = []; let todayCards = []; let currentIndex = 0; let completedCount = 0; let sessionTotal = 0; let dailyNewLimit = 30; let isTTSOn = true;
 
-        <div id="ai-result-screen" class="sub-screen" style="z-index: 130; background: var(--bg-body);">
-            <header class="sub-header" style="background: var(--bg-app); border-bottom: 1px solid var(--card-border); z-index: 20;">
-                <div class="header-left"><button class="icon-btn" id="btn-back-ai-result"><span class="material-symbols-rounded">arrow_back_ios_new</span></button></div>
-                <div class="result-header-info" style="flex: 1; min-width: 0; padding: 0 16px;">
-                    <h2 id="ai-result-title" style="font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">여행 일정</h2>
-                    <p id="ai-result-subtitle" style="font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">AI가 완성한 최적의 동선</p>
-                </div>
-                <div class="header-right" style="display: flex; width: auto; gap: 4px; justify-content: flex-end;">
-                    <button class="icon-btn" id="btn-toggle-map-top"><span class="material-symbols-rounded" id="top-map-icon">map</span></button>
-                    <button class="icon-btn" onclick="document.getElementById('plan-action-modal').classList.add('active'); document.getElementById('calendar-overlay').style.zIndex='1030'; document.getElementById('calendar-overlay').style.display='block';"><span class="material-symbols-rounded">more_horiz</span></button>
-                </div>
-            </header>
-            
-            <div class="day-tabs-container" id="ai-result-tabs"></div>
-            
-            <div class="explore-chips-container">
-                <div class="explore-chip active" data-type="timeline"><span class="material-symbols-rounded chip-icon">format_list_bulleted</span>일정표 보기</div>
-                <div class="explore-chip" data-type="food"><span class="material-symbols-rounded chip-icon">restaurant</span>식사/맛집</div>
-                <div class="explore-chip" data-type="tour"><span class="material-symbols-rounded chip-icon">photo_camera</span>관광/명소</div>
-                <div class="explore-chip" data-type="cafe"><span class="material-symbols-rounded chip-icon">local_cafe</span>카페/휴식</div>
-            </div>
-            
-            <!-- 🌟 컨테이너 분리 및 스크롤 격리 (새로고침 기능 안정화) -->
-            <div style="position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; background: var(--bg-body);">
-                
-                <!-- 🌟 토스 스타일의 동글동글한 새로고침 인디케이터 -->
-                <div id="pull-refresh-indicator" style="position: absolute; top: -60px; left: 0; width: 100%; display: flex; justify-content: center; z-index: 10; transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
-                    <div style="background: var(--card-bg); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                        <span class="material-symbols-rounded" style="font-size: 24px; color: #8B5CF6;">sync</span>
-                    </div>
-                </div>
+  const sfxCardSwipe = new Audio('https://assets.mixkit.co/active_storage/sfx/2042/2042-preview.mp3');
+  sfxCardSwipe.volume = 0.4;
 
-                <div class="timeline-bg" id="ai-timeline-container" style="flex: 1; overflow-y: auto; overscroll-behavior-y: none; padding-bottom: 120px; position: relative; z-index: 11;"></div>
-                <div class="explore-bg" id="ai-explore-container" style="display: none; flex: 1; overflow-y: auto; padding-bottom: 120px;"></div>
+  function playSound(type) {
+    if (!isTTSOn) return;
+    sfxCardSwipe.currentTime = 0; 
+    sfxCardSwipe.play().catch(()=>{});
+  }
 
-                <div id="ai-result-map-wrapper" style="display: none; flex: 1; width: 100%; z-index: 1; position: relative;">
-                    <div id="ai-result-map" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
-                    <div id="animation-blocker" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: transparent;"></div>
-                    
-                    <div id="map-info-card" class="map-info-card" style="z-index: 10;">
-                        <div class="map-info-img" id="map-info-img"></div>
-                        <div class="map-info-texts" id="map-info-texts-wrap" style="cursor: pointer;">
-                            <div class="map-info-badge" id="map-info-badge">관광</div>
-                            <h4 id="map-info-title">장소 이름</h4>
-                            <p id="map-info-desc">여기에 간단한 설명이 들어갑니다.</p>
-                        </div>
-                        <button class="icon-btn close-info-card" id="btn-close-map-info"><span class="material-symbols-rounded" style="font-size: 20px;">close</span></button>
-                    </div>
-                    <button id="btn-play-route" class="ripple-btn" style="position: absolute; top: 16px; right: 16px; width: 52px; height: 52px; border-radius: 50%; background: #2563EB; color: white; border: none; box-shadow: 0 4px 14px rgba(37,99,235,0.4); z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s;"><span class="material-symbols-rounded" style="font-size: 28px;">play_arrow</span></button>
-                </div>
-            </div>
-            
-            <div class="result-action-area"><button class="floating-save-btn ripple-btn"><span class="material-symbols-rounded">bookmark</span> 내 일정에 저장하기</button></div>
-        </div>
-        <!-- 👆 모든 서브 화면들 끝 👆 -->
+  const LEVELS = [{ name: "백수", maxExp: 100 }, { name: "알바", maxExp: 300 }, { name: "제초자격증 5급", maxExp: 600 }, { name: "제초자격증 4급", maxExp: 1000 }, { name: "제초자격증 3급", maxExp: 1500 }, { name: "제초자격증 2급", maxExp: 2100 }, { name: "제초자격증 1급", maxExp: 3000 }];
 
-        <script type="module" src="firebase-config.js?v=260828_1"></script>
-        <script type="module" src="script.js?v=260828_1"></script>
-    </div> <!-- app-container 끝 -->
+  const SHOP_DB = {
+    char: [
+      { id: 'c_chiikawa', name: '치이카와', price: 2000, desc: '다정하고 눈물이 많은 기본 캐릭터' },
+      { id: 'c_hachiware', name: '하치와레', price: 2000, desc: '긍정적이고 말할 줄 아는 고양이' },
+      { id: 'c_usagi', name: '우사기', price: 2000, desc: '우라라라! 자유분방한 천재 토끼' },
+      { id: 'c_momonga', name: '모몽가', price: 2000, desc: '귀여움 받는 것을 제일 좋아하는 관종' },
+      { id: 'c_pajama_parties', name: '파자마 파티즈', price: 2000, desc: '파자마를 입고 노래하고 춤추는 친구들' },
+      { id: 'c_rakko', name: '랏코', price: 2000, desc: '달콤한 것을 좋아하는 동경의 대상, 토벌 랭커!' }
+    ],
+    equip: [
+      { id: 'e_none', name: '맨몸', price: 0, desc: '기본 상태입니다.' },
+      { id: 'e_pajama', name: '파자마', price: 2000, desc: '포근하고 귀여운 수면 잠옷' },
+      { id: 'e_guitar', name: '기타', price: 1000, desc: '방 한켠에 세워둘 수 있는 어쿠스틱 기타' },
+      { id: 'e_tv', name: '티비', price: 1000, desc: '귀여운 뚱뚱이 브라운관 티비' },
+      { id: 'e_beetle', name: '풍뎅이', price: 5000, desc: '항상 곁을 따라다니는 소중한 친구' }
+    ],
+    house: [
+      { id: 'h_cave', name: '아늑한 동굴', price: 0, desc: '바람을 피할 수 있는 시원한 기본 동굴' },
+      { id: 'h_yogurt', name: '요구르트 집', price: 3000, desc: '달콤한 냄새가 나는 커다란 요구르트 병' }
+    ]
+  };
+
+  // 🎯 DB 모델에 언어 추가 (courseLanguage)
+  let userStats = { levelIdx: 0, exp: 0, money: 0, lastLoginDate: "", dailyStudyDone: false, dailyQuizDone: false, character: 'c_chiikawa', equipment: 'e_none', accessories: [], house: 'h_cave', ownedItems: ['c_chiikawa', 'e_none', 'h_cave'], streakDays: 0, courseLanguage: 'hanja', courseLevel: '8급' };
+
+  function getTodayString() { const tzOffset = new Date().getTimezoneOffset() * 60000; return new Date(Date.now() - tzOffset).toISOString().split('T')[0]; }
+  function getDaysDifference(date1, date2) { const d1 = new Date(date1); d1.setHours(0, 0, 0, 0); const d2 = new Date(date2); d2.setHours(0, 0, 0, 0); return Math.round((d2 - d1) / (1000 * 60 * 60 * 24)); }
+
+  function switchMainTab(tabId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+    if (tabId === 'homeScreen') { document.getElementById('navHome').classList.add('active'); updateHomeStatus(); } 
+    else if (tabId === 'vocabScreen') { document.getElementById('navVocab').classList.add('active'); renderVocabList(); } 
+    else if (tabId === 'shopScreen') { document.getElementById('navShop').classList.add('active'); document.getElementById('shopMoneyText').innerText = userStats.money; renderShopList(); }
+    document.getElementById('mainBottomNav').style.display = 'flex'; document.getElementById('fadeBottom').style.display = 'block';
+  }
+
+  function goHome() { switchMainTab('homeScreen'); }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) { USER_UID = user.uid; document.getElementById('authScreen').classList.remove('active'); switchMainTab('homeScreen'); loadData(); } 
+    else { USER_UID = null; document.getElementById('mainBottomNav').style.display = 'none'; document.getElementById('fadeBottom').style.display = 'none'; document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('authScreen').classList.add('active'); }
+  });
+
+  async function handleGoogleLogin() { 
+    try { const btn = document.getElementById('googleLoginBtn'); btn.innerHTML = `<span class="material-symbols-rounded">hourglass_empty</span> 팝업창에서 로그인 중...`; await signInWithPopup(auth, provider); } 
+    catch (e) { document.getElementById('authErrorMsg').innerText = "로그인이 취소되었습니다."; document.getElementById('googleLoginBtn').innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width: 20px;"> Google 계정으로 로그인`; }
+  }
+
+  async function handleLogout() { if (confirm("정말 로그아웃 하시겠습니까?")) { await signOut(auth); } }
+
+  async function syncToCloud() {
+    if (!USER_UID) return; 
+    const learnedData = myHanjaData.filter(c => c.interval > 0 || (c.mistakes && c.mistakes > 0)).map(c => ({ id: c.id, interval: c.interval, nextReview: c.nextReview, mistakes: c.mistakes || 0 }));
+    try { 
+      // 💡 핵심: 'progress_언어이름' 형태로 저장하고, { merge: true }를 넣어 다른 언어 데이터가 날아가지 않게 보호!
+      await setDoc(doc(db, "vocawa_progress", USER_UID), { 
+        dailyNewLimit: dailyNewLimit, 
+        ['progress_' + userStats.courseLanguage]: learnedData, 
+        stats: userStats 
+      }, { merge: true }); 
+    } catch(e) { console.error("동기화 에러:", e); }
+  }
+
+  // 🎯 4. 언어별 데이터 파일 분리 로드 함수
+  async function fetchWordData(lang) {
+    const fileUrl = LANG_CONFIG[lang].file;
+    try {
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error("File not found");
+      return await res.json();
+    } catch(e) {
+      console.warn(`${fileUrl} 파일이 아직 없습니다. 빈 배열로 시작합니다.`);
+      return []; 
+    }
+  }
+
+  async function loadData() {
+    if (!USER_UID) return;
+    try {
+      const docSnap = await getDoc(doc(db, "vocawa_progress", USER_UID));
+      let cloudProgress = [];
+      if (docSnap.exists()) {
+        const data = docSnap.data(); 
+        if (data.stats) { 
+          userStats = { ...userStats, ...data.stats };
+          if (!userStats.ownedItems) userStats.ownedItems = ['c_chiikawa', 'e_none', 'h_cave']; 
+          if (userStats.streakDays === undefined) userStats.streakDays = 0; 
+          if (!userStats.courseLanguage) userStats.courseLanguage = 'hanja'; 
+          if (!userStats.courseLevel) userStats.courseLevel = '8급'; 
+          if (!userStats.accessories) userStats.accessories = [];
+          if (['e_guitar', 'e_tv', 'e_beetle'].includes(userStats.equipment)) {
+             if(!userStats.accessories.includes(userStats.equipment)) { userStats.accessories.push(userStats.equipment); }
+             userStats.equipment = 'e_none';
+          }
+        }
+
+        // 💡 핵심: 현재 유저가 선택한 언어의 progress만 쏙 골라서 불러오기
+        cloudProgress = data['progress_' + userStats.courseLanguage] || []; 
+        if (data.dailyNewLimit) dailyNewLimit = data.dailyNewLimit;
+      }
+      
+      const fetchedData = await fetchWordData(userStats.courseLanguage);
+      
+      myHanjaData = fetchedData.map(card => {
+        const savedCard = cloudProgress.find(c => c.id === card.id);
+        if (savedCard) { return { ...card, interval: savedCard.interval, nextReview: savedCard.nextReview, mistakes: savedCard.mistakes || 0 }; }
+        return { ...card, interval: 0, nextReview: 0, mistakes: 0 };
+      });
+
+      checkDailyLogin(); updateHomeStatus(); updateUserStatsUI();
+    } catch (error) { console.log("데이터 불러오기 에러:", error); }
+  }
+
+  function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      obj.innerHTML = Math.floor(progress * (end - start) + start);
+      if (progress < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+  }
+
+  function checkDailyLogin() {
+    const today = getTodayString();
+    let isNewLogin = false; let oldStreak = userStats.streakDays || 0; let newStreak = 1; let isPenalty = false; let penaltyExp = 0;
+
+    if (userStats.lastLoginDate !== today) {
+      isNewLogin = true;
+      if (userStats.lastLoginDate !== "") {
+        const missedDays = getDaysDifference(userStats.lastLoginDate, today) - 1;
+        if (missedDays === 0) { newStreak = oldStreak + 1; } 
+        else if (missedDays > 0) {
+          isPenalty = true; const currentMaxExp = LEVELS[userStats.levelIdx].maxExp;
+          penaltyExp = Math.floor(currentMaxExp * 0.1) * missedDays; userStats.exp -= penaltyExp;
+          while (userStats.exp < 0 && userStats.levelIdx > 0) { userStats.levelIdx--; userStats.exp += LEVELS[userStats.levelIdx].maxExp; }
+          if (userStats.exp < 0) userStats.exp = 0; newStreak = 1;
+        }
+      } else { newStreak = 1; oldStreak = 0; }
+      
+      userStats.streakDays = newStreak; userStats.money += 50; userStats.dailyStudyDone = false; userStats.dailyQuizDone = false; userStats.lastLoginDate = today;
+      syncToCloud();
+    }
+
+    document.getElementById('streakDaysText').innerText = userStats.streakDays || 1;
+
+    if (isNewLogin) {
+      document.getElementById('attendanceMsg').innerHTML = isPenalty 
+        ? `앗! ${getDaysDifference(userStats.lastLoginDate, today)-1}일 결석하여 경험치가 ${penaltyExp} 하락했어요.<br>다시 힘차게 시작해 봐요! (💰 +50원)`
+        : `오늘도 잊지 않고 찾아오셨군요!<br>단어들을 물리쳐 볼까요? (💰 +50원)`;
+      
+      document.getElementById('attendanceModal').classList.add('show');
+      animateValue(document.getElementById('attendanceStreakNum'), oldStreak, newStreak, 1000); 
+    }
+  }
+
+  function closeAttendanceModal() { document.getElementById('attendanceModal').classList.remove('show'); }
+
+  function addExp(amount) {
+    userStats.exp += amount; let currentLevel = LEVELS[userStats.levelIdx];
+    while (userStats.exp >= currentLevel.maxExp && userStats.levelIdx < LEVELS.length - 1) {
+      userStats.exp -= currentLevel.maxExp; userStats.levelIdx++; currentLevel = LEVELS[userStats.levelIdx];
+      alert(`🎉 승급을 축하합니다!\n[${currentLevel.name}] 달성`);
+    }
+    if (userStats.levelIdx === LEVELS.length - 1 && userStats.exp >= currentLevel.maxExp) { userStats.exp = currentLevel.maxExp; }
+    updateUserStatsUI(); syncToCloud();
+  }
+
+  function getImageUrl(id) { return `./image/${id.replace('c_', '').replace('e_', '')}.png`; }
+
+  function updateUserStatsUI() {
+    const lvl = LEVELS[userStats.levelIdx];
+    document.getElementById('userLevelBadge').innerText = lvl.name;
+    const charObj = SHOP_DB.char.find(c => c.id === userStats.character);
+    document.getElementById('userLevelName').innerText = charObj ? charObj.name : '치이카와';
+    document.getElementById('userMoneyText').innerText = userStats.money;
+    
+    const expPercent = (userStats.exp / lvl.maxExp) * 100;
+    document.getElementById('userExpBar').style.width = `${expPercent}%`; document.getElementById('userExpText').innerText = `EXP ${userStats.exp} / ${lvl.maxExp}`;
+    
+    if (charObj) { 
+      let charImgName = userStats.character.replace('c_', '');
+      document.getElementById('itemBeetle').style.display = 'none'; document.getElementById('itemGuitar').style.display = 'none'; document.getElementById('itemTv').style.display = 'none';
+      if (userStats.equipment === 'e_pajama') { charImgName += '_paj'; } 
+      if (!userStats.accessories) userStats.accessories = [];
+      if (userStats.accessories.includes('e_beetle')) { document.getElementById('itemBeetle').style.display = 'block'; } 
+      if (userStats.accessories.includes('e_guitar')) { document.getElementById('itemGuitar').style.display = 'block'; } 
+      if (userStats.accessories.includes('e_tv')) { document.getElementById('itemTv').style.display = 'block'; }
+      document.getElementById('userAvatarImg').src = `./image/${charImgName}.png`; 
+    }
+    const bgName = userStats.house ? userStats.house.replace('h_', '') : 'cave';
+    document.getElementById('userRoomBg').src = `./image/${bgName}.png`;
+  }
+
+  let currentShopTab = 'char';
+  function changeShopTab(tab) {
+    currentShopTab = tab;
+    document.getElementById('tabChar').classList.remove('active'); document.getElementById('tabEquip').classList.remove('active'); document.getElementById('tabHouse').classList.remove('active');
+    if (tab === 'char') document.getElementById('tabChar').classList.add('active');
+    else if (tab === 'equip') document.getElementById('tabEquip').classList.add('active');
+    else if (tab === 'house') document.getElementById('tabHouse').classList.add('active');
+    renderShopList();
+  }
+  
+  function renderShopList() {
+    const listData = SHOP_DB[currentShopTab];
+    const container = document.getElementById('shopListContainer');
+    if(!userStats.accessories) userStats.accessories = [];
+
+    container.innerHTML = listData.map(item => {
+      const isOwned = userStats.ownedItems.includes(item.id);
+      let isEquipped = false;
+      if (currentShopTab === 'char') isEquipped = userStats.character === item.id;
+      else if (currentShopTab === 'house') isEquipped = userStats.house === item.id;
+      else if (currentShopTab === 'equip') {
+         if (item.id === 'e_none' || item.id === 'e_pajama') isEquipped = userStats.equipment === item.id;
+         else isEquipped = userStats.accessories.includes(item.id);
+      }
+
+      let btnHtml = '';
+      if (isEquipped) { 
+        if (currentShopTab === 'equip' && item.id !== 'e_none') {
+           btnHtml = `<button class="shop-buy-btn btn-unequip" onclick="buyOrEquipItem('${item.id}', '${currentShopTab}')"><span class="material-symbols-rounded" style="font-size:16px;">close</span> 장착 해제</button>`;
+        } else {
+           btnHtml = `<button class="shop-buy-btn btn-equipped"><span class="material-symbols-rounded" style="font-size:16px;">check</span> 장착 중</button>`;
+        }
+      } 
+      else if (isOwned) { btnHtml = `<button class="shop-buy-btn btn-equip" onclick="buyOrEquipItem('${item.id}', '${currentShopTab}')">장착하기</button>`; } 
+      else { btnHtml = `<button class="shop-buy-btn btn-buy" onclick="buyOrEquipItem('${item.id}', '${currentShopTab}')">${item.price}원 구매</button>`; }
+      
+      const bgmIcon = (item.id === 'e_guitar' || item.id === 'e_tv') ? `<span class="material-symbols-rounded" style="font-size: 16px; color: #4dabf7; margin-left: 4px;">music_note</span>` : '';
+      return `<div class="shop-item"><img class="shop-item-img" src="${getImageUrl(item.id)}" alt="item" onerror="this.style.display='none'"><div class="shop-item-content"><div class="shop-item-info"><h4>${item.name}${bgmIcon}</h4><p>${item.desc}</p></div>${btnHtml}</div></div>`;
+    }).join('');
+  }
+
+  function buyOrEquipItem(itemId, type) {
+    const itemObj = SHOP_DB[type].find(i => i.id === itemId); if (!itemObj) return;
+    const isOwned = userStats.ownedItems.includes(itemId);
+    if (!isOwned) {
+      if (userStats.money >= itemObj.price) { userStats.money -= itemObj.price; userStats.ownedItems.push(itemId); } 
+      else { alert("재화가 부족합니다."); return; }
+    }
+    if (type === 'char') { userStats.character = itemId; } 
+    else if (type === 'house') { userStats.house = itemId; } 
+    else if (type === 'equip') {
+      if (itemId === 'e_none' || itemId === 'e_pajama') {
+         if (userStats.equipment === itemId) { if (itemId === 'e_pajama') userStats.equipment = 'e_none'; } 
+         else { userStats.equipment = itemId; }
+      } else {
+         if (!userStats.accessories) userStats.accessories = [];
+         if (userStats.accessories.includes(itemId)) {
+           userStats.accessories = userStats.accessories.filter(id => id !== itemId);
+           if ((itemId === 'e_guitar' || itemId === 'e_tv') && userStats.bgmTrack === itemId) { stopBGM(); userStats.bgmTrack = 'none'; }
+         } else { userStats.accessories.push(itemId); }
+      }
+    }
+    syncToCloud(); updateUserStatsUI(); document.getElementById('shopMoneyText').innerText = userStats.money; renderShopList();
+  }
+
+  // 🎯 다국어 단어 추출 공통 헬퍼 (JSON 호환성)
+  function getWordField(card) {
+    return card.hanja || card.word || "?";
+  }
+
+  function getTodayStudyCards() {
+    const now = new Date().getTime();
+    const reviewCards = myHanjaData.filter(card => card.interval > 0 && card.nextReview <= now);
+    
+    const currLangConfig = LANG_CONFIG[userStats.courseLanguage];
+    const targetLvlIdx = currLangConfig.levels.indexOf(userStats.courseLevel);
+    
+    let newCards = myHanjaData.filter(card => {
+      const cardLvlIdx = currLangConfig.levels.indexOf(card.level);
+      return card.interval === 0 && cardLvlIdx !== -1 && cardLvlIdx <= targetLvlIdx;
+    });
+    
+    newCards.sort((a, b) => currLangConfig.levels.indexOf(a.level) - currLangConfig.levels.indexOf(b.level));
+    const dailyNewCards = newCards.slice(0, dailyNewLimit);
+    
+    return [...reviewCards, ...dailyNewCards];
+  }
+
+  function updateHomeStatus() {
+    const pendingCards = getTodayStudyCards();
+    const currLangConfig = LANG_CONFIG[userStats.courseLanguage];
+    const targetLevel = userStats.courseLevel;
+    const targetLvlIdx = currLangConfig.levels.indexOf(targetLevel);
+    
+    let newCards = myHanjaData.filter(card => {
+      const cardLvlIdx = currLangConfig.levels.indexOf(card.level);
+      return card.interval === 0 && cardLvlIdx !== -1 && cardLvlIdx <= targetLvlIdx;
+    });
+    
+    const newCount = newCards.length > 0 ? Math.min(newCards.length, dailyNewLimit) : 0;
+    const reviewCount = pendingCards.length - newCount;
+    
+    const statusText = pendingCards.length > 0 ? `복습: ${reviewCount}개 / 신규: ${newCount}개` : `<span class="material-symbols-rounded" style="font-size:16px; margin-right:4px; vertical-align:middle; color:#4dabf7;">check_circle</span>오늘의 토벌 완료`;
+    document.getElementById('courseStatus').innerHTML = statusText;
+    
+    const langName = currLangConfig.name;
+    document.getElementById('currentCourseTitle').innerHTML = `<span class="material-symbols-rounded" style="color: #4dabf7; font-size: 24px;">swords</span>${langName} 토벌 : ${targetLevel}`;
+
+    // 💡 피드백 5 반영: 해당 레벨의 전체 단어 수 및 완료 수 계산
+    const levelCards = myHanjaData.filter(card => card.level === targetLevel);
+    const levelLearned = levelCards.filter(card => card.interval > 0).length;
+    const levelTotal = levelCards.length;
+    
+    const progressWrap = document.getElementById('courseProgressWrap');
+    if (levelTotal > 0) {
+        progressWrap.style.display = 'flex';
+        const pct = (levelLearned / levelTotal) * 100;
+        document.getElementById('courseProgressBar').style.width = pct + '%';
+        document.getElementById('courseProgressText').innerText = `${levelLearned} / ${levelTotal}`;
+    } else {
+        progressWrap.style.display = 'none';
+    }
+
+    document.getElementById('quizStatusText').innerHTML = userStats.dailyQuizDone 
+      ? `<span class="material-symbols-rounded" style="font-size:16px; margin-right:4px; vertical-align:middle; color:#51cf66;">check_circle</span>오늘의 제초 완료` 
+      : `일일 1회 보상 대기 중 (EXP 20 / 50원)`;
+  }
+
+  // 🎯 1. TTS 언어 동적 스위칭
+  function toggleTTS() {
+    isTTSOn = !isTTSOn;
+    const btn = document.getElementById('ttsToggleBtn'); const icon = document.getElementById('ttsIcon');
+    if (isTTSOn) { btn.classList.add('active'); icon.innerText = 'volume_up'; } else { btn.classList.remove('active'); icon.innerText = 'volume_off'; window.speechSynthesis.cancel(); }
+  }
+  
+  let availableVoices = [];
+  window.speechSynthesis.onvoiceschanged = () => { availableVoices = window.speechSynthesis.getVoices(); };
+
+  function playSpeech(text) {
+    if (!isTTSOn || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    
+    const langConfig = LANG_CONFIG[userStats.courseLanguage];
+    const msg = new SpeechSynthesisUtterance(text); 
+    msg.lang = langConfig.ttsLang; 
+    msg.rate = 1.0; 
+    
+    if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+    
+    const prefix = langConfig.ttsLang.split('-')[0];
+    const voicesForLang = availableVoices.filter(v => v.lang.startsWith(prefix));
+    
+    let bestVoice = voicesForLang.find(v => v.name.includes('Google') || v.name.includes('Siri') || v.name.includes('Yuna') || v.name.includes('Ting-Ting') || v.name.includes('Kyoko'));
+    if (!bestVoice && voicesForLang.length > 0) bestVoice = voicesForLang[0];
+    
+    if (bestVoice) { msg.voice = bestVoice; }
+    window.speechSynthesis.speak(msg);
+  }
+
+  function startLearning() {
+    stopBGM(); document.getElementById('mainBottomNav').style.display = 'none'; document.getElementById('fadeBottom').style.display = 'none'; 
+    document.getElementById('homeScreen').classList.remove('active'); document.getElementById('learningScreen').classList.add('active');
+    todayCards = getTodayStudyCards(); currentIndex = 0; completedCount = 0; sessionTotal = todayCards.length; updateProgress();
+    if (todayCards.length > 0) { document.getElementById('emptyState').classList.remove('show'); document.getElementById('cardContainer').style.display = 'block'; renderCard(currentIndex); } 
+    else { document.getElementById('cardContainer').style.display = 'none'; document.getElementById('emptyState').classList.add('show'); }
+    resetCardStyle(); document.getElementById('evalButtons').classList.remove('show');
+  }
+
+  function renderCard(index) {
+    if (index >= todayCards.length) return;
+    const data = todayCards[index];
+    const wordText = getWordField(data);
+    const langConfig = LANG_CONFIG[userStats.courseLanguage];
+    const lang = userStats.courseLanguage;
+
+    // 💡 피드백 4 반영: 언어별 NEW / 이전 학습일 표기
+    const badgeEl = document.getElementById('cardBadge');
+    badgeEl.style.display = 'block';
+    
+    if (data.interval === 0) {
+        badgeEl.className = 'card-badge badge-new';
+        if (lang === 'english') badgeEl.innerText = 'NEW';
+        else badgeEl.innerText = '新';
+    } else {
+        badgeEl.className = 'card-badge badge-review';
+        const days = data.interval;
+        if (lang === 'english') badgeEl.innerText = days + ' days ago';
+        else if (lang === 'hanja' || lang === 'chinese' || lang === 'japanese') badgeEl.innerText = days + '日前';
+        else badgeEl.innerText = days + '일 전';
+    }
+
+    const frontEl = document.getElementById('cardHanja');
+    frontEl.innerText = wordText;
+    if (wordText.length >= 12) { frontEl.style.fontSize = '36px'; } 
+    else if (wordText.length >= 8) { frontEl.style.fontSize = '50px'; } 
+    else { frontEl.style.fontSize = '80px'; }
+
+    document.getElementById('cardMiniHanja').innerText = wordText; 
+    const formattedMeaning = data.meaning.split(' / ').join('<br>');
+    document.getElementById('cardMeaning').innerHTML = formattedMeaning; 
+    
+    const radEl = document.getElementById('cardRadical');
+    if (langConfig.hasRadical && data.radical) {
+      radEl.style.display = 'inline-block';
+      radEl.innerText = `[${data.level}] 부수: ${data.radical}`; 
+    } else {
+      radEl.style.display = 'none';
+    }
+    document.getElementById('cardStory').innerText = data.story || ""; 
+  }
+
+  function flipCard() {
+    const card = document.getElementById('flashcard');
+    if (!card.classList.contains('flipped')) { 
+      card.classList.add('flipped'); document.getElementById('evalButtons').classList.add('show'); 
+      // 한자는 뜻음을 읽어주는게 좋고, 외국어는 해당 단어를 읽어주는게 좋음.
+      const langConfig = LANG_CONFIG[userStats.courseLanguage];
+      const textToRead = langConfig.name === '한자' ? todayCards[currentIndex].meaning : getWordField(todayCards[currentIndex]);
+      playSpeech(textToRead); 
+    }
+  }
+
+  let isMistakeMode = false;
+  window.startMistakeReview = startMistakeReview;
+
+  function processEvaluation(result) {
+    let currentCard = todayCards[currentIndex]; 
+    let originalCard = myHanjaData.find(c => c.id === currentCard.id); 
+    const ONE_DAY = 24 * 60 * 60 * 1000; 
+    const now = new Date().getTime();
+
+    // 항상 일관된 스와이프 소리 재생
+    playSound('swipe');
+
+    if (result === '모름') { 
+      // 💡 진동 피드백: 드르륵 (에러 느낌)
+      if (navigator.vibrate) navigator.vibrate([30, 50, 30]); 
+      originalCard.mistakes = (originalCard.mistakes || 0) + 1; 
+      
+      // 💡 피드백 1 반영: splice로 2칸 뒤가 아닌, 배열 맨 끝(push)으로 보내서 나중에 몰아보기
+      todayCards.push(currentCard); 
+      
+    } else if (result === '헷갈림') { 
+      // 💡 진동 피드백: 툭 (일반적인 느낌)
+      if (navigator.vibrate) navigator.vibrate(30);
+      todayCards.push(currentCard); 
+
+    } else if (result === '완벽함') {
+      // 💡 진동 피드백: 투둑 (성공적인 느낌)
+      if (navigator.vibrate) navigator.vibrate([20, 30, 20]);
+      
+      // 💡 피드백 3 반영: 에빙하우스 망각곡선 주기 (1일, 7일, 14일, 30일)
+      let nextInt = 1;
+      if (originalCard.interval === 1) nextInt = 7;
+      else if (originalCard.interval === 7) nextInt = 14;
+      else if (originalCard.interval >= 14) nextInt = 30; // 30일이 최대 장기기억
+      
+      originalCard.interval = nextInt;
+      originalCard.nextReview = now + (nextInt * ONE_DAY);
+      if (isMistakeMode) originalCard.mistakes = 0; 
+      completedCount++; 
+    }
+
+    syncToCloud(); updateProgress(); currentIndex++; resetCardStyle(); document.getElementById('evalButtons').classList.remove('show');
+    
+    if (currentIndex >= todayCards.length) { 
+      setTimeout(() => { 
+        isMistakeMode = false; 
+        if (!userStats.dailyStudyDone && sessionTotal > 0) {
+          userStats.dailyStudyDone = true; userStats.money += 100; addExp(sessionTotal);
+          document.getElementById('completionMsg').innerHTML = `훌륭하게 단어 토벌에 성공했습니다!<br><br><span style="font-size:16px; color:#4dabf7; font-weight:800;">EXP +${sessionTotal}  |  💰 +100원</span>`;
+        } else { document.getElementById('completionMsg').innerHTML = `오늘의 토벌을 완벽하게 마쳤습니다.<br>푹 쉬고 내일 다시 만나요!`; }
+        document.getElementById('completionModal').classList.add('show'); 
+      }, 300); 
+    } else { setTimeout(() => { renderCard(currentIndex); }, 150); }
+  }
+
+  function resetCardStyle() { const card = document.getElementById('flashcard'); card.classList.remove('flipped', 'dragging'); card.style.transform = ''; document.getElementById('hintBad').style.opacity = '0'; document.getElementById('hintPerfect').style.opacity = '0'; document.getElementById('hintSoso').style.opacity = '0'; }
+
+  const cardElement = document.getElementById('flashcard'); let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
+  cardElement.addEventListener('touchstart', (e) => { if (!cardElement.classList.contains('flipped')) return; startX = e.touches[0].clientX; startY = e.touches[0].clientY; isDragging = true; cardElement.classList.add('dragging'); });
+  cardElement.addEventListener('touchmove', (e) => {
+    if (!isDragging) return; currentX = e.touches[0].clientX - startX; currentY = e.touches[0].clientY - startY; const rotateZ = currentX * 0.05; cardElement.style.transform = `rotateY(180deg) translate(${-currentX}px, ${currentY}px) rotateZ(${-rotateZ}deg)`;
+    document.getElementById('hintPerfect').style.opacity = currentX > 50 ? '1' : '0'; document.getElementById('hintBad').style.opacity = currentX < -50 ? '1' : '0'; document.getElementById('hintSoso').style.opacity = currentY < -80 && Math.abs(currentX) < 50 ? '1' : '0';
+  });
+  cardElement.addEventListener('touchend', (e) => {
+    if (!isDragging) return; isDragging = false; cardElement.classList.remove('dragging'); const threshold = 100;
+    if (currentX > threshold) { processEvaluation('완벽함'); } else if (currentX < -threshold) { processEvaluation('모름'); } else if (currentY < -threshold && Math.abs(currentX) < 80) { processEvaluation('헷갈림'); } 
+    else { cardElement.style.transform = 'rotateY(180deg)'; document.getElementById('hintBad').style.opacity = '0'; document.getElementById('hintPerfect').style.opacity = '0'; document.getElementById('hintSoso').style.opacity = '0'; }
+    currentX = 0; currentY = 0;
+  });
+
+  function resetAndGoHome() { document.getElementById('completionModal').classList.remove('show'); setTimeout(() => { goHome(); }, 300); }
+  function updateProgress() { if (sessionTotal === 0) return; const progressPercent = (completedCount / sessionTotal) * 100; document.getElementById('progressBar').style.width = progressPercent + '%'; }
+  
+  function openSettings() { document.getElementById('limitInput').value = dailyNewLimit; document.getElementById('settingsModal').classList.add('show'); }
+  function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+  function saveSettings() { const newVal = parseInt(document.getElementById('limitInput').value); if (newVal >= 0) { dailyNewLimit = newVal; syncToCloud(); updateHomeStatus(); closeSettings(); } else { alert("0 이상의 숫자를 입력해 주세요."); } }
+  
+  // 🎯 2 & 3. 과정 변경 (언어 및 급수 연동)
+  let tempSelectedLang = 'hanja';
+
+  function openCourseModal() { 
+    tempSelectedLang = userStats.courseLanguage || 'hanja';
+    renderLangButtons();
+    renderLevelDropdown(tempSelectedLang);
+    document.getElementById('courseLevelSelect').value = userStats.courseLevel || LANG_CONFIG[tempSelectedLang].levels[0]; 
+    document.getElementById('courseModal').classList.add('show'); 
+  }
+
+  function selectTempLang(lang) {
+    tempSelectedLang = lang;
+    renderLangButtons();
+    renderLevelDropdown(lang);
+  }
+
+  function renderLangButtons() {
+    ['hanja', 'english', 'chinese', 'japanese'].forEach(l => {
+      const btn = document.getElementById('btnLang_' + l);
+      if (l === tempSelectedLang) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+  }
+
+  function renderLevelDropdown(lang) {
+    const selectEl = document.getElementById('courseLevelSelect');
+    const levels = LANG_CONFIG[lang].levels;
+    selectEl.innerHTML = levels.map(lvl => `<option value="${lvl}">${lvl}</option>`).join('');
+  }
+
+  function closeCourseModal() { document.getElementById('courseModal').classList.remove('show'); }
+  
+  async function applyCourseChange() { 
+    const newLang = tempSelectedLang;
+    const newLevel = document.getElementById('courseLevelSelect').value;
+    const isLangChanged = userStats.courseLanguage !== newLang;
+    
+    userStats.courseLanguage = newLang;
+    userStats.courseLevel = newLevel;
+    
+    if (isLangChanged) {
+      document.getElementById('courseStatus').innerHTML = `<span class="material-symbols-rounded" style="font-size:16px; margin-right:4px;">hourglass_empty</span>데이터 교체 중...`;
+      
+      const fetchedData = await fetchWordData(newLang);
+      const docSnap = await getDoc(doc(db, "vocawa_progress", USER_UID));
+      // 💡 핵심: 새로 바뀐 언어에 맞는 progress만 불러오기
+      let cloudProgress = docSnap.exists() ? (docSnap.data()['progress_' + newLang] || []) : [];
+      
+      myHanjaData = fetchedData.map(card => {
+        const savedCard = cloudProgress.find(c => c.id === card.id);
+        if (savedCard) { return { ...card, interval: savedCard.interval, nextReview: savedCard.nextReview, mistakes: savedCard.mistakes || 0 }; }
+        return { ...card, interval: 0, nextReview: 0, mistakes: 0 };
+      });
+    }
+    
+    syncToCloud(); updateHomeStatus(); closeCourseModal(); 
+  }
+  
+  function renderVocabList() {
+    const learnedCards = myHanjaData.filter(card => card.interval > 0);
+    document.getElementById('vocabStatsCount').innerText = `${learnedCards.length} / ${myHanjaData.length}`;
+    const listContainer = document.getElementById('vocabListContainer');
+    const langConfig = LANG_CONFIG[userStats.courseLanguage];
+
+    if (learnedCards.length === 0) { listContainer.innerHTML = `<div class="empty-state show"><div class="empty-icon material-symbols-rounded">menu_book</div><div class="empty-desc">학습을 시작해 단어를 누적해 보세요.</div></div>`; return; }
+    
+    listContainer.innerHTML = learnedCards.reverse().map(card => {
+      let badgeClass = ''; let badgeText = '초급';
+      if (card.interval >= 7) { badgeClass = 'level-high'; badgeText = '장기기억'; } else if (card.interval >= 3) { badgeClass = 'level-mid'; badgeText = '숙련'; }
+      
+      const wordText = getWordField(card);
+      let subText = `[${card.level}]`;
+      if (langConfig.hasRadical && card.radical) subText += ` 부수: ${card.radical}`;
+
+      // 💡 단어장 목록에서도 ' / ' 를 줄바꿈으로 처리
+      const formattedListMeaning = card.meaning.split(' / ').join('<br>');
+
+      return `<div class="vocab-item"><div class="vocab-hanja" style="${wordText.length > 2 ? 'font-size:20px;' : ''}">${wordText}</div><div class="vocab-details"><div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 4px;"><div class="vocab-meaning" style="line-height:1.4;">${formattedListMeaning}</div><div class="level-badge ${badgeClass}" style="flex-shrink:0; margin-left:8px;">${badgeText}</div></div><div class="vocab-story" style="color:#adb5bd; font-size:12px; font-weight:700;">${subText}</div></div></div>`;
+    }).join('');
+  }
+
+  let quizQuestions = []; 
+  let currentQuizIdx = 0; 
+  let quizScore = 0; 
+  let isAnswering = false;
+
+  function startMistakeReview() {
+    stopBGM(); 
+    const mistakeCards = myHanjaData.filter(c => c.mistakes > 0); 
+    if (mistakeCards.length === 0) { alert("완벽합니다! 현재 복습할 오답이 없습니다."); return; }
+    isMistakeMode = true; 
+    document.getElementById('mainBottomNav').style.display = 'none'; 
+    document.getElementById('fadeBottom').style.display = 'none'; 
+    document.getElementById('homeScreen').classList.remove('active'); 
+    document.getElementById('learningScreen').classList.add('active');
+    
+    todayCards = [...mistakeCards]; currentIndex = 0; completedCount = 0; sessionTotal = todayCards.length; updateProgress();
+    document.getElementById('emptyState').classList.remove('show'); document.getElementById('cardContainer').style.display = 'block'; 
+    renderCard(currentIndex); resetCardStyle(); document.getElementById('evalButtons').classList.remove('show');
+  }
+
+  // 🎯 퀴즈 시작 (부수 예외 처리 적용)
+  function startQuiz() {
+    stopBGM(); 
+    const learnedCards = myHanjaData.filter(card => card.interval > 0);
+    if (learnedCards.length < 4) { alert("학습을 완료한 단어가 최소 4개 이상이어야 합니다."); return; }
+    
+    document.getElementById('mainBottomNav').style.display = 'none'; document.getElementById('fadeBottom').style.display = 'none'; 
+    
+    const shuffledLearned = [...learnedCards].sort(() => 0.5 - Math.random());
+    const selectedCards = shuffledLearned.slice(0, Math.min(10, learnedCards.length));
+    const langConfig = LANG_CONFIG[userStats.courseLanguage];
+    
+    quizQuestions = selectedCards.map(card => {
+      const rand = Math.random();
+      let type = 'meaning';
+      if (langConfig.hasRadical) {
+        if (rand > 0.4 && rand <= 0.8) type = 'hanja';
+        else if (rand > 0.8) type = 'radical';
+      } else {
+        if (rand > 0.5) type = 'hanja'; // 외국어는 단어 vs 뜻 50:50
+      }
+      return { card: card, type: type };
+    });
+
+    currentQuizIdx = 0; quizScore = 0; isAnswering = false; 
+    document.getElementById('homeScreen').classList.remove('active'); document.getElementById('quizScreen').classList.add('active'); 
+    renderQuizQuestion();
+  }
+
+  function renderQuizQuestion() {
+    if (currentQuizIdx >= quizQuestions.length) { finishQuiz(); return; }
+    isAnswering = false; 
+    const qObj = quizQuestions[currentQuizIdx]; 
+    const currentQ = qObj.card;
+    const qType = qObj.type;
+    const langName = LANG_CONFIG[userStats.courseLanguage].name;
+    
+    document.getElementById('quizProgressText').innerText = `문제 ${currentQuizIdx + 1}/${quizQuestions.length}`;
+    
+    const instructionEl = document.getElementById('quizInstruction');
+    const targetEl = document.getElementById('quizHanjaTarget');
+    let correctText = ''; let optionsText = [];
+    let distractorPool = myHanjaData.filter(c => c.id !== currentQ.id).sort(() => 0.5 - Math.random());
+
+    if (qType === 'meaning') {
+      instructionEl.innerText = `다음 ${langName}의 알맞은 뜻을 고르시오.`;
+      const wordText = getWordField(currentQ);
+      targetEl.innerText = wordText;
+      // 💡 모의고사 문제 글자 크기 동적 조절
+      targetEl.style.fontSize = wordText.length >= 10 ? '36px' : (wordText.length > 5 ? '50px' : '80px');
+      correctText = currentQ.meaning;
+      optionsText = [correctText, ...distractorPool.slice(0, 3).map(c => c.meaning)];
+      
+    } else if (qType === 'hanja') {
+      instructionEl.innerText = `다음 뜻에 알맞은 ${langName}를 고르시오.`;
+      targetEl.innerText = currentQ.meaning;
+      targetEl.style.fontSize = currentQ.meaning.length > 6 ? '32px' : '40px';
+      correctText = getWordField(currentQ);
+      optionsText = [correctText, ...distractorPool.slice(0, 3).map(c => getWordField(c))];
+      
+    } else if (qType === 'radical') {
+      instructionEl.innerText = `다음 한자의 부수를 고르시오.`;
+      targetEl.innerText = getWordField(currentQ);
+      targetEl.style.fontSize = '80px';
+      correctText = currentQ.radical;
+      
+      let uniqueRadicals = [];
+      for (let c of distractorPool) {
+         if (c.radical && c.radical !== correctText && !uniqueRadicals.includes(c.radical)) {
+            uniqueRadicals.push(c.radical);
+         }
+         if (uniqueRadicals.length === 3) break;
+      }
+      while (uniqueRadicals.length < 3) { uniqueRadicals.push("부수없음" + Math.random()); }
+      optionsText = [correctText, ...uniqueRadicals];
+    }
+    
+    optionsText.sort(() => 0.5 - Math.random());
+
+    const container = document.getElementById('quizOptionsContainer'); container.innerHTML = '';
+    optionsText.forEach(optText => {
+      const btn = document.createElement('button'); btn.className = 'quiz-opt-btn'; btn.innerText = optText; 
+      btn.onclick = () => checkQuizAnswer(btn, optText === correctText, correctText, currentQ); container.appendChild(btn);
+    });
+  }
+
+  function checkQuizAnswer(btn, isCorrect, correctText, currentQ) {
+    if (isAnswering) return; isAnswering = true; const allBtns = document.querySelectorAll('.quiz-opt-btn');
+    if (isCorrect) { playSound('correct'); btn.classList.add('correct'); quizScore++; } 
+    else { playSound('wrong'); btn.classList.add('wrong'); allBtns.forEach(b => { if (b.innerText === correctText) b.classList.add('correct'); }); 
+      const originalCard = myHanjaData.find(c => c.id === currentQ.id); 
+      if (originalCard) { originalCard.mistakes = (originalCard.mistakes || 0) + 1; syncToCloud(); }
+    }
+    setTimeout(() => { currentQuizIdx++; renderQuizQuestion(); }, 1200);
+  }
+
+  function finishQuiz() {
+    document.getElementById('finalQuizScore').innerText = `${quizScore} / ${quizQuestions.length}`;
+    let msg = ''; const ratio = quizScore / quizQuestions.length;
+    if (ratio === 1) msg = "완벽하게 제초를 완료했습니다!"; else if (ratio >= 0.7) msg = "훌륭합니다. 제초에 성공했습니다!"; else msg = "아슬아슬했네요. 단어장을 복습해 보세요.";
+    if (!userStats.dailyQuizDone) { userStats.dailyQuizDone = true; userStats.money += 50; addExp(20); msg += `<br><br><span style="font-size:16px; color:#51cf66; font-weight:800;">EXP +20  |  💰 +50원</span>`; }
+    document.getElementById('quizResultMsg').innerHTML = msg; document.getElementById('quizResultModal').classList.add('show');
+  }
+
+  function closeQuizResult() { document.getElementById('quizResultModal').classList.remove('show'); goHome(); }
+
+  const shopScreenEl = document.getElementById('shopScreen'); let shopStartX = 0; let shopStartY = 0;
+  shopScreenEl.addEventListener('touchstart', (e) => { shopStartX = e.touches[0].clientX; shopStartY = e.touches[0].clientY; });
+  shopScreenEl.addEventListener('touchend', (e) => {
+    if (!shopScreenEl.classList.contains('active')) return;
+    const shopEndX = e.changedTouches[0].clientX; const shopEndY = e.changedTouches[0].clientY;
+    const diffX = shopStartX - shopEndX; const diffY = shopStartY - shopEndY;
+
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+      const tabs = ['char', 'equip', 'house'];
+      const currentIndex = tabs.indexOf(currentShopTab);
+      const listContainer = document.getElementById('shopListContainer');
+      listContainer.classList.remove('slide-in-right', 'slide-in-left');
+      
+      if (diffX > 0 && currentIndex < tabs.length - 1) {
+        void listContainer.offsetWidth; listContainer.classList.add('slide-in-right'); changeShopTab(tabs[currentIndex + 1]);
+      } else if (diffX < 0 && currentIndex > 0) {
+        void listContainer.offsetWidth; listContainer.classList.add('slide-in-left'); changeShopTab(tabs[currentIndex - 1]);
+      }
+    }
+  });
+
+  if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(e => console.log('SW 실패', e)); }); }
+</script>
 </body>
 </html>
