@@ -227,6 +227,15 @@
   .level-progress-bar-bg { flex: 1; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden; }
   .level-progress-bar-fill { height: 100%; background: #51cf66; border-radius: 4px; transition: width 0.4s ease; }
   .level-progress-text { font-size: 13px; font-weight: 800; color: #495057; }
+
+  /* 💡 수정: 뱃지가 자연스럽게 사라지도록 transition 추가 */
+  .card-badge { 
+    position: absolute; top: -16px; right: -16px; padding: 8px 16px; 
+    border-radius: 16px; font-size: 14px; font-weight: 800; color: white; 
+    z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: rotate(5deg);
+    transition: opacity 0.3s ease; /* 페이드 효과 */
+  }
+  .badge-mistake { background: #fa5252; } /* 오답 노트 전용 빨간 뱃지 */
 </style>
 </head>
 <body>
@@ -981,16 +990,20 @@
     const badgeEl = document.getElementById('cardBadge');
     badgeEl.style.display = 'block';
     
-    if (data.interval === 0) {
-        badgeEl.className = 'card-badge badge-new';
-        if (lang === 'english') badgeEl.innerText = 'NEW';
-        else badgeEl.innerText = '新';
+    if (isMistakeMode) {
+        badgeEl.className = 'card-badge badge-mistake';
+        badgeEl.innerText = lang === 'english' ? 'Retry' : '다시 도전';
     } else {
-        badgeEl.className = 'card-badge badge-review';
-        const days = data.interval;
-        if (lang === 'english') badgeEl.innerText = days + ' days ago';
-        else if (lang === 'hanja' || lang === 'chinese' || lang === 'japanese') badgeEl.innerText = days + '日前';
-        else badgeEl.innerText = days + '일 전';
+        if (data.interval === 0) {
+            badgeEl.className = 'card-badge badge-new';
+            badgeEl.innerText = lang === 'english' ? 'NEW' : '新';
+        } else {
+            badgeEl.className = 'card-badge badge-review';
+            const days = data.interval;
+            if (lang === 'english') badgeEl.innerText = days + ' days ago';
+            else if (lang === 'hanja' || lang === 'chinese' || lang === 'japanese') badgeEl.innerText = days + '日前';
+            else badgeEl.innerText = days + '일 전';
+        }
     }
 
     const frontEl = document.getElementById('cardHanja');
@@ -1016,8 +1029,12 @@
   function flipCard() {
     const card = document.getElementById('flashcard');
     if (!card.classList.contains('flipped')) { 
-      card.classList.add('flipped'); document.getElementById('evalButtons').classList.add('show'); 
-      // 한자는 뜻음을 읽어주는게 좋고, 외국어는 해당 단어를 읽어주는게 좋음.
+      card.classList.add('flipped'); 
+      document.getElementById('evalButtons').classList.add('show'); 
+      
+      // 💡 뱃지 숨기기
+      document.getElementById('cardBadge').style.opacity = '0';
+      
       const langConfig = LANG_CONFIG[userStats.courseLanguage];
       const textToRead = langConfig.name === '한자' ? todayCards[currentIndex].meaning : getWordField(todayCards[currentIndex]);
       playSpeech(textToRead); 
@@ -1079,7 +1096,17 @@
     } else { setTimeout(() => { renderCard(currentIndex); }, 150); }
   }
 
-  function resetCardStyle() { const card = document.getElementById('flashcard'); card.classList.remove('flipped', 'dragging'); card.style.transform = ''; document.getElementById('hintBad').style.opacity = '0'; document.getElementById('hintPerfect').style.opacity = '0'; document.getElementById('hintSoso').style.opacity = '0'; }
+  function resetCardStyle() { 
+    const card = document.getElementById('flashcard'); 
+    card.classList.remove('flipped', 'dragging'); 
+    card.style.transform = ''; 
+    document.getElementById('hintBad').style.opacity = '0'; 
+    document.getElementById('hintPerfect').style.opacity = '0'; 
+    document.getElementById('hintSoso').style.opacity = '0'; 
+    
+    // 💡 뱃지 다시 보이게 복구
+    document.getElementById('cardBadge').style.opacity = '1';
+  }
 
   const cardElement = document.getElementById('flashcard'); let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
   cardElement.addEventListener('touchstart', (e) => { if (!cardElement.classList.contains('flipped')) return; startX = e.touches[0].clientX; startY = e.touches[0].clientY; isDragging = true; cardElement.classList.add('dragging'); });
